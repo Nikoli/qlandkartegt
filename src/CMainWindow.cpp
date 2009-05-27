@@ -302,6 +302,9 @@ void CMainWindow::keyPressEvent(QKeyEvent * e)
             return megaMenu->keyPressEvent(e);
         }
     }
+    else if (e->modifiers() == Qt::ControlModifier)
+      return megaMenu->keyPressEvent(e);
+
     return e->ignore();
 }
 

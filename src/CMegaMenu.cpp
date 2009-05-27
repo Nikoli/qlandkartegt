@@ -370,6 +370,19 @@ void CMegaMenu::keyPressEvent(QKeyEvent * e)
         canvas->move(CCanvas::eMoveDown);
         return e->accept();
     }
+    else if (e->key() == Qt::Key_C && e->modifiers() == Qt::ControlModifier)
+    {
+      qDebug() << "ctrl + c pressed" ;
+      CTrackDB::self().copyToClipboard();
+      return e->accept();
+    }
+    else if (e->key() == Qt::Key_V && e->modifiers() == Qt::ControlModifier)
+    {
+      qDebug() << "ctrl + v pressed" ;
+      CTrackDB::self().pasteFromClipboard();
+      return e->accept();
+    }
+
 }
 
 
