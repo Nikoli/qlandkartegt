@@ -27,7 +27,7 @@
 class CCanvas;
 class QLabel;
 class QGridLayout;
-
+class CActionGroupProvider;
 /// the left hand context sensitive menu
 class CMegaMenu : public QLabel
 {
@@ -50,7 +50,7 @@ class CMegaMenu : public QLabel
     private:
         friend class CMainWindow;
         CMegaMenu(CCanvas * canvas);
-
+        CActionGroupProvider *actionProvider;
         struct func_key_state_t
         {
             func_key_state_t() {
@@ -69,7 +69,7 @@ class CMegaMenu : public QLabel
         };
 
         void switchState(QVector<func_key_state_t>* statedef);
-
+    private slots:
         void funcSwitchToMain();
         void funcSwitchToMap();
 #ifdef PLOT_3D
@@ -134,6 +134,7 @@ class CMegaMenu : public QLabel
         void funcColorPicker();
         void funcWorldBasemap();
 
+     private:
         static CMegaMenu * m_self;
 
         QPointer<CCanvas>  canvas;
