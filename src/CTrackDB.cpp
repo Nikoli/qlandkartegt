@@ -773,5 +773,6 @@ void CTrackDB::pasteFromClipboard()
     CQlb qlb(this);
     qlb.load(&buffer);
     CTrackDB::self().loadQLB(qlb);
+    clipboard->clear();
   }
 }
