@@ -34,6 +34,7 @@
 #include "IDevice.h"
 #include "CDlgCreateWorldBasemap.h"
 #include "CActionGroupProvider.h"
+#include "CActions.h"
 #ifdef PLOT_3D
 #include "CMap3DWidget.h"
 #endif
@@ -94,33 +95,18 @@ CMegaMenu::CMegaMenu(CCanvas * canvas)
 , fsRoute(11, func_key_state_t())
 {
 
-    actionProvider = CActionGroupProvider::getInstance();
+    actionGroup = theMainWindow->getActionGroupProvider();
+    actions = theMainWindow->getActions();
 
-    QAction *switchToMapAction = new QAction(QIcon(":/icons/iconMap16x16"), tr("Map ..."),this);
-    switchToMapAction->setShortcut(tr("F1"));
-    switchToMapAction->setToolTip(tr("Manage maps."));
-    canvas->addAction(switchToMapAction);
-    connect(switchToMapAction, SIGNAL(triggered()),this,SLOT(funcSwitchToMap()));
+    connect(actions->getAction("aSwitchToMap"), SIGNAL(triggered()),this,SLOT(funcSwitchToMap()));
+    connect(actions->getAction("aSwitchToWpt"), SIGNAL(triggered()),this,SLOT(funcSwitchToWpt()));
+    connect(actions->getAction("aSwitchToMain"), SIGNAL(triggered()),this,SLOT(funcSwitchToMain()));
+    connect(actions->getAction("aSwitchToTrack"), SIGNAL(triggered()),this,SLOT(funcSwitchToTrack()));
 
-    QAction *switchToMainAction = new QAction(QIcon(":/icons/iconBack16x16"), tr("Back ..."),this);
-    switchToMainAction->setShortcut(tr("Esc"));
-    switchToMainAction->setToolTip(tr("Go back to main menu."));
-    canvas->addAction(switchToMainAction);
-    connect(switchToMainAction, SIGNAL(triggered()),this,SLOT(funcSwitchToMain()));
 
-    QAction *switchToTrackAction = new QAction(QIcon(":/icons/iconTrack16x16"), tr("Track ..."),this);
-    switchToTrackAction->setShortcut(tr("F3"));
-    switchToTrackAction->setToolTip(tr("Manage tracks."));
-    canvas->addAction(switchToTrackAction);
-    connect(switchToTrackAction, SIGNAL(triggered()),this,SLOT(funcSwitchToTrack()));
-
-    // actionProvider->addAction(switchToMapAction);
-//    fsMain[0] = func_key_state_t(0,tr("-"),0,tr(""));
-//    fsMain[1] = func_key_state_t(":/icons/iconMap16x16",tr("Map ..."),&CMegaMenu::funcSwitchToMap,tr("Manage maps."));
-    actionProvider->addAction(CActionGroupProvider::MainMenu, switchToMapAction);
-//    fsMain[2] = func_key_state_t(":/icons/iconWaypoint16x16",tr("Waypoint ..."),&CMegaMenu::funcSwitchToWpt,tr("Manage waypoints."));
-//    fsMain[3] = func_key_state_t(":/icons/iconTrack16x16",tr("Track ..."),&CMegaMenu::funcSwitchToTrack,tr("Manage tracks."));
-    actionProvider->addAction(CActionGroupProvider::MainMenu, switchToTrackAction);
+    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToMap");
+    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToWpt");
+    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToTrack");
 //    fsMain[4] = func_key_state_t(":/icons/iconRoute16x16",tr("Route ..."),&CMegaMenu::funcSwitchToRoute,tr(""));
 //    fsMain[5] = func_key_state_t(":/icons/iconLiveLog16x16",tr("Live Log ..."),&CMegaMenu::funcSwitchToLiveLog,tr("Toggle live log recording."));
 //    fsMain[6] = func_key_state_t(":/icons/iconOverlay16x16",tr("Overlay ..."),&CMegaMenu::funcSwitchToOverlay,tr("Manage overlays, such as textboxes"));
@@ -131,7 +117,7 @@ CMegaMenu::CMegaMenu(CCanvas * canvas)
 
 
 
-    actionProvider->addAction(CActionGroupProvider::MapMenu, switchToMainAction);
+    actionGroup->addAction(CActionGroupProvider::MapMenu, "aSwitchToMain");
 //    fsMap[0] = func_key_state_t(":/icons/iconBack16x16",tr("Back"),&CMegaMenu::funcSwitchToMain,tr("Go back to main menu."));
 //    fsMap[1] = func_key_state_t(":/icons/iconMoveMap16x16",tr("Move Map"),&CMegaMenu::funcMoveArea,tr("Move the map. Press down the left mouse button and move the mouse."));
 //    fsMap[2] = func_key_state_t(":/icons/iconZoomArea16x16",tr("Zoom Map"),&CMegaMenu::funcZoomArea,tr("Select area for zoom."));
@@ -177,9 +163,9 @@ CMegaMenu::CMegaMenu(CCanvas * canvas)
     fsWpt[10] = func_key_state_t(":/icons/iconDownload16x16",tr("Download"),&CMegaMenu::funcDownloadWpt,tr("Download waypoints from device."));
 
 //    fsTrack[0] = func_key_state_t(":/icons/iconBack16x16",tr("Back"),&CMegaMenu::funcSwitchToMain,tr("Go back to main menu."));
-    actionProvider->addAction(CActionGroupProvider::TrackMenu, switchToMainAction);
+    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aSwitchToMain");
     // just for testing
-    actionProvider->addAction(CActionGroupProvider::TrackMenu, switchToMapAction);
+    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aSwitchToMap");
 //    fsTrack[1] = func_key_state_t(":/icons/iconMoveMap16x16",tr("Move Map"),&CMegaMenu::funcMoveArea,tr("Move the map. Press down the left mouse button and move the mouse."));
 //    fsTrack[2] = func_key_state_t(":/icons/iconZoomArea16x16",tr("Zoom Map"),&CMegaMenu::funcZoomArea,tr("Select area for zoom."));
 //    fsTrack[3] = func_key_state_t(":/icons/iconCenter16x16",tr("Center Map"),&CMegaMenu::funcCenterMap,tr("Find your map by jumping to it's center."));
@@ -436,7 +422,7 @@ void CMegaMenu::mousePressEvent(QMouseEvent * e)
 void CMegaMenu::funcSwitchToMain()
 {
     qDebug() << Q_FUNC_INFO;
-    actionProvider->switchToActionGroup(CActionGroupProvider::MainMenu);
+    actionGroup->switchToActionGroup(CActionGroupProvider::MainMenu);
     menuTitle->setText(tr("<b>Main ...</b>"));
     setPixmap(QPixmap(":/icons/backGlobe128x128"));
     switchState(&fsMain);
@@ -447,7 +433,7 @@ void CMegaMenu::funcSwitchToMain()
 void CMegaMenu::funcSwitchToMap()
 {
     qDebug() << Q_FUNC_INFO;
-    actionProvider->switchToActionGroup(CActionGroupProvider::MapMenu);
+    actionGroup->switchToActionGroup(CActionGroupProvider::MapMenu);
     menuTitle->setText(tr("<b>Maps ...</b>"));
     setPixmap(QPixmap(":/icons/backMap128x128"));
     switchState(&fsMap);
@@ -469,6 +455,7 @@ void CMegaMenu::funcSwitchToMap3D()
 
 void CMegaMenu::funcSwitchToWpt()
 {
+    actionGroup->switchToActionGroup(CActionGroupProvider::WaypointMenu);
     menuTitle->setText(tr("<b>Waypoints ...</b>"));
     setPixmap(QPixmap(":/icons/backWaypoint128x128"));
     switchState(&fsWpt);
@@ -480,7 +467,7 @@ void CMegaMenu::funcSwitchToWpt()
 void CMegaMenu::funcSwitchToTrack()
 {
     qDebug() << Q_FUNC_INFO;
-    actionProvider->switchToActionGroup(CActionGroupProvider::TrackMenu);
+    actionGroup->switchToActionGroup(CActionGroupProvider::TrackMenu);
     menuTitle->setText(tr("<b>Tracks ...</b>"));
     setPixmap(QPixmap(":/icons/backTrack128x128"));
     switchState(&fsTrack);

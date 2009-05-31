@@ -25,18 +25,18 @@ class CActionGroupProvider: public QObject
   Q_OBJECT
   Q_ENUMS(ActionGroupName)
 public:
-  CActionGroupProvider();
+  CActionGroupProvider(QObject * parent);
   virtual ~CActionGroupProvider();
-  static CActionGroupProvider* getInstance();
   enum ActionGroupName
   {
     TrackMenu,
     MapMenu,
+    WaypointMenu,
     MainMenu
   };
 
   void addAction(ActionGroupName group, QAction *action, bool force = false);
-  QAction *addAction(ActionGroupName group, QString shortCut, QString icon, QString text, QString tooltip, bool force = false);
+  void addAction(ActionGroupName group, const QString& actionName, bool force = false);
 
   void removeAction(ActionGroupName group, QAction *action);
   void removeAction(QAction *action);

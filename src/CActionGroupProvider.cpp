@@ -17,7 +17,11 @@
 #include "CActionGroupProvider.h"
 #include <QPointer>
 #include <QWidget>
-CActionGroupProvider::CActionGroupProvider()
+
+#include "CMainWindow.h"
+#include "CActions.h"
+
+CActionGroupProvider::CActionGroupProvider(QObject *parent) : QObject(parent)
 {
   activeGroup = MainMenu;
 }
@@ -27,16 +31,12 @@ CActionGroupProvider::~CActionGroupProvider()
 
 }
 
-
-CActionGroupProvider* CActionGroupProvider::getInstance()
+void CActionGroupProvider::addAction(ActionGroupName groupName, const QString& actionName, bool force /*= false*/)
 {
-  static QPointer<CActionGroupProvider> instance;
+  QAction *action = theMainWindow->getActions()->getAction(actionName);
 
-  if (instance.isNull())
-    instance = new CActionGroupProvider();
-
-  return instance;
-
+  if (action)
+    addAction(groupName,action,force);
 }
 
 void CActionGroupProvider::addAction(ActionGroupName groupName, QAction *action, bool force /*= false*/)
@@ -51,14 +51,6 @@ void CActionGroupProvider::addAction(ActionGroupName groupName, QAction *action,
     actionGroup = actionGroupHash.value(groupName);
 
   actionGroup->append(action);
-}
-
-
-QAction * CActionGroupProvider::addAction(ActionGroupName group, QString shortCut, QString icon, QString text, QString tooltip, bool force /*= false*/)
-{
-  QAction *tmpAction = new QAction(QIcon(icon), text, this);
-  tmpAction->setShortcut(shortCut);
-  tmpAction->setToolTip(tooltip);
 }
 
 void CActionGroupProvider::removeAction(ActionGroupName group, QAction *action)

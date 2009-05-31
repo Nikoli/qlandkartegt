@@ -28,6 +28,7 @@ class CCanvas;
 class QLabel;
 class QGridLayout;
 class CActionGroupProvider;
+class CActions;
 /// the left hand context sensitive menu
 class CMegaMenu : public QLabel
 {
@@ -50,7 +51,8 @@ class CMegaMenu : public QLabel
     private:
         friend class CMainWindow;
         CMegaMenu(CCanvas * canvas);
-        CActionGroupProvider *actionProvider;
+        CActionGroupProvider *actionGroup;
+        CActions *actions;
         struct func_key_state_t
         {
             func_key_state_t() {

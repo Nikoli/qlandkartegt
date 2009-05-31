@@ -36,6 +36,8 @@
 #include "printpreview.h"
 #include "CLiveLogDB.h"
 #include "COverlayDB.h"
+#include "CActions.h"
+#include "CActionGroupProvider.h"
 
 #include <QtGui>
 
@@ -52,6 +54,8 @@ CMainWindow::CMainWindow()
 
     resources = new CResources(this);
 
+    actions = new CActions(this);
+    actionGroupProvider = new CActionGroupProvider(this);
     setupMenuBar();
 
     // setup splitter views

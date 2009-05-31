@@ -38,6 +38,8 @@ class CTabWidget;
 class CLiveLogDB;
 class COverlayDB;
 class QComboBox;
+class CActions;
+class CActionGroupProvider;
 
 class CMainWindow : public QMainWindow
 {
@@ -58,6 +60,9 @@ class CMainWindow : public QMainWindow
         void clearAll();
 
         const QString& getCurrentFilename(){return wksFile;}
+
+        CActionGroupProvider *getActionGroupProvider() { return actionGroupProvider;};
+        CActions *getActions() { return actions;};
 
     protected:
         void keyPressEvent(QKeyEvent * e);
@@ -80,6 +85,8 @@ class CMainWindow : public QMainWindow
         void slotDeviceChanged();
 
     private:
+        CActions *actions;
+        CActionGroupProvider *actionGroupProvider;
         void setupMenuBar();
         void loadData(QString& filename, const QString& filter);
         void setTitleBar();
