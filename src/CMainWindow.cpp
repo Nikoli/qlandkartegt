@@ -290,7 +290,7 @@ void CMainWindow::setupMenuBar()
 
 void CMainWindow::keyPressEvent(QKeyEvent * e)
 {
-
+/*
     if((e->key() >= Qt::Key_F1) && (e->key() < Qt::Key_F11)) {
         return megaMenu->keyPressEvent(e);
     }
@@ -310,6 +310,7 @@ void CMainWindow::keyPressEvent(QKeyEvent * e)
       return megaMenu->keyPressEvent(e);
 
     return e->ignore();
+    */
 }
 
 

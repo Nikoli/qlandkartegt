@@ -23,12 +23,13 @@
 #include <QLabel>
 #include <QPointer>
 #include <QVector>
-
+#include "CActionGroupProvider.h"
 class CCanvas;
 class QLabel;
 class QGridLayout;
-class CActionGroupProvider;
 class CActions;
+class QVBoxLayout;
+class QScrollArea;
 /// the left hand context sensitive menu
 class CMegaMenu : public QLabel
 {
@@ -70,7 +71,7 @@ class CMegaMenu : public QLabel
             QString tooltip;
         };
 
-        void switchState(QVector<func_key_state_t>* statedef);
+        void switchState(CActionGroupProvider::ActionGroupName groupName);
     private slots:
         void funcSwitchToMain();
         void funcSwitchToMap();
@@ -138,9 +139,11 @@ class CMegaMenu : public QLabel
 
      private:
         static CMegaMenu * m_self;
-
+        QWidget *menuWidget;
+        QVBoxLayout *mainLayout;
         QPointer<CCanvas>  canvas;
-
+        QMenu *menu;
+        QScrollArea *scrollArea;
         QLabel * menuTitle;
 
         QGridLayout * layout;

@@ -29,9 +29,14 @@ public:
   virtual ~CActionGroupProvider();
   enum ActionGroupName
   {
+    Map3DMenu,
+    WptMenu,
+    LiveLogMenu,
+    OverlayMenu,
+    MainMoreMenu,
     TrackMenu,
+    RouteMenu,
     MapMenu,
-    WaypointMenu,
     MainMenu
   };
 

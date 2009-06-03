@@ -17,9 +17,11 @@
 #include "CActionGroupProvider.h"
 #include <QPointer>
 #include <QWidget>
+#include <QDebug>
 
 #include "CMainWindow.h"
 #include "CActions.h"
+#include "CCanvas.h"
 
 CActionGroupProvider::CActionGroupProvider(QObject *parent) : QObject(parent)
 {
@@ -65,7 +67,32 @@ void CActionGroupProvider::removeAction(QAction *action)
 
 void CActionGroupProvider::switchToActionGroup(ActionGroupName group)
 {
+
+  if (!(*actionGroupHash.value(group)).count())
+  {
+    qDebug() << tr("ActionGroup %1 is empty. Please fix.").arg(group);
+    return;
+  }
+
   activeGroup = group;
+
+
+  foreach(QAction* a, ((QWidget *)theMainWindow)->actions())
+  {
+     qDebug() << a->text();
+     theMainWindow->removeAction(a);
+     a->setEnabled(false);
+  }
+
+
+  foreach(QAction* a, *actionGroupHash.value(group))
+  {
+      qDebug() << a->text();
+      theMainWindow->addAction(a);
+      a->setEnabled(true);
+  }
+/*
+
   foreach(ActionGroupName i, actionGroupHash.keys())
   {
     foreach(QAction* a, *actionGroupHash.value(i))
@@ -78,4 +105,5 @@ void CActionGroupProvider::switchToActionGroup(ActionGroupName group)
   {
     a->setEnabled(true);
   }
+*/
 }
