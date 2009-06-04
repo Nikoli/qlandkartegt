@@ -340,10 +340,10 @@ void CMegaMenu::switchState(CActionGroupProvider::ActionGroupName groupName)
     if (scrollArea)
         delete scrollArea;
 
-    menu = new QMenu(menuWidget);
+    menu = new QMenu();
     menu->setWindowFlags(Qt::SubWindow);//Qt::Widget);
 
-    foreach(QAction *a, *theMainWindow->getActionGroupProvider()->getActiveActions())
+    foreach(QAction *a, *actionGroup->getActiveActions())
         menu->addAction(a);
 
     scrollArea = new QScrollArea();
