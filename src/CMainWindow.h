@@ -62,7 +62,6 @@ class CMainWindow : public QMainWindow
         const QString& getCurrentFilename(){return wksFile;}
 
         CActionGroupProvider *getActionGroupProvider() { return actionGroupProvider;};
-        CActions *getActions() { return actions;};
 
     protected:
         void keyPressEvent(QKeyEvent * e);
@@ -85,7 +84,6 @@ class CMainWindow : public QMainWindow
         void slotDeviceChanged();
 
     private:
-        CActions *actions;
         CActionGroupProvider *actionGroupProvider;
         void setupMenuBar();
         void loadData(QString& filename, const QString& filter);

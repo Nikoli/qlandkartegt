@@ -19,7 +19,11 @@
 #define CACTIONS_H_
 #include <QObject>
 #include <QString>
+#include <QPixmap>
+#include <QPointer>
 class QAction;
+class CActionGroupProvider;
+class CCanvas;
 class CActions : public QObject
 {
   Q_OBJECT
@@ -30,6 +34,77 @@ public:
 private:
   void createAction(const QString& shortCut,const char * icon,const QString& name, const QString& setObjectName, const QString& tooltip);
   QObject *parent;
+  CActionGroupProvider *actionGroup;
+  QPointer<CCanvas>  canvas;
+  QString menuTitle;
+  QPixmap menuPixmap;
+  void setMenuTitle(const QString &menuTitle);
+  void setMenuPixmap(const QPixmap & menuPixmap);
+public slots:
+    void funcSwitchToMain();
+    void funcSwitchToMap();
+#ifdef PLOT_3D
+    void funcSwitchToMap3D();
+#endif
+    void funcSwitchToWpt();
+    void funcSwitchToTrack();
+    void funcSwitchToRoute();
+
+    void funcSwitchToLiveLog();
+    void funcSwitchToOverlay();
+    void funcSwitchToMainMore();
+    void funcClearAll();
+    void funcUploadAll();
+    void funcDownloadAll();
+
+    void funcMoveArea();
+    void funcZoomArea();
+    void funcCenterMap();
+
+    void funcSelectArea();
+    void funcEditMap();
+    void funcSearchMap();
+    void funcUploadMap();
+
+#ifdef PLOT_3D
+    void funcCloseMap3D();
+    void funcMap3DMode();
+    void funcMap3DZoomPlus();
+    void funcMap3DZoomMinus();
+    void funcMap3DLighting();
+#endif
+
+    void funcNewWpt();
+    void funcEditWpt();
+    void funcMoveWpt();
+#ifdef HAS_EXIF
+    void funcImageWpt();
+#endif
+    void funcUploadWpt();
+    void funcDownloadWpt();
+
+    void funcCombineTrack();
+    void funcEditTrack();
+    void funcCutTrack();
+    void funcSelTrack();
+    void funcUploadTrack();
+    void funcDownloadTrack();
+
+    void funcUploadRoute();
+    void funcDownloadRoute();
+
+    void funcLiveLog();
+    void funcLockMap();
+    void funcAddWpt();
+
+    void funcText();
+    void funcTextBox();
+    void funcDistance();
+
+    void funcDiary();
+    void funcColorPicker();
+    void funcWorldBasemap();
+
 };
 
 #endif /* CACTIONS_H_ */

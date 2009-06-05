@@ -98,66 +98,9 @@ CMegaMenu::CMegaMenu(CCanvas * canvas) :
 {
 
     actionGroup = theMainWindow->getActionGroupProvider();
-    actions = theMainWindow->getActions();
+    actions = actionGroup->getActions();
     menu=0;
     scrollArea=0;
-    connect(actions->getAction("aSwitchToMap"), SIGNAL(triggered()), this, SLOT(funcSwitchToMap()));
-    connect(actions->getAction("aSwitchToWpt"), SIGNAL(triggered()), this, SLOT(funcSwitchToWpt()));
-    connect(actions->getAction("aSwitchToTrack"), SIGNAL(triggered()), this, SLOT(funcSwitchToTrack()));
-    connect(actions->getAction("aSwitchToRoute"), SIGNAL(triggered()), this, SLOT(funcSwitchToRoute()));
-    connect(actions->getAction("aSwitchToLiveLog"), SIGNAL(triggered()), this, SLOT(funcSwitchToLiveLog()));
-    connect(actions->getAction("aSwitchToOverlay"), SIGNAL(triggered()), this, SLOT(funcSwitchToOverlay()));
-    connect(actions->getAction("aSwitchToMainMore"), SIGNAL(triggered()), this, SLOT(funcSwitchToMainMore()));
-    connect(actions->getAction("aClearAll"), SIGNAL(triggered()), this, SLOT(funcClearAll()));
-    connect(actions->getAction("aUploadAll"), SIGNAL(triggered()), this, SLOT(funcUploadAll()));
-    connect(actions->getAction("aDownloadAll"), SIGNAL(triggered()), this, SLOT(funcDownloadAll()));
-
-    connect(actions->getAction("aSwitchToMain"), SIGNAL(triggered()), this, SLOT(funcSwitchToMain()));
-    connect(actions->getAction("aMoveArea"), SIGNAL(triggered()), this, SLOT(funcMoveArea()));
-    connect(actions->getAction("aZoomArea"), SIGNAL(triggered()), this, SLOT(funcZoomArea()));
-    connect(actions->getAction("aCenterMap"), SIGNAL(triggered()), this, SLOT(funcCenterMap()));
-
-    connect(actions->getAction("aSelectArea"), SIGNAL(triggered()), this, SLOT(funcSelectArea()));
-    connect(actions->getAction("aEditMap"), SIGNAL(triggered()), this, SLOT(funcEditMap()));
-    connect(actions->getAction("aSearchMap"), SIGNAL(triggered()), this, SLOT(funcSearchMap()));
-#ifdef PLOT_3D
-    connect(actions->getAction("aSwitchToMap3D"), SIGNAL(triggered()),this,SLOT(funcSwitchToMap3D()));
-#endif
-    connect(actions->getAction("aUploadMap"), SIGNAL(triggered()), this, SLOT(funcUploadMap()));
-
-#ifdef PLOT_3D
-    connect(actions->getAction("aCloseMap3D"), SIGNAL(triggered()),this,SLOT(funcCloseMap3D()));
-    connect(actions->getAction("aMap3DMode"), SIGNAL(triggered()),this,SLOT(funcMap3DMode()));
-    connect(actions->getAction("aMap3DZoomPlus"), SIGNAL(triggered()),this,SLOT(funcMap3DZoomPlus()));
-    connect(actions->getAction("aMap3DZoomMinus"), SIGNAL(triggered()),this,SLOT(funcMap3DZoomMinus()));
-    connect(actions->getAction("aMap3DLighting"), SIGNAL(triggered()),this,SLOT(funcMap3DLighting()));
-
-#endif
-    connect(actions->getAction("aNewWpt"), SIGNAL(triggered()), this, SLOT(funcNewWpt()));
-    connect(actions->getAction("aEditWpt"), SIGNAL(triggered()), this, SLOT(funcEditWpt()));
-    connect(actions->getAction("aMoveWpt"), SIGNAL(triggered()), this, SLOT(funcMoveWpt()));
-#ifdef HAS_EXIF
-    connect(actions->getAction("aImageWpt"), SIGNAL(triggered()),this,SLOT(funcImageWpt()));
-#endif
-    connect(actions->getAction("aUploadWpt"), SIGNAL(triggered()), this, SLOT(funcUploadWpt()));
-    connect(actions->getAction("aDownloadWpt"), SIGNAL(triggered()), this, SLOT(funcDownloadWpt()));
-    connect(actions->getAction("aCombineTrack"), SIGNAL(triggered()), this, SLOT(funcCombineTrack()));
-    connect(actions->getAction("aEditTrack"), SIGNAL(triggered()), this, SLOT(funcEditTrack()));
-    connect(actions->getAction("aCutTrack"), SIGNAL(triggered()), this, SLOT(funcCutTrack()));
-    connect(actions->getAction("aSelTrack"), SIGNAL(triggered()), this, SLOT(funcSelTrack()));
-    connect(actions->getAction("aUploadTrack"), SIGNAL(triggered()), this, SLOT(funcUploadTrack()));
-    connect(actions->getAction("aDownloadTrack"), SIGNAL(triggered()), this, SLOT(funcDownloadTrack()));
-    connect(actions->getAction("aLiveLog"), SIGNAL(triggered()), this, SLOT(funcLiveLog()));
-    connect(actions->getAction("aLockMap"), SIGNAL(triggered()), this, SLOT(funcLockMap()));
-    connect(actions->getAction("aAddWpt"), SIGNAL(triggered()), this, SLOT(funcAddWpt()));
-    connect(actions->getAction("aText"), SIGNAL(triggered()), this, SLOT(funcText()));
-    connect(actions->getAction("aTextBox"), SIGNAL(triggered()), this, SLOT(funcTextBox()));
-    connect(actions->getAction("aDistance"), SIGNAL(triggered()), this, SLOT(funcDistance()));
-    connect(actions->getAction("aDiary"), SIGNAL(triggered()), this, SLOT(funcDiary()));
-    connect(actions->getAction("aColorPicker"), SIGNAL(triggered()), this, SLOT(funcColorPicker()));
-    connect(actions->getAction("aWorldBasemap"), SIGNAL(triggered()), this, SLOT(funcWorldBasemap()));
-    connect(actions->getAction("aUploadRoute"), SIGNAL(triggered()), this, SLOT(funcUploadRoute()));
-    connect(actions->getAction("aDownloadRoute"), SIGNAL(triggered()), this, SLOT(funcDownloadRoute()));
 
     actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToMap");
     actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToWpt");
@@ -340,8 +283,8 @@ void CMegaMenu::switchState(CActionGroupProvider::ActionGroupName groupName)
     if (scrollArea)
         delete scrollArea;
 
-    menu = new QMenu();
-    menu->setWindowFlags(Qt::SubWindow);//Qt::Widget);
+    menu = new QMenu(this);
+    menu->setWindowFlags(Qt::Widget);
 
     foreach(QAction *a, *actionGroup->getActiveActions())
         menu->addAction(a);
@@ -362,35 +305,35 @@ void CMegaMenu::switchByKeyWord(const QString& key)
 
     if (key == "Main")
     {
-        funcSwitchToMain();
+        actions->funcSwitchToMain();
     } else if (key == "Waypoints" && current != &fsWpt)
     {
-        funcSwitchToWpt();
-        funcMoveArea();
+        actions->funcSwitchToWpt();
+        actions->funcMoveArea();
     } else if (key == "Search" && current != &fsMain)
     {
-        funcSwitchToMain();
-        funcMoveArea();
+        actions->funcSwitchToMain();
+        actions->funcMoveArea();
     } else if (key == "Maps" && current != &fsMap)
     {
-        funcSwitchToMap();
-        funcMoveArea();
+        actions->funcSwitchToMap();
+        actions->funcMoveArea();
     } else if (key == "Tracks" && current != &fsTrack)
     {
-        funcSwitchToTrack();
-        funcMoveArea();
+        actions->funcSwitchToTrack();
+        actions->funcMoveArea();
     } else if (key == "LiveLog" && current != &fsLiveLog)
     {
-        funcSwitchToLiveLog();
-        funcMoveArea();
+        actions->funcSwitchToLiveLog();
+        actions->funcMoveArea();
     } else if (key == "Overlay" && current != &fsOverlay)
     {
-        funcSwitchToOverlay();
-        funcMoveArea();
+        actions->funcSwitchToOverlay();
+        actions->funcMoveArea();
     } else if (key == "Routes" && current != &fsRoute)
     {
-        funcSwitchToRoute();
-        funcMoveArea();
+        actions->funcSwitchToRoute();
+        actions->funcMoveArea();
     }
 
 }
@@ -470,314 +413,3 @@ void CMegaMenu::mousePressEvent(QMouseEvent * e)
     //    }
 }
 
-void CMegaMenu::funcSwitchToMain()
-{
-    qDebug() << Q_FUNC_INFO;
-    menuTitle->setText(tr("<b>Main ...</b>"));
-    setPixmap(QPixmap(":/icons/backGlobe128x128"));
-    switchState(CActionGroupProvider::MainMenu);
-    funcMoveArea();
-}
-
-void CMegaMenu::funcSwitchToMap()
-{
-    qDebug() << Q_FUNC_INFO;
-    menuTitle->setText(tr("<b>Maps ...</b>"));
-    setPixmap(QPixmap(":/icons/backMap128x128"));
-    switchState(CActionGroupProvider::MapMenu);
-    CMapDB::self().gainFocus();
-    funcMoveArea();
-}
-
-#ifdef PLOT_3D
-void CMegaMenu::funcSwitchToMap3D()
-{
-    menuTitle->setText(tr("<b>Maps 3D ...</b>"));
-    setPixmap(QPixmap(":/icons/backMap128x128"));
-    switchState(CActionGroupProvider::Map3DMenu);
-    CMapDB::self().gainFocus();
-    CMapDB::self().show3DMap(true);
-}
-#endif
-
-void CMegaMenu::funcSwitchToWpt()
-{
-    menuTitle->setText(tr("<b>Waypoints ...</b>"));
-    setPixmap(QPixmap(":/icons/backWaypoint128x128"));
-    switchState(CActionGroupProvider::WptMenu);
-    CWptDB::self().gainFocus();
-    funcMoveArea();
-}
-
-void CMegaMenu::funcSwitchToTrack()
-{
-    menuTitle->setText(tr("<b>Tracks ...</b>"));
-    setPixmap(QPixmap(":/icons/backTrack128x128"));
-    switchState(CActionGroupProvider::TrackMenu);
-    CTrackDB::self().gainFocus();
-    funcMoveArea();
-}
-
-void CMegaMenu::funcSwitchToRoute()
-{
-    menuTitle->setText(tr("<b>Routes ...</b>"));
-    setPixmap(QPixmap(":/icons/backRoute128x128"));
-    switchState(CActionGroupProvider::RouteMenu);
-    CRouteDB::self().gainFocus();
-    funcMoveArea();
-}
-
-void CMegaMenu::funcSwitchToLiveLog()
-{
-    menuTitle->setText(tr("<b>Live Log ...</b>"));
-    setPixmap(QPixmap(":/icons/backLiveLog128x128"));
-    switchState(CActionGroupProvider::LiveLogMenu);
-    CLiveLogDB::self().gainFocus();
-    funcMoveArea();
-}
-
-void CMegaMenu::funcSwitchToOverlay()
-{
-    menuTitle->setText(tr("<b>Overlay ...</b>"));
-    setPixmap(QPixmap(":/icons/backOverlay128x128"));
-    switchState(CActionGroupProvider::OverlayMenu);
-    COverlayDB::self().gainFocus();
-    funcMoveArea();
-}
-
-void CMegaMenu::funcSwitchToMainMore()
-{
-    menuTitle->setText(tr("<b>Main (More) ...</b>"));
-    setPixmap(QPixmap(":/icons/backGlobe+128x128"));
-    switchState(CActionGroupProvider::MainMoreMenu);
-    funcMoveArea();
-}
-
-void CMegaMenu::funcDiary()
-{
-    CDiaryDB::self().openEditWidget();
-}
-
-void CMegaMenu::funcColorPicker()
-{
-    canvas->setMouseMode(CCanvas::eMouseColorPicker);
-}
-
-void CMegaMenu::funcClearAll()
-{
-    theMainWindow->clearAll();
-}
-
-void CMegaMenu::funcUploadAll()
-{
-    IDevice * dev = CResources::self().device();
-    if (dev == 0)
-        return;
-
-    dev->uploadAll();
-}
-
-void CMegaMenu::funcDownloadAll()
-{
-    IDevice * dev = CResources::self().device();
-    if (dev == 0)
-        return;
-
-    dev->downloadAll();
-}
-
-void CMegaMenu::funcMoveArea()
-{
-    canvas->setMouseMode(CCanvas::eMouseMoveArea);
-}
-
-void CMegaMenu::funcZoomArea()
-{
-    canvas->setMouseMode(CCanvas::eMouseZoomArea);
-}
-
-void CMegaMenu::funcCenterMap()
-{
-    canvas->move(CCanvas::eMoveCenter);
-}
-
-void CMegaMenu::funcSelectArea()
-{
-    canvas->setMouseMode(CCanvas::eMouseSelectArea);
-}
-
-void CMegaMenu::funcEditMap()
-{
-
-    CMapDB::self().editMap();
-    if (CCreateMapGeoTiff::self())
-    {
-        setEnabled(false);
-connect    (CCreateMapGeoTiff::self(), SIGNAL(destroyed(QObject*)), this, SLOT(slotEnable()));
-}
-}
-
-void CMegaMenu::funcSearchMap()
-{
-    CMapDB::self().searchMap();
-}
-
-void CMegaMenu::funcUploadMap()
-{
-    CMapDB::self().upload();
-}
-
-void CMegaMenu::funcNewWpt()
-{
-    canvas->setMouseMode(CCanvas::eMouseAddWpt);
-}
-
-#ifdef PLOT_3D
-void CMegaMenu::funcCloseMap3D()
-{
-    CMapDB::self().show3DMap(false);
-    menuTitle->setText(tr("<b>Maps ...</b>"));
-    setPixmap(QPixmap(":/icons/backMap128x128"));
-    switchState(CActionGroupProvider::Map3DMenu);
-    CMapDB::self().gainFocus();
-    funcMoveArea();
-}
-
-void CMegaMenu::funcMap3DZoomPlus()
-{
-    CMap3DWidget * map = CMapDB::self().getMap3D();
-    if(map)
-    {
-        map->eleZoomIn();
-    }
-}
-
-void CMegaMenu::funcMap3DZoomMinus()
-{
-    CMap3DWidget * map = CMapDB::self().getMap3D();
-    if(map)
-    {
-        map->eleZoomOut();
-    }
-}
-
-void CMegaMenu::funcMap3DLighting()
-{
-    CMap3DWidget * map = CMapDB::self().getMap3D();
-    map->lightTurn();
-}
-
-void CMegaMenu::funcMap3DMode()
-{
-    CMap3DWidget * map = CMapDB::self().getMap3D();
-    if(map)
-    {
-        map->changeMode();
-    }
-}
-#endif
-
-void CMegaMenu::funcEditWpt()
-{
-    canvas->setMouseMode(CCanvas::eMouseEditWpt);
-}
-
-void CMegaMenu::funcMoveWpt()
-{
-    canvas->setMouseMode(CCanvas::eMouseMoveWpt);
-}
-
-#ifdef HAS_EXIF
-void CMegaMenu::funcImageWpt()
-{
-    CWptDB::self().createWaypointsFromImages();
-}
-#endif
-
-void CMegaMenu::funcUploadWpt()
-{
-    CWptDB::self().upload();
-}
-
-void CMegaMenu::funcDownloadWpt()
-{
-    CWptDB::self().download();
-}
-
-void CMegaMenu::funcEditTrack()
-{
-    CTrackToolWidget * toolview = CTrackDB::self().getToolWidget();
-    if (toolview)
-        toolview->slotEdit();
-}
-
-void CMegaMenu::funcCombineTrack()
-{
-    CTrackDB::self().CombineTracks();
-}
-
-void CMegaMenu::funcCutTrack()
-{
-    canvas->setMouseMode(CCanvas::eMouseCutTrack);
-}
-
-void CMegaMenu::funcSelTrack()
-{
-    canvas->setMouseMode(CCanvas::eMouseSelTrack);
-}
-
-void CMegaMenu::funcUploadTrack()
-{
-    CTrackDB::self().upload();
-}
-
-void CMegaMenu::funcDownloadTrack()
-{
-    CTrackDB::self().download();
-}
-
-void CMegaMenu::funcUploadRoute()
-{
-    CRouteDB::self().upload();
-}
-
-void CMegaMenu::funcDownloadRoute()
-{
-    CRouteDB::self().download();
-}
-
-void CMegaMenu::funcLiveLog()
-{
-    CLiveLogDB::self().start(!CLiveLogDB::self().logging());
-}
-
-void CMegaMenu::funcLockMap()
-{
-    CLiveLogDB::self().setLockToCenter(!CLiveLogDB::self().lockToCenter());
-}
-
-void CMegaMenu::funcAddWpt()
-{
-    CLiveLogDB::self().addWpt();
-}
-
-void CMegaMenu::funcText()
-{
-    canvas->setMouseMode(CCanvas::eMouseAddText);
-}
-
-void CMegaMenu::funcTextBox()
-{
-    canvas->setMouseMode(CCanvas::eMouseAddTextBox);
-}
-
-void CMegaMenu::funcDistance()
-{
-    canvas->setMouseMode(CCanvas::eMouseAddDistance);
-}
-
-void CMegaMenu::funcWorldBasemap()
-{
-    CDlgCreateWorldBasemap dlg;
-    dlg.exec();
-}

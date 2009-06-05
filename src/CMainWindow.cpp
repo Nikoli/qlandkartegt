@@ -54,8 +54,6 @@ CMainWindow::CMainWindow()
 
     resources = new CResources(this);
 
-    actions = new CActions(this);
-    actionGroupProvider = new CActionGroupProvider(this);
     setupMenuBar();
 
     // setup splitter views
@@ -76,6 +74,7 @@ CMainWindow::CMainWindow()
     canvas = new CCanvas(this);
     canvasTab->addTab(canvas,tr("Map"));
 
+    actionGroupProvider = new CActionGroupProvider(this);
     megaMenu = new CMegaMenu(canvas);
     leftSplitter->addWidget(megaMenu);
 
@@ -194,6 +193,7 @@ CMainWindow::CMainWindow()
     {
       loadData(arg, QString());
     }
+
 
 }
 

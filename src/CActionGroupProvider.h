@@ -18,6 +18,8 @@
 #define CACTIONGROUPPROVIDER_H_
 #include <QList>
 #include <QAction>
+#include <QPointer>
+class CActions;
 class QWidget;
 
 class CActionGroupProvider: public QObject
@@ -46,11 +48,12 @@ public:
   void removeAction(ActionGroupName group, QAction *action);
   void removeAction(QAction *action);
   void switchToActionGroup(ActionGroupName group);
-
+  CActions* getActions() {return actions;};
   QList<QAction *> *getActiveActions() { return actionGroupHash.value(activeGroup,new QList<QAction* >());};
 private:
   ActionGroupName activeGroup;
   QHash<ActionGroupName, QList<QAction *> *> actionGroupHash;
+  CActions* actions;
 };
 
 #endif /* CActionGroupProvider_H_ */

@@ -26,6 +26,7 @@
 CActionGroupProvider::CActionGroupProvider(QObject *parent) : QObject(parent)
 {
   activeGroup = MainMenu;
+  actions = new CActions(this);
 }
 
 CActionGroupProvider::~CActionGroupProvider()
@@ -35,7 +36,7 @@ CActionGroupProvider::~CActionGroupProvider()
 
 void CActionGroupProvider::addAction(ActionGroupName groupName, const QString& actionName, bool force /*= false*/)
 {
-  QAction *action = theMainWindow->getActions()->getAction(actionName);
+  QAction *action = actions->getAction(actionName);
 
   if (action)
     addAction(groupName,action,force);
@@ -68,9 +69,9 @@ void CActionGroupProvider::removeAction(QAction *action)
 void CActionGroupProvider::switchToActionGroup(ActionGroupName group)
 {
 
-  if (!(*actionGroupHash.value(group)).count())
-  {
-    qDebug() << tr("ActionGroup %1 is empty. Please fix.").arg(group);
+ if (!actionGroupHash.value(group))
+   {
+    qDebug() << tr("ActionGroup %1 not defined. Please fix.").arg(group);
     return;
   }
 
