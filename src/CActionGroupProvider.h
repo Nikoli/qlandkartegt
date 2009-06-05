@@ -19,6 +19,7 @@
 #include <QList>
 #include <QAction>
 #include <QPointer>
+#include <QHash>
 class CActions;
 class QWidget;
 
