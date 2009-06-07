@@ -45,9 +45,8 @@ private:
 public slots:
     void funcSwitchToMain();
     void funcSwitchToMap();
-#ifdef PLOT_3D
     void funcSwitchToMap3D();
-#endif
+
     void funcSwitchToWpt();
     void funcSwitchToTrack();
     void funcSwitchToRoute();
@@ -68,13 +67,11 @@ public slots:
     void funcSearchMap();
     void funcUploadMap();
 
-#ifdef PLOT_3D
     void funcCloseMap3D();
     void funcMap3DMode();
     void funcMap3DZoomPlus();
     void funcMap3DZoomMinus();
     void funcMap3DLighting();
-#endif
 
     void funcNewWpt();
     void funcEditWpt();

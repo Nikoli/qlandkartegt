@@ -133,7 +133,7 @@ CMegaMenu::CMegaMenu(CCanvas * canvas) :
     actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aMap3DMode");
     actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aMap3DZoomPlus");
     actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aMap3DZoomMinus");
-    actionGroup->addAction(CActionGroupProvider::Map3DMenu, "Map3DLighting");
+    actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aMap3DLighting");
     //    fsMap3D[5] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsMap3D[6] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsMap3D[7] = func_key_state_t(0,tr("-"),0,tr(""));
