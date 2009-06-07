@@ -122,9 +122,9 @@ CMegaMenu::CMegaMenu(CCanvas * canvas) :
     actionGroup->addAction(CActionGroupProvider::MapMenu, "aSelectArea");
     actionGroup->addAction(CActionGroupProvider::MapMenu, "aEditMap");
     actionGroup->addAction(CActionGroupProvider::MapMenu, "aSearchMap");
-    //#ifdef PLOT_3D
-    //    fsMap[8] = func_key_state_t(":/icons/icon3D16x16.png",tr("3D Map..."), &CMegaMenu::funcSwitchToMap3D, tr("Show 3D map"));
-    //#endif
+    #ifdef PLOT_3D
+         actionGroup->addAction(CActionGroupProvider::MapMenu, "aSwitchToMap3D");
+    #endif
     actionGroup->addAction(CActionGroupProvider::MapMenu, "aUploadMap");
     //    fsMap[10] = func_key_state_t(0,tr("-"),0,tr(""));
 
