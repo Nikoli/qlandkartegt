@@ -20,6 +20,7 @@
 #include <QAction>
 #include <QPointer>
 #include <QHash>
+#include <QSet>
 class CActions;
 class QWidget;
 
@@ -51,7 +52,11 @@ public:
   void switchToActionGroup(ActionGroupName group);
   CActions* getActions() {return actions;};
   QList<QAction *> *getActiveActions() { return actionGroupHash.value(activeGroup,new QList<QAction* >());};
+  bool addActionsToMenu(QMenu *menu, bool isMegaMenu = false);
+ signals:
+  void stateChanged();
 private:
+  QSet<QAction *>  controlledActions;
   ActionGroupName activeGroup;
   QHash<ActionGroupName, QList<QAction *> *> actionGroupHash;
   CActions* actions;

@@ -71,7 +71,8 @@ class CMegaMenu : public QLabel
             QString tooltip;
         };
 
-        void switchState(CActionGroupProvider::ActionGroupName groupName);
+    private slots:
+        void switchState();
 
      private:
         static CMegaMenu * m_self;

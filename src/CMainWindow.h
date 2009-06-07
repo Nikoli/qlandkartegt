@@ -68,6 +68,7 @@ class CMainWindow : public QMainWindow
         void closeEvent(QCloseEvent * e);
 
     private slots:
+        void switchState();
         void slotLoadMapSet();
         void slotCopyright();
         void slotToolBoxChanged(int idx);
@@ -86,12 +87,15 @@ class CMainWindow : public QMainWindow
     private:
         CActionGroupProvider *actionGroupProvider;
         void setupMenuBar();
+
         void loadData(QString& filename, const QString& filter);
         void setTitleBar();
         bool maybeSave();
         void saveData(const QString& filename, const QString& filter);
         bool convertData(const QString& inFormat, const QString& inFile, const QString& outFormat, const QString& outFile);
 
+        QMenu *setupMenu;
+        QMenu *groupProvidedMenu;
         /// horizontal main splitter holding the canvas and the tool view
         QSplitter * mainSplitter;
         /// the vertical splitter holding the tool views

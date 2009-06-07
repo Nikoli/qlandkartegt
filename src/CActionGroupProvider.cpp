@@ -18,10 +18,14 @@
 #include <QPointer>
 #include <QWidget>
 #include <QDebug>
-
+#include <QMenu>
 #include "CMainWindow.h"
 #include "CActions.h"
 #include "CCanvas.h"
+#define SIZE_OF_MEGAMENU 10
+
+//#define lqdebug(x) qDebug() << x
+#define lqdebug(x)
 
 CActionGroupProvider::CActionGroupProvider(QObject *parent) : QObject(parent)
 {
@@ -54,6 +58,7 @@ void CActionGroupProvider::addAction(ActionGroupName groupName, QAction *action,
     actionGroup = actionGroupHash.value(groupName);
 
   actionGroup->append(action);
+  controlledActions << action;
 }
 
 void CActionGroupProvider::removeAction(ActionGroupName group, QAction *action)
@@ -80,31 +85,59 @@ void CActionGroupProvider::switchToActionGroup(ActionGroupName group)
 
   foreach(QAction* a, ((QWidget *)theMainWindow)->actions())
   {
-     qDebug() << a->text();
-     theMainWindow->removeAction(a);
-     a->setEnabled(false);
+     if (controlledActions.contains(a))
+     {
+         lqdebug(QString("Action with '%1' as text is controlled -> removed").arg(a->text()));
+         theMainWindow->removeAction(a);
+         a->setEnabled(false);
+     }
+     else
+     {
+         lqdebug(QString("Action with '%1' as text is not controlled -> don't touch").arg(a->text()));
+     }
   }
 
 
   foreach(QAction* a, *actionGroupHash.value(group))
   {
-      qDebug() << a->text();
+      lqdebug(QString("Controlled Action with '%1' added").arg(a->text()));
       theMainWindow->addAction(a);
       a->setEnabled(true);
   }
-/*
 
-  foreach(ActionGroupName i, actionGroupHash.keys())
-  {
-    foreach(QAction* a, *actionGroupHash.value(i))
+  emit (stateChanged());
+}
+
+bool CActionGroupProvider::addActionsToMenu(QMenu *menu, bool isMegaMenu /*= false*/)
+{
+    int i=0;
+    menu->setTitle(actions->getMenuTitle());
+    foreach(QAction *a, *getActiveActions())
     {
-      a->setEnabled(false);
+       if (isMegaMenu)
+       {
+           lqdebug("isMegamenu");
+           QRegExp re ("^F(\\d+)$");
+           if (re.exactMatch(a->shortcut().toString()))
+           {
+               int nextNumber = re.cap(1).toInt();
+               lqdebug("match" << nextNumber << i);
+               while(i < nextNumber)
+               {
+                   lqdebug("add action" << nextNumber << i);
+                   QAction *dummyAction = new QAction(menu);
+                   dummyAction->setText(tr("-"));
+                   dummyAction->setShortcut(tr("F%1").arg(i));
+                   menu->addAction(dummyAction);
+                   i++;
+               }
+           }
+           if (i> SIZE_OF_MEGAMENU)
+               return true;
+       }
+       menu->addAction(a);
+       i++;
     }
-  }
-
-  foreach(QAction* a, *actionGroupHash.value(group))
-  {
-    a->setEnabled(true);
-  }
-*/
+   // Howto set the pixmap as background of the menu?
+   // menu->render(&actions->getMenuPixmap());
 }

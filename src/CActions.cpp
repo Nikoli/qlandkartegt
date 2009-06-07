@@ -107,7 +107,14 @@ CActions::CActions(QObject *parent) :
     createAction(tr("F10"), ":/icons/iconDownload16x16", tr("Download"), "aDownloadRoute", tr("Download routes from device."));
     //
 
-
+    createAction(tr("+"), ":/icons/editcopy.png", tr("&Zoom in"), "aZoomIn", tr("Zoom's into the Map."));
+    createAction(tr("-"), ":/icons/editcopy.png", tr("&Zoom out"), "aZoomOut", tr("Zoom's out of the Map."));
+    createAction(QKeySequence ( Qt::Key_Left).toString(), ":/icons/editcopy.png", tr("&Move left"), "aMoveLeft", tr("Move to the left side."));
+    createAction(QKeySequence ( Qt::Key_Right).toString(), ":/icons/editcopy.png", tr("&Move right"), "aMoveRight", tr("Move to the right side."));
+    createAction(QKeySequence ( Qt::Key_Up).toString(), ":/icons/editcopy.png", tr("&Move up"), "aMoveUp", tr("Move up."));
+    createAction(QKeySequence ( Qt::Key_Down).toString(), ":/icons/editcopy.png", tr("&Move down"), "aMoveDown", tr("Move down."));
+    createAction(tr("ctrl+c"), ":/icons/editcopy.png", tr("&Copy"), "aCopyToClipboard", tr("Copy selected trackpoints to clipboard."));
+    createAction(tr("ctrl+v"), ":/icons/editpaste.png", tr("&Paste"), "aPasteFromClipboard", tr("Paste Track."));
 }
 
 CActions::~CActions()
@@ -169,7 +176,7 @@ void CActions::setMenuPixmap(const QPixmap& pixmap)
 void CActions::funcSwitchToMain()
 {
     qDebug() << Q_FUNC_INFO;
-    setMenuTitle(tr("<b>Main ...</b>"));
+    setMenuTitle(tr("&Main"));
     setMenuPixmap(QPixmap(":/icons/backGlobe128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::MainMenu);
     funcMoveArea();
@@ -178,7 +185,7 @@ void CActions::funcSwitchToMain()
 void CActions::funcSwitchToMap()
 {
     qDebug() << Q_FUNC_INFO;
-    setMenuTitle(tr("<b>Maps ...</b>"));
+    setMenuTitle(tr("&Maps"));
     setMenuPixmap(QPixmap(":/icons/backMap128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::MapMenu);
     CMapDB::self().gainFocus();
@@ -188,7 +195,7 @@ void CActions::funcSwitchToMap()
 #ifdef PLOT_3D
 void CActions::funcSwitchToMap3D()
 {
-    setMenuTitle(tr("<b>Maps 3D ...</b>"));
+    setMenuTitle(tr("&Maps</b>"));
     setMenuPixmap(QPixmap(":/icons/backMap128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::Map3DMenu);
     CMapDB::self().gainFocus();
@@ -198,7 +205,7 @@ void CActions::funcSwitchToMap3D()
 
 void CActions::funcSwitchToWpt()
 {
-    setMenuTitle(tr("<b>Waypoints ...</b>"));
+    setMenuTitle(tr("&Waypoints"));
     setMenuPixmap(QPixmap(":/icons/backWaypoint128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::WptMenu);
     CWptDB::self().gainFocus();
@@ -207,7 +214,7 @@ void CActions::funcSwitchToWpt()
 
 void CActions::funcSwitchToTrack()
 {
-    setMenuTitle(tr("<b>Tracks ...</b>"));
+    setMenuTitle(tr("&Tracks"));
     setMenuPixmap(QPixmap(":/icons/backTrack128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::TrackMenu);
     CTrackDB::self().gainFocus();
@@ -216,7 +223,7 @@ void CActions::funcSwitchToTrack()
 
 void CActions::funcSwitchToRoute()
 {
-    setMenuTitle(tr("<b>Routes ...</b>"));
+    setMenuTitle(tr("&Routes"));
     setMenuPixmap(QPixmap(":/icons/backRoute128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::RouteMenu);
     CRouteDB::self().gainFocus();
@@ -225,7 +232,7 @@ void CActions::funcSwitchToRoute()
 
 void CActions::funcSwitchToLiveLog()
 {
-    setMenuTitle(tr("<b>Live Log ...</b>"));
+    setMenuTitle(tr("&Live Log"));
     setMenuPixmap(QPixmap(":/icons/backLiveLog128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::LiveLogMenu);
     CLiveLogDB::self().gainFocus();
@@ -234,7 +241,7 @@ void CActions::funcSwitchToLiveLog()
 
 void CActions::funcSwitchToOverlay()
 {
-    setMenuTitle(tr("<b>Overlay ...</b>"));
+    setMenuTitle(tr("&Overlay"));
     setMenuPixmap(QPixmap(":/icons/backOverlay128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::OverlayMenu);
     COverlayDB::self().gainFocus();
@@ -243,7 +250,7 @@ void CActions::funcSwitchToOverlay()
 
 void CActions::funcSwitchToMainMore()
 {
-    setMenuTitle(tr("<b>Main (More) ...</b>"));
+    setMenuTitle(tr("&Main (More)"));
     setMenuPixmap(QPixmap(":/icons/backGlobe+128x128"));
     actionGroup->switchToActionGroup(CActionGroupProvider::MainMoreMenu);
     funcMoveArea();
@@ -478,3 +485,51 @@ void CActions::funcWorldBasemap()
     dlg.exec();
 }
 
+//    else if(e->key() == Qt::Key_Plus) {
+void CActions::funcZoomIn()
+{
+          canvas->zoom(true, canvas->geometry().center());
+}
+
+//    else if(e->key() == Qt::Key_Minus) {
+void CActions::funcZoomOut()
+{
+    canvas->zoom(false, canvas->geometry().center());
+}
+
+//    else if(e->key() == Qt::Key_Left) {
+void CActions::funcMoveLeft()
+{
+    canvas->move(CCanvas::eMoveLeft);
+}
+
+  //    else if(e->key() == Qt::Key_Right) {
+void CActions::funcMoveRight()
+{
+    canvas->move(CCanvas::eMoveRight);
+}
+
+//    else if(e->key() == Qt::Key_Up) {
+void CActions::funcMoveUp()
+{
+    canvas->move(CCanvas::eMoveUp);
+}
+
+  //    else if(e->key() == Qt::Key_Down) {
+void CActions::funcMoveDown()
+{
+     canvas->move(CCanvas::eMoveDown);
+}
+
+//    else if (e->key() == Qt::Key_C && e->modifiers() == Qt::ControlModifier)
+void CActions::funcCopyToClipboard()
+{
+    CTrackDB::self().copyToClipboard();
+}
+
+
+//    else if (e->key() == Qt::Key_V && e->modifiers() == Qt::ControlModifier)
+void CActions::funcPasteFromClipboard()
+{
+    CTrackDB::self().pasteFromClipboard();
+}

@@ -47,7 +47,8 @@ CMainWindow::CMainWindow()
 : modified(false)
 {
     theMainWindow = this;
-
+    groupProvidedMenu = 0;
+    setupMenu = 0;
     setObjectName("MainWidget");
     setWindowTitle("QLandkarte GT");
     setWindowIcon(QIcon(":/icons/iconGlobe16x16.png"));
@@ -75,9 +76,28 @@ CMainWindow::CMainWindow()
     canvasTab->addTab(canvas,tr("Map"));
 
     actionGroupProvider = new CActionGroupProvider(this);
+
+
+
     megaMenu = new CMegaMenu(canvas);
     leftSplitter->addWidget(megaMenu);
 
+    actionGroupProvider->addAction(CActionGroupProvider::TrackMenu, "aCopyToClipboard");
+    actionGroupProvider->addAction(CActionGroupProvider::TrackMenu, "aPasteFromClipboard");
+
+    CActions *actions = actionGroupProvider->getActions();
+    canvas->addAction(actions->getAction("aZoomIn"));
+    canvas->addAction(actions->getAction("aZoomOut"));
+    canvas->addAction(actions->getAction("aMoveLeft"));
+    canvas->addAction(actions->getAction("aMoveRight"));
+    canvas->addAction(actions->getAction("aMoveUp"));
+    canvas->addAction(actions->getAction("aMoveDown"));
+
+
+//    canvas->addAction(actionGroupProvider->getActions()->getAction("aCopyToClipboard"));
+//    canvas->addAction(actionGroupProvider->getActions()->getAction("aPasteFromClipboard"));
+    switchState();
+    groupProvidedMenu->setTitle("&Main");
     QWidget * wtmp      = new QWidget(this);
     QVBoxLayout * ltmp  = new QVBoxLayout(wtmp);
     wtmp->setLayout(ltmp);
@@ -194,7 +214,7 @@ CMainWindow::CMainWindow()
       loadData(arg, QString());
     }
 
-
+    connect(actionGroupProvider, SIGNAL(stateChanged()), this, SLOT(switchState()));
 }
 
 
@@ -257,6 +277,14 @@ void CMainWindow::setPositionInfo(const QString& info)
     statusCoord->setText(info);
 }
 
+void CMainWindow::switchState()
+{
+    if (groupProvidedMenu)
+    {
+        groupProvidedMenu->clear();
+        actionGroupProvider->addActionsToMenu(groupProvidedMenu, true);
+    }
+}
 
 void CMainWindow::setupMenuBar()
 {
@@ -275,6 +303,10 @@ void CMainWindow::setupMenuBar()
     menu->addSeparator();
     menu->addAction(QIcon(":/icons/iconExit16x16.png"),tr("Exit"),this,SLOT(close()));
     menuBar()->addMenu(menu);
+
+    groupProvidedMenu = new QMenu(this);
+    groupProvidedMenu->setTitle(tr("-"));
+    menuBar()->addMenu(groupProvidedMenu);
 
     menu = new QMenu(this);
     menu->setTitle(tr("&Setup"));

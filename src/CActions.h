@@ -31,6 +31,8 @@ public:
   CActions(QObject *parent);
   virtual ~CActions();
   QAction *getAction(const QString& actionObjectName);
+  const QString& getMenuTitle() { return menuTitle; };
+  const QPixmap & getMenuPixmap( ) {return menuPixmap;};
 private:
   void createAction(const QString& shortCut,const char * icon,const QString& name, const QString& setObjectName, const QString& tooltip);
   QObject *parent;
@@ -104,6 +106,15 @@ public slots:
     void funcDiary();
     void funcColorPicker();
     void funcWorldBasemap();
+
+    void funcZoomIn();
+    void funcZoomOut();
+    void funcMoveLeft();
+    void funcMoveRight();
+    void funcMoveUp();
+    void funcMoveDown();
+    void funcCopyToClipboard();
+    void funcPasteFromClipboard();
 
 };
 

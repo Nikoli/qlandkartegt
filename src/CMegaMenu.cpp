@@ -231,41 +231,7 @@ CMegaMenu::CMegaMenu(CCanvas * canvas) :
 
     mainLayout->addLayout(layout);
 
-
-    //    keyEsc   = new QLabel("Esc",this);
-    //    layout->addWidget(keyEsc,0,0);
-    //    keyF1   = new QLabel("F1",this);
-    //    layout->addWidget(keyF1,1,0);
-    //    keyF2 = new QLabel("F2",this);
-    //    layout->addWidget(keyF2,2,0);
-    //    keyF3 = new QLabel("F3",this);
-    //    layout->addWidget(keyF3,3,0);
-    //    keyF4 = new QLabel("F4",this);
-    //    layout->addWidget(keyF4,4,0);
-    //    keyF5 = new QLabel("F5",this);
-    //    layout->addWidget(keyF5,5,0);
-    //    keyF6 = new QLabel("F6",this);
-    //    layout->addWidget(keyF6,6,0);
-    //    keyF7 = new QLabel("F7",this);
-    //    layout->addWidget(keyF7,7,0);
-    //    keyF8 = new QLabel("F8",this);
-    //    layout->addWidget(keyF8,8,0);
-    //    keyF9 = new QLabel("F9",this);
-    //    layout->addWidget(keyF9,9,0);
-    //    keyF10 = new QLabel("F10",this);
-    //    layout->addWidget(keyF10,10,0);
-    //
-    //    for(i=0; i<11; ++i) {
-    //        icons[i] = new QLabel(this);
-    //        layout->addWidget(icons[i],i,1);
-    //    }
-    //
-    //    for(i=0; i<11; ++i) {
-    //        names[i] = new CLabel(this);
-    //        names[i]->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Minimum);
-    //        layout->addWidget(names[i],i,2);
-    //    }
-
+    connect(actionGroup, SIGNAL(stateChanged()), this, SLOT(switchState()));
 }
 
 CMegaMenu::~CMegaMenu()
@@ -273,9 +239,8 @@ CMegaMenu::~CMegaMenu()
 
 }
 
-void CMegaMenu::switchState(CActionGroupProvider::ActionGroupName groupName)
+void CMegaMenu::switchState()
 {
-    actionGroup->switchToActionGroup(groupName);
 
     if (menu)
         delete menu;
@@ -286,14 +251,9 @@ void CMegaMenu::switchState(CActionGroupProvider::ActionGroupName groupName)
     menu = new QMenu(this);
     menu->setWindowFlags(Qt::Widget);
 
-    foreach(QAction *a, *actionGroup->getActiveActions())
-        menu->addAction(a);
-
-    scrollArea = new QScrollArea();
-    //scrollArea->setBackgroundRole(QPalette::Dark);
-    scrollArea->setWidget(menu);
-
-    layout->addWidget(scrollArea);
+    actionGroup->addActionsToMenu(menu, true);
+    menuTitle->setText(tr("<b>%1 ...</b>").arg(menu->title().remove('&')));
+    layout->addWidget(menu);
     menu->show();
 
 }
@@ -357,59 +317,23 @@ void CMegaMenu::keyPressEvent(QKeyEvent * e)
     //        }
     //        return e->accept();
     //    }
-    //    else if(e->key() == Qt::Key_Plus) {
-    //        canvas->zoom(true, canvas->geometry().center());
-    //        return e->accept();
-    //    }
-    //    else if(e->key() == Qt::Key_Minus) {
-    //        canvas->zoom(false, canvas->geometry().center());
-    //        return e->accept();
-    //    }
-    //    else if(e->key() == Qt::Key_Left) {
-    //        canvas->move(CCanvas::eMoveLeft);
-    //        return e->accept();
-    //    }
-    //    else if(e->key() == Qt::Key_Right) {
-    //        canvas->move(CCanvas::eMoveRight);
-    //        return e->accept();
-    //    }
-    //    else if(e->key() == Qt::Key_Up) {
-    //        canvas->move(CCanvas::eMoveUp);
-    //        return e->accept();
-    //    }
-    //    else if(e->key() == Qt::Key_Down) {
-    //        canvas->move(CCanvas::eMoveDown);
-    //        return e->accept();
-    //    }
-    //    else if (e->key() == Qt::Key_C && e->modifiers() == Qt::ControlModifier)
-    //    {
-    //      qDebug() << "ctrl + c pressed" ;
-    //      CTrackDB::self().copyToClipboard();
-    //      return e->accept();
-    //    }
-    //    else if (e->key() == Qt::Key_V && e->modifiers() == Qt::ControlModifier)
-    //    {
-    //      qDebug() << "ctrl + v pressed" ;
-    //      CTrackDB::self().pasteFromClipboard();
-    //      return e->accept();
-    //    }
 
 }
 
 void CMegaMenu::mousePressEvent(QMouseEvent * e)
 {
-    //    unsigned i;
-    //
+   // unsigned i;
+
     //    if(e->button() == Qt::RightButton)
     //      qDebug() << "Right Button in " << Q_FUNC_INFO;
-    //    if(e->button() != Qt::LeftButton) return;
-    //    for(i=0; i<11; ++i) {
-    //        if(names[i]->geometry().contains(e->pos())) {
-    //            if((*current)[i].func) {
-    //                (this->*(*current)[i].func)();
-    //            }
-    //            return;
-    //        }
-    //    }
+//    if(e->button() != Qt::LeftButton) return;
+//    for(i=0; i<11; ++i) {
+//        if(names[i]->geometry().contains(e->pos())) {
+//            if((*current)[i].func) {
+//                (this->*(*current)[i].func)();
+//                    }
+//                return;
+//            }
+//        }
 }
 
