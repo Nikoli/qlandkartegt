@@ -110,8 +110,7 @@ void CTrackDB::loadGPX(CGpx& gpx)
     QDomElement tmpelem;
 
     QDomElement trk = gpx.firstChildElement("gpx").firstChildElement("trk");
-    while (!trk.isNull())
-    {
+    while (!trk.isNull()) {
         CTrack* track = new CTrack(this);
 
         /*
@@ -129,8 +128,7 @@ void CTrackDB::loadGPX(CGpx& gpx)
         if(!tmpelem.isNull()) track->comment = tmpelem.text();
 
         tmpelem = trkmap.value("link");
-        if(!tmpelem.isNull())
-        {
+        if(!tmpelem.isNull()) {
             track->url = tmpelem.attribute("href");
 
             // For now we are ignoring the following elements:
@@ -147,20 +145,17 @@ void CTrackDB::loadGPX(CGpx& gpx)
         // I haven't seen any software using those, but who knows
 
         tmpelem = trkmap.value("extensions");
-        if(!tmpelem.isNull())
-        {
+        if(!tmpelem.isNull()) {
             QMap<QString,QDomElement> extensionsmap = CGpx::mapChildElements(tmpelem);
 
             // Garmin extensions v3
 
             tmpelem = extensionsmap.value(CGpx::gpxx_ns + ":" + "TrackExtension");
-            if(!tmpelem.isNull())
-            {
+            if(!tmpelem.isNull()) {
                 QMap<QString,QDomElement> trackextensionmap = CGpx::mapChildElements(tmpelem);
 
                 tmpelem = trackextensionmap.value(CGpx::gpxx_ns + ":" + "DisplayColor");
-                if (!tmpelem.isNull())
-                {
+                if (!tmpelem.isNull()) {
                     int colorID = gpx.getTrackColorMap().right(tmpelem.text(), -1);
                     if (colorID >= 0) track->setColor(colorID);
                 }
@@ -170,8 +165,7 @@ void CTrackDB::loadGPX(CGpx& gpx)
         // Own backward compatibility, to be removed soon (May 2009)
 
         tmpelem = trkmap.value("extension");
-        if(!tmpelem.isNull())
-        {
+        if(!tmpelem.isNull()) {
             QMap<QString,QDomElement> trkextensionmap = CGpx::mapChildElements(tmpelem);
 
             tmpelem = trkextensionmap.value("color");
@@ -185,11 +179,9 @@ void CTrackDB::loadGPX(CGpx& gpx)
         bool foundTraineeData = false;
 
         QDomElement trkseg = trk.firstChildElement("trkseg");
-        while(!trkseg.isNull())
-        {
+        while(!trkseg.isNull()) {
             QDomElement trkpt = trkseg.firstChildElement("trkpt");
-            while (!trkpt.isNull())
-            {
+            while (!trkpt.isNull()) {
                 CTrack::pt_t pt;
 
                 QMap<QString,QDomElement> trkptmap = CGpx::mapChildElements(trkpt);
@@ -203,13 +195,13 @@ void CTrackDB::loadGPX(CGpx& gpx)
                 if(!tmpelem.isNull()) pt.ele = tmpelem.text().toDouble();
 
                 tmpelem = trkptmap.value("time");
-                if(!tmpelem.isNull())
-                {
+                if(!tmpelem.isNull()) {
                     QString timetext = tmpelem.text();
 
                     QString format = "yyyy-MM-dd'T'hh:mm:ss";
                     if (timetext.indexOf(".") != -1) format += ".zzz";
-                    if (timetext.indexOf("Z") != -1) format += "'Z'"; // bugfix for badly coded gpx files
+                                 // bugfix for badly coded gpx files
+                    if (timetext.indexOf("Z") != -1) format += "'Z'";
 
                     QDateTime datetime = QDateTime::fromString(timetext, format);
                     datetime.setTimeSpec(Qt::UTC);
@@ -255,8 +247,7 @@ void CTrackDB::loadGPX(CGpx& gpx)
                 if(!tmpelem.isNull()) pt.velocity = tmpelem.text().toDouble();
 
                 tmpelem = trkptmap.value("extensions");
-                if(!tmpelem.isNull())
-                {
+                if(!tmpelem.isNull()) {
                     QMap<QString,QDomElement> extensionsmap = CGpx::mapChildElements(tmpelem);
 
                     // Garmin extensions v3
@@ -273,20 +264,17 @@ void CTrackDB::loadGPX(CGpx& gpx)
                     // * depth - depth (meters)
 
                     tmpelem = extensionsmap.value(CGpx::gpxtpx_ns + ":" + "TrackPointExtension");
-                    if(!tmpelem.isNull())
-                    {
+                    if(!tmpelem.isNull()) {
                         QMap<QString,QDomElement> trackpointextensionmap = CGpx::mapChildElements(tmpelem);
 
                         tmpelem = trackpointextensionmap.value(CGpx::gpxtpx_ns + ":" + "hr");
-                        if(!tmpelem.isNull())
-                        {
+                        if(!tmpelem.isNull()) {
                             pt.heartReateBpm = tmpelem.text().toUInt();
                             foundTraineeData = true;
                         }
 
                         tmpelem = trackpointextensionmap.value(CGpx::gpxtpx_ns + ":" + "cad");
-                        if(!tmpelem.isNull())
-                        {
+                        if(!tmpelem.isNull()) {
                             pt.cadenceRpm = tmpelem.text().toUInt();
                             foundTraineeData = true;
                         }
@@ -304,13 +292,11 @@ void CTrackDB::loadGPX(CGpx& gpx)
                 // Own backward compatibility, to be removed soon (May 2009)
 
                 tmpelem = trkptmap.value("extension");
-                if(!tmpelem.isNull())
-                {
+                if(!tmpelem.isNull()) {
                     QMap<QString,QDomElement> extensionmap = CGpx::mapChildElements(tmpelem);
 
                     tmpelem = extensionmap.value("flags");
-                    if(!tmpelem.isNull())
-                    {
+                    if(!tmpelem.isNull()) {
                         pt.flags = tmpelem.text().toUInt();
                         pt.flags &= ~CTrack::pt_t::eFocus;
                         pt.flags &= ~CTrack::pt_t::eSelected;
@@ -328,7 +314,7 @@ void CTrackDB::loadGPX(CGpx& gpx)
         if (foundTraineeData) track->setTraineeData();
 
         if(track->getTrackPoints().count() > 0) addTrack(track, true);
-            else delete track;
+        else delete track;
 
         trk = trk.nextSiblingElement("trk");
     }
@@ -727,6 +713,7 @@ void CTrackDB::select(const QRect& rect)
     emit track->sigChanged();
 }
 
+
 void CTrackDB::copyToClipboard(bool deleteSelection /* = false */)
 {
     CTrack * track = highlightedTrack();
@@ -738,12 +725,11 @@ void CTrackDB::copyToClipboard(bool deleteSelection /* = false */)
     QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
     QList<CTrack::pt_t>::iterator trkpt = trkpts.begin();
     while(trkpt != trkpts.end()) {
-      if (trkpt->flags & CTrack::pt_t::eSelected)
-      {
-        *tmpTrack << *trkpt;
-      }
+        if (trkpt->flags & CTrack::pt_t::eSelected) {
+            *tmpTrack << *trkpt;
+        }
 
-      ++trkpt;
+        ++trkpt;
     }
 
     CQlb qlb(this);
@@ -760,19 +746,19 @@ void CTrackDB::copyToClipboard(bool deleteSelection /* = false */)
     delete tmpTrack;
 }
 
+
 void CTrackDB::pasteFromClipboard()
 {
-  QClipboard *clipboard = QApplication::clipboard();
-  qDebug() << clipboard->mimeData()->formats();
-  if (clipboard->mimeData()->hasFormat("qlandkartegt/qlb"))
-  {
-    QBuffer buffer;
-    buffer.open(QIODevice::WriteOnly);
-    buffer.write(clipboard->mimeData()->data("qlandkartegt/qlb"));
-    buffer.close();
-    CQlb qlb(this);
-    qlb.load(&buffer);
-    CTrackDB::self().loadQLB(qlb);
-    clipboard->clear();
-  }
+    QClipboard *clipboard = QApplication::clipboard();
+    qDebug() << clipboard->mimeData()->formats();
+    if (clipboard->mimeData()->hasFormat("qlandkartegt/qlb")) {
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        buffer.write(clipboard->mimeData()->data("qlandkartegt/qlb"));
+        buffer.close();
+        CQlb qlb(this);
+        qlb.load(&buffer);
+        CTrackDB::self().loadQLB(qlb);
+        clipboard->clear();
+    }
 }

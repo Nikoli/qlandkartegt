@@ -14,7 +14,6 @@
 //C- GNU General Public License for more details.
 //C-  ------------------------------------------------------------------
 
-
 #include "CActions.h"
 #include <QAction>
 #include <QDebug>
@@ -37,7 +36,7 @@
 #include "CDlgCreateWorldBasemap.h"
 
 CActions::CActions(QObject *parent) :
-    QObject(parent), parent(parent)
+QObject(parent), parent(parent)
 {
     actionGroup = (CActionGroupProvider*) parent;
     canvas = theMainWindow->getCanvas();
@@ -117,21 +116,22 @@ CActions::CActions(QObject *parent) :
     createAction(tr("ctrl+v"), ":/icons/editpaste.png", tr("&Paste"), "aPasteFromClipboard", tr("Paste Track."));
 }
 
+
 CActions::~CActions()
 {
 
 }
 
+
 void CActions::createAction(const QString& shortCut,
-        const char * icon,
-        const QString& name,
-        const QString& actionName,
-        const QString& toolTip)
+const char * icon,
+const QString& name,
+const QString& actionName,
+const QString& toolTip)
 {
-    if (findChild<QAction *> (actionName))
-    {
+    if (findChild<QAction *> (actionName)) {
         qDebug()
-                << tr("Action with the name '%1' already registered. Please choose an other name.").arg(actionName);
+            << tr("Action with the name '%1' already registered. Please choose an other name.").arg(actionName);
         return;
     }
 
@@ -150,28 +150,31 @@ void CActions::createAction(const QString& shortCut,
 
 }
 
+
 QAction *CActions::getAction(const QString& actionObjectName)
 {
     QAction *tmpAction = findChild<QAction *> (actionObjectName);
     if (tmpAction)
         return tmpAction;
-    else
-    {
+    else {
         qDebug()
-                << tr("Action with name '%1' not found. %2").arg(actionObjectName).arg(Q_FUNC_INFO);
+            << tr("Action with name '%1' not found. %2").arg(actionObjectName).arg(Q_FUNC_INFO);
         return new QAction(this);
     }
 }
+
 
 void CActions::setMenuTitle(const QString& title)
 {
     menuTitle = title;
 }
 
+
 void CActions::setMenuPixmap(const QPixmap& pixmap)
 {
     menuPixmap = pixmap;
 }
+
 
 void CActions::funcSwitchToMain()
 {
@@ -181,6 +184,7 @@ void CActions::funcSwitchToMain()
     actionGroup->switchToActionGroup(CActionGroupProvider::MainMenu);
     funcMoveArea();
 }
+
 
 void CActions::funcSwitchToMap()
 {
@@ -192,6 +196,7 @@ void CActions::funcSwitchToMap()
     funcMoveArea();
 }
 
+
 void CActions::funcSwitchToMap3D()
 {
     setMenuTitle(tr("&Maps</b>"));
@@ -200,6 +205,7 @@ void CActions::funcSwitchToMap3D()
     CMapDB::self().gainFocus();
     CMapDB::self().show3DMap(true);
 }
+
 
 void CActions::funcSwitchToWpt()
 {
@@ -210,6 +216,7 @@ void CActions::funcSwitchToWpt()
     funcMoveArea();
 }
 
+
 void CActions::funcSwitchToTrack()
 {
     setMenuTitle(tr("&Tracks"));
@@ -218,6 +225,7 @@ void CActions::funcSwitchToTrack()
     CTrackDB::self().gainFocus();
     funcMoveArea();
 }
+
 
 void CActions::funcSwitchToRoute()
 {
@@ -228,6 +236,7 @@ void CActions::funcSwitchToRoute()
     funcMoveArea();
 }
 
+
 void CActions::funcSwitchToLiveLog()
 {
     setMenuTitle(tr("&Live Log"));
@@ -236,6 +245,7 @@ void CActions::funcSwitchToLiveLog()
     CLiveLogDB::self().gainFocus();
     funcMoveArea();
 }
+
 
 void CActions::funcSwitchToOverlay()
 {
@@ -246,6 +256,7 @@ void CActions::funcSwitchToOverlay()
     funcMoveArea();
 }
 
+
 void CActions::funcSwitchToMainMore()
 {
     setMenuTitle(tr("&Main (More)"));
@@ -254,20 +265,24 @@ void CActions::funcSwitchToMainMore()
     funcMoveArea();
 }
 
+
 void CActions::funcDiary()
 {
     CDiaryDB::self().openEditWidget();
 }
+
 
 void CActions::funcColorPicker()
 {
     canvas->setMouseMode(CCanvas::eMouseColorPicker);
 }
 
+
 void CActions::funcClearAll()
 {
     theMainWindow->clearAll();
 }
+
 
 void CActions::funcUploadAll()
 {
@@ -278,6 +293,7 @@ void CActions::funcUploadAll()
     dev->uploadAll();
 }
 
+
 void CActions::funcDownloadAll()
 {
     IDevice * dev = CResources::self().device();
@@ -287,51 +303,59 @@ void CActions::funcDownloadAll()
     dev->downloadAll();
 }
 
+
 void CActions::funcMoveArea()
 {
     canvas->setMouseMode(CCanvas::eMouseMoveArea);
 }
+
 
 void CActions::funcZoomArea()
 {
     canvas->setMouseMode(CCanvas::eMouseZoomArea);
 }
 
+
 void CActions::funcCenterMap()
 {
     canvas->move(CCanvas::eMoveCenter);
 }
+
 
 void CActions::funcSelectArea()
 {
     canvas->setMouseMode(CCanvas::eMouseSelectArea);
 }
 
+
 void CActions::funcEditMap()
 {
 
     CMapDB::self().editMap();
-    if (CCreateMapGeoTiff::self())
-    {
-       // setEnabled(false); // not finished
+    if (CCreateMapGeoTiff::self()) {
+        // setEnabled(false); // not finished
         connect(CCreateMapGeoTiff::self(), SIGNAL(destroyed(QObject*)), this, SLOT(slotEnable()));
     }
 }
+
 
 void CActions::funcSearchMap()
 {
     CMapDB::self().searchMap();
 }
 
+
 void CActions::funcUploadMap()
 {
     CMapDB::self().upload();
 }
 
+
 void CActions::funcNewWpt()
 {
     canvas->setMouseMode(CCanvas::eMouseAddWpt);
 }
+
 
 void CActions::funcCloseMap3D()
 {
@@ -343,23 +367,24 @@ void CActions::funcCloseMap3D()
     funcMoveArea();
 }
 
+
 void CActions::funcMap3DZoomPlus()
 {
     CMap3DWidget * map = CMapDB::self().getMap3D();
-    if(map)
-    {
+    if(map) {
         map->eleZoomIn();
     }
 }
 
+
 void CActions::funcMap3DZoomMinus()
 {
     CMap3DWidget * map = CMapDB::self().getMap3D();
-    if(map)
-    {
+    if(map) {
         map->eleZoomOut();
     }
 }
+
 
 void CActions::funcMap3DLighting()
 {
@@ -367,24 +392,27 @@ void CActions::funcMap3DLighting()
     map->lightTurn();
 }
 
+
 void CActions::funcMap3DMode()
 {
     CMap3DWidget * map = CMapDB::self().getMap3D();
-    if(map)
-    {
+    if(map) {
         map->changeMode();
     }
 }
+
 
 void CActions::funcEditWpt()
 {
     canvas->setMouseMode(CCanvas::eMouseEditWpt);
 }
 
+
 void CActions::funcMoveWpt()
 {
     canvas->setMouseMode(CCanvas::eMouseMoveWpt);
 }
+
 
 #ifdef HAS_EXIF
 void CActions::funcImageWpt()
@@ -398,10 +426,12 @@ void CActions::funcUploadWpt()
     CWptDB::self().upload();
 }
 
+
 void CActions::funcDownloadWpt()
 {
     CWptDB::self().download();
 }
+
 
 void CActions::funcEditTrack()
 {
@@ -410,70 +440,84 @@ void CActions::funcEditTrack()
         toolview->slotEdit();
 }
 
+
 void CActions::funcCombineTrack()
 {
     CTrackDB::self().CombineTracks();
 }
+
 
 void CActions::funcCutTrack()
 {
     canvas->setMouseMode(CCanvas::eMouseCutTrack);
 }
 
+
 void CActions::funcSelTrack()
 {
     canvas->setMouseMode(CCanvas::eMouseSelTrack);
 }
+
 
 void CActions::funcUploadTrack()
 {
     CTrackDB::self().upload();
 }
 
+
 void CActions::funcDownloadTrack()
 {
     CTrackDB::self().download();
 }
+
 
 void CActions::funcUploadRoute()
 {
     CRouteDB::self().upload();
 }
 
+
 void CActions::funcDownloadRoute()
 {
     CRouteDB::self().download();
 }
+
 
 void CActions::funcLiveLog()
 {
     CLiveLogDB::self().start(!CLiveLogDB::self().logging());
 }
 
+
 void CActions::funcLockMap()
 {
     CLiveLogDB::self().setLockToCenter(!CLiveLogDB::self().lockToCenter());
 }
+
 
 void CActions::funcAddWpt()
 {
     CLiveLogDB::self().addWpt();
 }
 
+
 void CActions::funcText()
 {
     canvas->setMouseMode(CCanvas::eMouseAddText);
 }
+
 
 void CActions::funcTextBox()
 {
     canvas->setMouseMode(CCanvas::eMouseAddTextBox);
 }
 
+
 void CActions::funcDistance()
 {
     canvas->setMouseMode(CCanvas::eMouseAddDistance);
 }
+
 
 void CActions::funcWorldBasemap()
 {
@@ -481,11 +525,13 @@ void CActions::funcWorldBasemap()
     dlg.exec();
 }
 
+
 //    else if(e->key() == Qt::Key_Plus) {
 void CActions::funcZoomIn()
 {
-          canvas->zoom(true, canvas->geometry().center());
+    canvas->zoom(true, canvas->geometry().center());
 }
+
 
 //    else if(e->key() == Qt::Key_Minus) {
 void CActions::funcZoomOut()
@@ -493,17 +539,20 @@ void CActions::funcZoomOut()
     canvas->zoom(false, canvas->geometry().center());
 }
 
+
 //    else if(e->key() == Qt::Key_Left) {
 void CActions::funcMoveLeft()
 {
     canvas->move(CCanvas::eMoveLeft);
 }
 
-  //    else if(e->key() == Qt::Key_Right) {
+
+//    else if(e->key() == Qt::Key_Right) {
 void CActions::funcMoveRight()
 {
     canvas->move(CCanvas::eMoveRight);
 }
+
 
 //    else if(e->key() == Qt::Key_Up) {
 void CActions::funcMoveUp()
@@ -511,11 +560,13 @@ void CActions::funcMoveUp()
     canvas->move(CCanvas::eMoveUp);
 }
 
-  //    else if(e->key() == Qt::Key_Down) {
+
+//    else if(e->key() == Qt::Key_Down) {
 void CActions::funcMoveDown()
 {
-     canvas->move(CCanvas::eMoveDown);
+    canvas->move(CCanvas::eMoveDown);
 }
+
 
 //    else if (e->key() == Qt::Key_C && e->modifiers() == Qt::ControlModifier)
 void CActions::funcCopyToClipboard()

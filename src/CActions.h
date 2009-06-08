@@ -14,7 +14,6 @@
 //C- GNU General Public License for more details.
 //C-  ------------------------------------------------------------------
 
-
 #ifndef CACTIONS_H_
 #define CACTIONS_H_
 #include <QObject>
@@ -26,93 +25,92 @@ class CActionGroupProvider;
 class CCanvas;
 class CActions : public QObject
 {
-  Q_OBJECT
-public:
-  CActions(QObject *parent);
-  virtual ~CActions();
-  QAction *getAction(const QString& actionObjectName);
-  const QString& getMenuTitle() { return menuTitle; };
-  const QPixmap & getMenuPixmap( ) {return menuPixmap;};
-private:
-  void createAction(const QString& shortCut,const char * icon,const QString& name, const QString& setObjectName, const QString& tooltip);
-  QObject *parent;
-  CActionGroupProvider *actionGroup;
-  QPointer<CCanvas>  canvas;
-  QString menuTitle;
-  QPixmap menuPixmap;
-  void setMenuTitle(const QString &menuTitle);
-  void setMenuPixmap(const QPixmap & menuPixmap);
-public slots:
-    void funcSwitchToMain();
-    void funcSwitchToMap();
-    void funcSwitchToMap3D();
+    Q_OBJECT
+        public:
+        CActions(QObject *parent);
+        virtual ~CActions();
+        QAction *getAction(const QString& actionObjectName);
+        const QString& getMenuTitle() { return menuTitle; };
+        const QPixmap & getMenuPixmap( ) {return menuPixmap;};
+    private:
+        void createAction(const QString& shortCut,const char * icon,const QString& name, const QString& setObjectName, const QString& tooltip);
+        QObject *parent;
+        CActionGroupProvider *actionGroup;
+        QPointer<CCanvas>  canvas;
+        QString menuTitle;
+        QPixmap menuPixmap;
+        void setMenuTitle(const QString &menuTitle);
+        void setMenuPixmap(const QPixmap & menuPixmap);
+    public slots:
+        void funcSwitchToMain();
+        void funcSwitchToMap();
+        void funcSwitchToMap3D();
 
-    void funcSwitchToWpt();
-    void funcSwitchToTrack();
-    void funcSwitchToRoute();
+        void funcSwitchToWpt();
+        void funcSwitchToTrack();
+        void funcSwitchToRoute();
 
-    void funcSwitchToLiveLog();
-    void funcSwitchToOverlay();
-    void funcSwitchToMainMore();
-    void funcClearAll();
-    void funcUploadAll();
-    void funcDownloadAll();
+        void funcSwitchToLiveLog();
+        void funcSwitchToOverlay();
+        void funcSwitchToMainMore();
+        void funcClearAll();
+        void funcUploadAll();
+        void funcDownloadAll();
 
-    void funcMoveArea();
-    void funcZoomArea();
-    void funcCenterMap();
+        void funcMoveArea();
+        void funcZoomArea();
+        void funcCenterMap();
 
-    void funcSelectArea();
-    void funcEditMap();
-    void funcSearchMap();
-    void funcUploadMap();
+        void funcSelectArea();
+        void funcEditMap();
+        void funcSearchMap();
+        void funcUploadMap();
 
-    void funcCloseMap3D();
-    void funcMap3DMode();
-    void funcMap3DZoomPlus();
-    void funcMap3DZoomMinus();
-    void funcMap3DLighting();
+        void funcCloseMap3D();
+        void funcMap3DMode();
+        void funcMap3DZoomPlus();
+        void funcMap3DZoomMinus();
+        void funcMap3DLighting();
 
-    void funcNewWpt();
-    void funcEditWpt();
-    void funcMoveWpt();
+        void funcNewWpt();
+        void funcEditWpt();
+        void funcMoveWpt();
 #ifdef HAS_EXIF
-    void funcImageWpt();
+        void funcImageWpt();
 #endif
-    void funcUploadWpt();
-    void funcDownloadWpt();
+        void funcUploadWpt();
+        void funcDownloadWpt();
 
-    void funcCombineTrack();
-    void funcEditTrack();
-    void funcCutTrack();
-    void funcSelTrack();
-    void funcUploadTrack();
-    void funcDownloadTrack();
+        void funcCombineTrack();
+        void funcEditTrack();
+        void funcCutTrack();
+        void funcSelTrack();
+        void funcUploadTrack();
+        void funcDownloadTrack();
 
-    void funcUploadRoute();
-    void funcDownloadRoute();
+        void funcUploadRoute();
+        void funcDownloadRoute();
 
-    void funcLiveLog();
-    void funcLockMap();
-    void funcAddWpt();
+        void funcLiveLog();
+        void funcLockMap();
+        void funcAddWpt();
 
-    void funcText();
-    void funcTextBox();
-    void funcDistance();
+        void funcText();
+        void funcTextBox();
+        void funcDistance();
 
-    void funcDiary();
-    void funcColorPicker();
-    void funcWorldBasemap();
+        void funcDiary();
+        void funcColorPicker();
+        void funcWorldBasemap();
 
-    void funcZoomIn();
-    void funcZoomOut();
-    void funcMoveLeft();
-    void funcMoveRight();
-    void funcMoveUp();
-    void funcMoveDown();
-    void funcCopyToClipboard();
-    void funcPasteFromClipboard();
+        void funcZoomIn();
+        void funcZoomOut();
+        void funcMoveLeft();
+        void funcMoveRight();
+        void funcMoveUp();
+        void funcMoveDown();
+        void funcCopyToClipboard();
+        void funcPasteFromClipboard();
 
 };
-
-#endif /* CACTIONS_H_ */
+#endif                           /* CACTIONS_H_ */

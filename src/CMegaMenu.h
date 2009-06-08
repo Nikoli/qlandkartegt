@@ -30,6 +30,8 @@ class QGridLayout;
 class CActions;
 class QVBoxLayout;
 class QScrollArea;
+class QStyleOptionMenuItem;
+
 /// the left hand context sensitive menu
 class CMegaMenu : public QLabel
 {
@@ -39,8 +41,6 @@ class CMegaMenu : public QLabel
 
         static CMegaMenu& self(){return *m_self;}
 
-        void keyPressEvent(QKeyEvent * e);
-
         void switchByKeyWord(const QString& key);
 
     protected slots:
@@ -48,69 +48,31 @@ class CMegaMenu : public QLabel
 
     protected:
         void mousePressEvent(QMouseEvent * e);
-
+        void mouseReleaseEvent(QMouseEvent * e);
+        void mouseMoveEvent(QMouseEvent * e);
+        void paintEvent(QPaintEvent *e);
+        void resizeEvent(QResizeEvent * e);
+        void leaveEvent ( QEvent * event );
+        void initStyleOption(QStyleOptionMenuItem *option, const QAction *action, bool isCurrent) const;
     private:
         friend class CMainWindow;
         CMegaMenu(CCanvas * canvas);
         CActionGroupProvider *actionGroup;
         CActions *actions;
-        struct func_key_state_t
-        {
-            func_key_state_t() {
-                icon = 0;
-                name = tr("-");
-                func = 0;
-                tooltip = tr("-");
-            }
-
-            func_key_state_t(const char * icon,const QString& name, void (CMegaMenu::*func)(), const QString& tooltip)
-                : icon(icon), name(name), func(func), tooltip(tooltip){}
-            const char * icon;
-            QString name;
-            void (CMegaMenu::*func)();
-            QString tooltip;
-        };
 
     private slots:
         void switchState();
 
-     private:
+    private:
         static CMegaMenu * m_self;
-        QWidget *menuWidget;
-        QVBoxLayout *mainLayout;
         QPointer<CCanvas>  canvas;
-        QMenu *menu;
-        QScrollArea *scrollArea;
-        QLabel * menuTitle;
 
-        QGridLayout * layout;
-        QLabel * keyEsc;
-        QLabel * keyF1;
-        QLabel * keyF2;
-        QLabel * keyF3;
-        QLabel * keyF4;
-        QLabel * keyF5;
-        QLabel * keyF6;
-        QLabel * keyF7;
-        QLabel * keyF8;
-        QLabel * keyF9;
-        QLabel * keyF10;
+        QString title;
 
-        QLabel * icons[11];
+        QRect rectTitle;
+        QRect rectF[11];
 
-        QLabel * names[11];
-
-        QVector<func_key_state_t>* current;
-
-        QVector<func_key_state_t> fsMain;
-        QVector<func_key_state_t> fsMap;
-        QVector<func_key_state_t> fsMap3D;
-        QVector<func_key_state_t> fsWpt;
-        QVector<func_key_state_t> fsTrack;
-        QVector<func_key_state_t> fsLiveLog;
-        QVector<func_key_state_t> fsOverlay;
-        QVector<func_key_state_t> fsMainMore;
-        QVector<func_key_state_t> fsRoute;
-
+        int currentItemIndex;
+        bool mouseDown;
 };
 #endif                           //CMEGAMENU_H

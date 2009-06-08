@@ -37,10 +37,12 @@ CDeviceQLandkarteM::CDeviceQLandkarteM(const QString& ipaddr, quint16 port, QObj
 
 }
 
+
 CDeviceQLandkarteM::~CDeviceQLandkarteM()
 {
 
 }
+
 
 bool CDeviceQLandkarteM::acquire(const QString& operation, int max)
 {
@@ -61,6 +63,7 @@ bool CDeviceQLandkarteM::acquire(const QString& operation, int max)
     }
     return true;
 }
+
 
 void CDeviceQLandkarteM::send(const packet_e type, const QByteArray& data)
 {
@@ -152,11 +155,13 @@ void CDeviceQLandkarteM::uploadWpts(const QList<CWpt*>& wpts)
     return release();
 }
 
+
 void CDeviceQLandkarteM::downloadWpts(QList<CWpt*>& wpts)
 {
     if(!startDeviceDetection()) return;
     QMessageBox::information(0,tr("Error..."), tr("QLandkarteM: Download waypoints is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
 }
+
 
 void CDeviceQLandkarteM::uploadTracks(const QList<CTrack*>& trks)
 {
@@ -164,11 +169,13 @@ void CDeviceQLandkarteM::uploadTracks(const QList<CTrack*>& trks)
     QMessageBox::information(0,tr("Error..."), tr("QLandkarteM: Upload tracks is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
 }
 
+
 void CDeviceQLandkarteM::downloadTracks(QList<CTrack*>& trks)
 {
     if(!startDeviceDetection()) return;
     QMessageBox::information(0,tr("Error..."), tr("QLandkarteM: Download tracks is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
 }
+
 
 void CDeviceQLandkarteM::uploadMap(const QList<IMapSelection*>& mss)
 {
@@ -176,11 +183,13 @@ void CDeviceQLandkarteM::uploadMap(const QList<IMapSelection*>& mss)
     QMessageBox::information(0,tr("Error..."), tr("QLandkarteM: Upload map is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
 }
 
+
 void CDeviceQLandkarteM::uploadRoutes(const QList<CRoute*>& rtes)
 {
     if(!startDeviceDetection()) return;
     QMessageBox::information(0,tr("Error..."), tr("QLandkarteM: Download routes is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
 }
+
 
 void CDeviceQLandkarteM::downloadRoutes(QList<CRoute*>& rtes)
 {
@@ -188,9 +197,10 @@ void CDeviceQLandkarteM::downloadRoutes(QList<CRoute*>& rtes)
     QMessageBox::information(0,tr("Error..."), tr("QLandkarteM: Download routes is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
 }
 
+
 bool CDeviceQLandkarteM::startDeviceDetection()
 {
-    if(ipaddr.isEmpty() || port == 0){
+    if(ipaddr.isEmpty() || port == 0) {
         QApplication::setOverrideCursor(Qt::WaitCursor);
 
         QByteArray datagram = "GETADRESS";
@@ -198,20 +208,21 @@ bool CDeviceQLandkarteM::startDeviceDetection()
 
         QTime time;
         time.start();
-        while(time.elapsed() < 3000){
+        while(time.elapsed() < 3000) {
             QApplication::processEvents();
         }
 
         QApplication::restoreOverrideCursor();
     }
 
-    if(ipaddr.isEmpty() || port == 0){
+    if(ipaddr.isEmpty() || port == 0) {
         QMessageBox::critical(0,tr("Error..."), tr("QLandkarteM: No device found. Is it connected to the network?"),QMessageBox::Abort,QMessageBox::Abort);
         return false;
     }
 
     return true;
 }
+
 
 void CDeviceQLandkarteM::detectedDevice()
 {

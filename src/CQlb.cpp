@@ -56,6 +56,7 @@ CQlb& CQlb::operator <<(CTrack& trk)
     return *this;
 }
 
+
 CQlb& CQlb::operator <<(CRoute& rte)
 {
     QDataStream stream(&rtes, QIODevice::Append);
@@ -82,11 +83,13 @@ CQlb& CQlb::operator <<(IOverlay& ovl)
     return *this;
 }
 
+
 void CQlb::load(const QString& filename)
 {
     QFile file(filename);
     load(&file);
 }
+
 
 void CQlb::load(QIODevice* ioDevice)
 {
@@ -138,6 +141,7 @@ void CQlb::save(const QString& filename)
     save(&file);
 }
 
+
 void CQlb::save(QIODevice* ioDevice)
 {
     ioDevice->open(QIODevice::WriteOnly);
@@ -152,5 +156,3 @@ void CQlb::save(QIODevice* ioDevice)
 
     ioDevice->close();
 }
-
-

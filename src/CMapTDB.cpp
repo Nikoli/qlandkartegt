@@ -1954,7 +1954,6 @@ void CMapTDB::getInfoPoints(const QPoint& pt, QMultiMap<QString, QString>& dict)
         ++point;
     }
 
-
 }
 
 

@@ -40,67 +40,22 @@
 #endif
 
 #include <QtGui>
-/// Enhanced QLabel used by CMegaMenu
-class CLabel: public QLabel
-{
-public:
-    CLabel(QWidget * parent) :
-        QLabel(parent)
-    {
-        setMouseTracking(true);
-    }
-    ~CLabel()
-    {
-    }
-
-    void mouseMoveEvent(QMouseEvent * e)
-    {
-        setBackgroundRole(QPalette::Highlight);
-        setForegroundRole(QPalette::HighlightedText);
-    }
-
-    void leaveEvent(QEvent *)
-    {
-        setBackgroundRole(QPalette::Window);
-        setForegroundRole(QPalette::WindowText);
-    }
-
-    void paintEvent(QPaintEvent * e)
-    {
-
-        QPainter p;
-        p.begin(this);
-        if (backgroundRole() == QPalette::Highlight)
-        {
-            p.setBrush(QBrush(QColor(66, 121, 206, 150)));
-        } else
-        {
-            p.setBrush(QBrush(QColor(66, 121, 206, 0)));
-        }
-        p.setPen(Qt::NoPen);
-        p.drawRect(rect());
-        p.end();
-
-        QLabel::paintEvent(e);
-    }
-};
 
 CMegaMenu * CMegaMenu::m_self = 0;
 
 /// Left hand side multi-function menu
-CMegaMenu::CMegaMenu(CCanvas * canvas) :
-    QLabel(canvas), canvas(canvas), current(0), fsMain(11, func_key_state_t()),
-            fsMap(11, func_key_state_t()), fsMap3D(11, func_key_state_t()),
-            fsWpt(11, func_key_state_t()), fsTrack(11, func_key_state_t()),
-            fsLiveLog(11, func_key_state_t()),
-            fsOverlay(11, func_key_state_t()),
-            fsMainMore(11, func_key_state_t()), fsRoute(11, func_key_state_t())
+CMegaMenu::CMegaMenu(CCanvas * canvas)
+: QLabel(canvas)
+, canvas(canvas)
+, currentItemIndex(-1)
+, mouseDown(false)
 {
+    m_self = this;
+    setScaledContents(true);
+    setMouseTracking(true);
 
     actionGroup = theMainWindow->getActionGroupProvider();
-    actions = actionGroup->getActions();
-    menu=0;
-    scrollArea=0;
+    actions     = actionGroup->getActions();
 
     actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToMap");
     actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToWpt");
@@ -122,9 +77,9 @@ CMegaMenu::CMegaMenu(CCanvas * canvas) :
     actionGroup->addAction(CActionGroupProvider::MapMenu, "aSelectArea");
     actionGroup->addAction(CActionGroupProvider::MapMenu, "aEditMap");
     actionGroup->addAction(CActionGroupProvider::MapMenu, "aSearchMap");
-    #ifdef PLOT_3D
-         actionGroup->addAction(CActionGroupProvider::MapMenu, "aSwitchToMap3D");
-    #endif
+#ifdef PLOT_3D
+    actionGroup->addAction(CActionGroupProvider::MapMenu, "aSwitchToMap3D");
+#endif
     actionGroup->addAction(CActionGroupProvider::MapMenu, "aUploadMap");
     //    fsMap[10] = func_key_state_t(0,tr("-"),0,tr(""));
 
@@ -213,84 +168,62 @@ CMegaMenu::CMegaMenu(CCanvas * canvas) :
     actionGroup->addAction(CActionGroupProvider::RouteMenu, "aUploadRoute");
     actionGroup->addAction(CActionGroupProvider::RouteMenu, "aDownloadRoute");
 
-    m_self = this;
-    setScaledContents(true);
-
-    int i;
-
-    mainLayout = new QVBoxLayout(this);
-
-    QHBoxLayout * titleLayout = new QHBoxLayout();
-    mainLayout->addLayout(titleLayout);
-
-    menuTitle = new QLabel(this);
-    menuTitle->setAlignment(Qt::AlignCenter);
-    titleLayout->addWidget(menuTitle);
-        //
-    layout = new QGridLayout();
-
-    mainLayout->addLayout(layout);
-
     connect(actionGroup, SIGNAL(stateChanged()), this, SLOT(switchState()));
 }
+
 
 CMegaMenu::~CMegaMenu()
 {
 
 }
 
+
 void CMegaMenu::switchState()
 {
+    QList<QAction *> acts = QWidget::actions();
+    QAction * act;
+    foreach(act,acts){
+        removeAction(act);
+    }
+    actionGroup->addActionsToWidget(this);
 
-    if (menu)
-        delete menu;
-
-    if (scrollArea)
-        delete scrollArea;
-
-    menu = new QMenu(this);
-    menu->setWindowFlags(Qt::Widget);
-
-    actionGroup->addActionsToMenu(menu, true);
-    menuTitle->setText(tr("<b>%1 ...</b>").arg(menu->title().remove('&')));
-    layout->addWidget(menu);
-    menu->show();
+    title = tr("%1 ...").arg(objectName().remove('&'));
 
 }
+
 
 void CMegaMenu::switchByKeyWord(const QString& key)
 {
     if (!isEnabled())
         return;
 
-    if (key == "Main")
-    {
+    if (key == "Main") {
         actions->funcSwitchToMain();
-    } else if (key == "Waypoints" && current != &fsWpt)
+    } else if (key == "Waypoints")
     {
         actions->funcSwitchToWpt();
         actions->funcMoveArea();
-    } else if (key == "Search" && current != &fsMain)
+    } else if (key == "Search")
     {
         actions->funcSwitchToMain();
         actions->funcMoveArea();
-    } else if (key == "Maps" && current != &fsMap)
+    } else if (key == "Maps")
     {
         actions->funcSwitchToMap();
         actions->funcMoveArea();
-    } else if (key == "Tracks" && current != &fsTrack)
+    } else if (key == "Tracks")
     {
         actions->funcSwitchToTrack();
         actions->funcMoveArea();
-    } else if (key == "LiveLog" && current != &fsLiveLog)
+    } else if (key == "LiveLog")
     {
         actions->funcSwitchToLiveLog();
         actions->funcMoveArea();
-    } else if (key == "Overlay" && current != &fsOverlay)
+    } else if (key == "Overlay")
     {
         actions->funcSwitchToOverlay();
         actions->funcMoveArea();
-    } else if (key == "Routes" && current != &fsRoute)
+    } else if (key == "Routes")
     {
         actions->funcSwitchToRoute();
         actions->funcMoveArea();
@@ -298,42 +231,159 @@ void CMegaMenu::switchByKeyWord(const QString& key)
 
 }
 
-void CMegaMenu::keyPressEvent(QKeyEvent * e)
-{
-    qDebug() << e->key();
-    //    if(!isEnabled()) return;
-    //
-    //    if((e->key() >= Qt::Key_F1) && (e->key() < Qt::Key_F11)) {
-    //        unsigned i = e->key() - Qt::Key_F1 + 1;
-    //        if((*current)[i].func) {
-    //            (this->*(*current)[i].func)();
-    //
-    //        }
-    //        return e->accept();
-    //    }
-    //    else if(e->key() == Qt::Key_Escape) {
-    //        if((*current)[0].func) {
-    //            (this->*(*current)[0].func)();
-    //        }
-    //        return e->accept();
-    //    }
+/*!
+    Initialize \a option with the values from this menu and information from \a action. This method
+    is useful for subclasses when they need a QStyleOptionMenuItem, but don't want
+    to fill in all the information themselves.
 
+    \sa QStyleOption::initFrom() QMenuBar::initStyleOption()
+*/
+void CMegaMenu::initStyleOption(QStyleOptionMenuItem *option, const QAction *action, bool isCurrent) const
+{
+    if (!option || !action)
+        return;
+
+    option->initFrom(this);
+    option->palette = palette();
+    option->state = QStyle::State_None;
+
+    if (window()->isActiveWindow())
+        option->state |= QStyle::State_Active;
+    if (isEnabled() && action->isEnabled()
+            && (!action->menu() || action->menu()->isEnabled()))
+        option->state |= QStyle::State_Enabled;
+    else
+        option->palette.setCurrentColorGroup(QPalette::Disabled);
+
+    option->font = action->font();
+
+    if (isCurrent && !action->isSeparator()) {
+        option->state |= QStyle::State_Selected | (mouseDown ? QStyle::State_Sunken : QStyle::State_None);
+    }
+
+//     option->menuHasCheckableItems = d->hasCheckableItems;
+    if (!action->isCheckable()) {
+        option->checkType = QStyleOptionMenuItem::NotCheckable;
+    } else {
+        option->checkType = (action->actionGroup() && action->actionGroup()->isExclusive())
+                            ? QStyleOptionMenuItem::Exclusive : QStyleOptionMenuItem::NonExclusive;
+        option->checked = action->isChecked();
+    }
+    if (action->menu())
+        option->menuItemType = QStyleOptionMenuItem::SubMenu;
+    else if (action->isSeparator())
+        option->menuItemType = QStyleOptionMenuItem::Separator;
+
+    else
+        option->menuItemType = QStyleOptionMenuItem::Normal;
+    if (action->isIconVisibleInMenu())
+        option->icon = action->icon();
+    QString textAndAccel = action->text();
+
+    if (textAndAccel.indexOf(QLatin1Char('\t')) == -1) {
+        QKeySequence seq = action->shortcut();
+        if (!seq.isEmpty())
+            textAndAccel += QLatin1Char('\t') + QString(seq);
+    }
+
+    option->text = textAndAccel;
+//     option->tabWidth = d->tabWidth;
+    option->maxIconWidth = 16;
+    option->menuRect = rect();
+}
+
+void CMegaMenu::paintEvent(QPaintEvent *e)
+{
+    QLabel::paintEvent(e);
+
+    QPainter p(this);
+
+    QFont f = font();
+    f.setBold(true);
+    p.setFont(f);
+
+    p.setClipRegion(rectTitle);
+    p.drawText(rectTitle, Qt::AlignCenter, title);
+
+    p.setFont(font());
+
+    int idx = 0;
+    QList<QAction *> acts = QWidget::actions();
+    QAction * act;
+    foreach(act,acts){
+        p.setClipRegion(rectF[idx]);
+
+        QStyleOptionMenuItem opt;
+        initStyleOption(&opt, act, currentItemIndex == idx);
+
+        opt.rect = rectF[idx];
+
+        style()->drawControl(QStyle::CE_MenuItem, &opt, &p, this);
+
+        ++idx;
+    }
+}
+
+void CMegaMenu::resizeEvent(QResizeEvent * e)
+{
+    QFont f = font();
+    f.setBold(true);
+    QFontMetrics fm(f);
+
+    int yoff    = 0;
+    int w       = e->size().width();
+    int h       = fm.height();
+
+    rectTitle = QRect(0,yoff, w, h);
+    for(int i=0; i < 11; ++i){
+        yoff += 2 + h;
+        rectF[i] = QRect(0,yoff, w, h);
+    }
+
+    yoff += 2 + h;
+    setMinimumHeight(yoff);
+}
+
+
+void CMegaMenu::leaveEvent ( QEvent * event )
+{
+    currentItemIndex = -1;
+    mouseDown = false;
+    update();
 }
 
 void CMegaMenu::mousePressEvent(QMouseEvent * e)
 {
-   // unsigned i;
-
-    //    if(e->button() == Qt::RightButton)
-    //      qDebug() << "Right Button in " << Q_FUNC_INFO;
-//    if(e->button() != Qt::LeftButton) return;
-//    for(i=0; i<11; ++i) {
-//        if(names[i]->geometry().contains(e->pos())) {
-//            if((*current)[i].func) {
-//                (this->*(*current)[i].func)();
-//                    }
-//                return;
-//            }
-//        }
+    mouseDown = true;
+    update();
 }
 
+void CMegaMenu::mouseReleaseEvent(QMouseEvent * e)
+{
+    QList<QAction*> acts = QWidget::actions();
+
+    QPoint pos = e->pos();
+    currentItemIndex = -1;
+    for(int i = 0; i < 11; ++i){
+        if(rectF[i].contains(pos)){
+            acts[i]->trigger();
+            break;
+        }
+    }
+
+    mouseDown = false;
+    update();
+}
+
+void CMegaMenu::mouseMoveEvent(QMouseEvent * e)
+{
+    QPoint pos = e->pos();
+    currentItemIndex = -1;
+    for(int i = 0; i < 11; ++i){
+        if(rectF[i].contains(pos)){
+            currentItemIndex = i;
+            update();
+            return;
+        }
+    }
+}

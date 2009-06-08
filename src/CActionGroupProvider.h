@@ -23,43 +23,44 @@
 #include <QSet>
 class CActions;
 class QWidget;
+class QLabel;
 
 class CActionGroupProvider: public QObject
 {
-  Q_OBJECT
-  Q_ENUMS(ActionGroupName)
-public:
-  CActionGroupProvider(QObject * parent);
-  virtual ~CActionGroupProvider();
-  enum ActionGroupName
-  {
-    Map3DMenu,
-    WptMenu,
-    LiveLogMenu,
-    OverlayMenu,
-    MainMoreMenu,
-    TrackMenu,
-    RouteMenu,
-    MapMenu,
-    MainMenu
-  };
+    Q_OBJECT
+        Q_ENUMS(ActionGroupName)
+        public:
+        CActionGroupProvider(QObject * parent);
+        virtual ~CActionGroupProvider();
+        enum ActionGroupName
+        {
+            Map3DMenu,
+            WptMenu,
+            LiveLogMenu,
+            OverlayMenu,
+            MainMoreMenu,
+            TrackMenu,
+            RouteMenu,
+            MapMenu,
+            MainMenu
+        };
 
-  void addAction(ActionGroupName group, QAction *action, bool force = false);
-  void addAction(ActionGroupName group, const QString& actionName, bool force = false);
+        void addAction(ActionGroupName group, QAction *action, bool force = false);
+        void addAction(ActionGroupName group, const QString& actionName, bool force = false);
 
-  void removeAction(ActionGroupName group, QAction *action);
-  void removeAction(QAction *action);
-  void switchToActionGroup(ActionGroupName group);
-  CActions* getActions() {return actions;};
-  QList<QAction *> *getActiveActions() { return actionGroupHash.value(activeGroup,new QList<QAction* >());};
-  bool addActionsToMenu(QMenu *menu, bool isMegaMenu = false);
- signals:
-  void stateChanged();
-private:
-  QSet<QAction *>  controlledActions;
-  ActionGroupName activeGroup;
-  QHash<ActionGroupName, QList<QAction *> *> actionGroupHash;
-  CActions* actions;
+        void removeAction(ActionGroupName group, QAction *action);
+        void removeAction(QAction *action);
+        void switchToActionGroup(ActionGroupName group);
+        CActions* getActions() {return actions;};
+        QList<QAction *> *getActiveActions() { return actionGroupHash.value(activeGroup,new QList<QAction* >());};
+        bool addActionsToMenu(QMenu *menu, bool isMegaMenu = false);
+        bool addActionsToWidget(QLabel *menu);
+        signals:
+        void stateChanged();
+    private:
+        QSet<QAction *>  controlledActions;
+        ActionGroupName activeGroup;
+        QHash<ActionGroupName, QList<QAction *> *> actionGroupHash;
+        CActions* actions;
 };
-
-#endif /* CActionGroupProvider_H_ */
+#endif                           /* CActionGroupProvider_H_ */

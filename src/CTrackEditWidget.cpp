@@ -468,6 +468,7 @@ void CTrackEditWidget::slotToggleStatDistance()
     }
 }
 
+
 void CTrackEditWidget::slotToggleStatTime()
 {
     if(trackStatSpeedTime.isNull()) {
