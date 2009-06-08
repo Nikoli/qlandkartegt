@@ -18,7 +18,7 @@
 #include <QAction>
 #include <QDebug>
 #include "CMainWindow.h"
-#include "CActionGroupProvider.h"
+#include "CMenus.h"
 #include "CCanvas.h"
 #include "CSearchDB.h"
 #include "CWptDB.h"
@@ -38,7 +38,7 @@
 CActions::CActions(QObject *parent) :
 QObject(parent), parent(parent)
 {
-    actionGroup = (CActionGroupProvider*) parent;
+    actionGroup = (CMenus*) parent;
     canvas = theMainWindow->getCanvas();
     createAction(tr("F1"), ":/icons/iconMap16x16", tr("&Map ..."), "aSwitchToMap", tr("Manage maps."));
     createAction(tr("F2"), ":/icons/iconWaypoint16x16", tr("&Waypoint ..."), "aSwitchToWpt", tr("Manage waypoints."));
@@ -181,7 +181,7 @@ void CActions::funcSwitchToMain()
     qDebug() << Q_FUNC_INFO;
     setMenuTitle(tr("&Main"));
     setMenuPixmap(QPixmap(":/icons/backGlobe128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::MainMenu);
+    actionGroup->switchToActionGroup(CMenus::MainMenu);
     funcMoveArea();
 }
 
@@ -191,7 +191,7 @@ void CActions::funcSwitchToMap()
     qDebug() << Q_FUNC_INFO;
     setMenuTitle(tr("&Maps"));
     setMenuPixmap(QPixmap(":/icons/backMap128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::MapMenu);
+    actionGroup->switchToActionGroup(CMenus::MapMenu);
     CMapDB::self().gainFocus();
     funcMoveArea();
 }
@@ -201,7 +201,7 @@ void CActions::funcSwitchToMap3D()
 {
     setMenuTitle(tr("&Maps</b>"));
     setMenuPixmap(QPixmap(":/icons/backMap128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::Map3DMenu);
+    actionGroup->switchToActionGroup(CMenus::Map3DMenu);
     CMapDB::self().gainFocus();
     CMapDB::self().show3DMap(true);
 }
@@ -211,7 +211,7 @@ void CActions::funcSwitchToWpt()
 {
     setMenuTitle(tr("&Waypoints"));
     setMenuPixmap(QPixmap(":/icons/backWaypoint128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::WptMenu);
+    actionGroup->switchToActionGroup(CMenus::WptMenu);
     CWptDB::self().gainFocus();
     funcMoveArea();
 }
@@ -221,7 +221,7 @@ void CActions::funcSwitchToTrack()
 {
     setMenuTitle(tr("&Tracks"));
     setMenuPixmap(QPixmap(":/icons/backTrack128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::TrackMenu);
+    actionGroup->switchToActionGroup(CMenus::TrackMenu);
     CTrackDB::self().gainFocus();
     funcMoveArea();
 }
@@ -231,7 +231,7 @@ void CActions::funcSwitchToRoute()
 {
     setMenuTitle(tr("&Routes"));
     setMenuPixmap(QPixmap(":/icons/backRoute128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::RouteMenu);
+    actionGroup->switchToActionGroup(CMenus::RouteMenu);
     CRouteDB::self().gainFocus();
     funcMoveArea();
 }
@@ -241,7 +241,7 @@ void CActions::funcSwitchToLiveLog()
 {
     setMenuTitle(tr("&Live Log"));
     setMenuPixmap(QPixmap(":/icons/backLiveLog128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::LiveLogMenu);
+    actionGroup->switchToActionGroup(CMenus::LiveLogMenu);
     CLiveLogDB::self().gainFocus();
     funcMoveArea();
 }
@@ -251,7 +251,7 @@ void CActions::funcSwitchToOverlay()
 {
     setMenuTitle(tr("&Overlay"));
     setMenuPixmap(QPixmap(":/icons/backOverlay128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::OverlayMenu);
+    actionGroup->switchToActionGroup(CMenus::OverlayMenu);
     COverlayDB::self().gainFocus();
     funcMoveArea();
 }
@@ -261,7 +261,7 @@ void CActions::funcSwitchToMainMore()
 {
     setMenuTitle(tr("&Main (More)"));
     setMenuPixmap(QPixmap(":/icons/backGlobe+128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::MainMoreMenu);
+    actionGroup->switchToActionGroup(CMenus::MainMoreMenu);
     funcMoveArea();
 }
 
@@ -362,7 +362,7 @@ void CActions::funcCloseMap3D()
     CMapDB::self().show3DMap(false);
     setMenuTitle(tr("<b>Maps ...</b>"));
     setMenuPixmap(QPixmap(":/icons/backMap128x128"));
-    actionGroup->switchToActionGroup(CActionGroupProvider::Map3DMenu);
+    actionGroup->switchToActionGroup(CMenus::Map3DMenu);
     CMapDB::self().gainFocus();
     funcMoveArea();
 }

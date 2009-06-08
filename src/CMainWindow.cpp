@@ -37,7 +37,7 @@
 #include "CLiveLogDB.h"
 #include "COverlayDB.h"
 #include "CActions.h"
-#include "CActionGroupProvider.h"
+#include "CMenus.h"
 
 #include <QtGui>
 
@@ -75,13 +75,13 @@ CMainWindow::CMainWindow()
     canvas = new CCanvas(this);
     canvasTab->addTab(canvas,tr("Map"));
 
-    actionGroupProvider = new CActionGroupProvider(this);
+    actionGroupProvider = new CMenus(this);
 
     megaMenu = new CMegaMenu(canvas);
     leftSplitter->addWidget(megaMenu);
 
-    actionGroupProvider->addAction(CActionGroupProvider::TrackMenu, "aCopyToClipboard");
-    actionGroupProvider->addAction(CActionGroupProvider::TrackMenu, "aPasteFromClipboard");
+    actionGroupProvider->addAction(CMenus::TrackMenu, "aCopyToClipboard");
+    actionGroupProvider->addAction(CMenus::TrackMenu, "aPasteFromClipboard");
 
     CActions *actions = actionGroupProvider->getActions();
     canvas->addAction(actions->getAction("aZoomIn"));

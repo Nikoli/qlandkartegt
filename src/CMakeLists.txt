@@ -15,7 +15,7 @@ set(qlandkarte_SRCS
     mitab.cpp
     tcxreader.cpp
     CActions.cpp
-    CActionGroupProvider.cpp
+    CMenus.cpp
     printpreview.cpp
     GeoMath.cpp
     WptIcons.cpp
@@ -145,7 +145,7 @@ set(qlandkarte_HDRS
     mitab.h
     tcxreader.h
     CActions.h
-    CActionGroupProvider.h
+    CMenus.h
     printpreview.h
     GeoMath.h
     WptIcons.h

@@ -21,7 +21,7 @@
 #include <QPixmap>
 #include <QPointer>
 class QAction;
-class CActionGroupProvider;
+class CMenus;
 class CCanvas;
 class CActions : public QObject
 {
@@ -35,7 +35,7 @@ class CActions : public QObject
     private:
         void createAction(const QString& shortCut,const char * icon,const QString& name, const QString& setObjectName, const QString& tooltip);
         QObject *parent;
-        CActionGroupProvider *actionGroup;
+        CMenus *actionGroup;
         QPointer<CCanvas>  canvas;
         QString menuTitle;
         QPixmap menuPixmap;

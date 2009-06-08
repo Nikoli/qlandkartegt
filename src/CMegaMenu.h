@@ -23,7 +23,7 @@
 #include <QLabel>
 #include <QPointer>
 #include <QVector>
-#include "CActionGroupProvider.h"
+#include "CMenus.h"
 class CCanvas;
 class QLabel;
 class QGridLayout;
@@ -57,7 +57,7 @@ class CMegaMenu : public QLabel
     private:
         friend class CMainWindow;
         CMegaMenu(CCanvas * canvas);
-        CActionGroupProvider *actionGroup;
+        CMenus *actionGroup;
         CActions *actions;
 
     private slots:

@@ -56,7 +56,7 @@
 #include "IUnit.h"
 
 #include <QtGui>
-#include "CActionGroupProvider.h"
+#include "CMenus.h"
 
 CCanvas::CCanvas(QWidget * parent)
 : QWidget(parent)

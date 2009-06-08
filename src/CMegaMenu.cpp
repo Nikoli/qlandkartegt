@@ -33,7 +33,7 @@
 #include "CResources.h"
 #include "IDevice.h"
 #include "CDlgCreateWorldBasemap.h"
-#include "CActionGroupProvider.h"
+#include "CMenus.h"
 #include "CActions.h"
 #ifdef PLOT_3D
 #include "CMap3DWidget.h"
@@ -57,38 +57,38 @@ CMegaMenu::CMegaMenu(CCanvas * canvas)
     actionGroup = theMainWindow->getActionGroupProvider();
     actions     = actionGroup->getActions();
 
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToMap");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToWpt");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToTrack");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToRoute");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToLiveLog");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToOverlay");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aSwitchToMainMore");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aClearAll");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aUploadAll");
-    actionGroup->addAction(CActionGroupProvider::MainMenu, "aDownloadAll");
+    actionGroup->addAction(CMenus::MainMenu, "aSwitchToMap");
+    actionGroup->addAction(CMenus::MainMenu, "aSwitchToWpt");
+    actionGroup->addAction(CMenus::MainMenu, "aSwitchToTrack");
+    actionGroup->addAction(CMenus::MainMenu, "aSwitchToRoute");
+    actionGroup->addAction(CMenus::MainMenu, "aSwitchToLiveLog");
+    actionGroup->addAction(CMenus::MainMenu, "aSwitchToOverlay");
+    actionGroup->addAction(CMenus::MainMenu, "aSwitchToMainMore");
+    actionGroup->addAction(CMenus::MainMenu, "aClearAll");
+    actionGroup->addAction(CMenus::MainMenu, "aUploadAll");
+    actionGroup->addAction(CMenus::MainMenu, "aDownloadAll");
 
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aSwitchToMain");
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aSwitchToMain");
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aMoveArea");
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aZoomArea");
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aCenterMap");
+    actionGroup->addAction(CMenus::MapMenu, "aSwitchToMain");
+    actionGroup->addAction(CMenus::MapMenu, "aSwitchToMain");
+    actionGroup->addAction(CMenus::MapMenu, "aMoveArea");
+    actionGroup->addAction(CMenus::MapMenu, "aZoomArea");
+    actionGroup->addAction(CMenus::MapMenu, "aCenterMap");
     //    fsMap[4] = func_key_state_t(0,tr("-"),0,tr(""));
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aSelectArea");
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aEditMap");
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aSearchMap");
+    actionGroup->addAction(CMenus::MapMenu, "aSelectArea");
+    actionGroup->addAction(CMenus::MapMenu, "aEditMap");
+    actionGroup->addAction(CMenus::MapMenu, "aSearchMap");
 #ifdef PLOT_3D
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aSwitchToMap3D");
+    actionGroup->addAction(CMenus::MapMenu, "aSwitchToMap3D");
 #endif
-    actionGroup->addAction(CActionGroupProvider::MapMenu, "aUploadMap");
+    actionGroup->addAction(CMenus::MapMenu, "aUploadMap");
     //    fsMap[10] = func_key_state_t(0,tr("-"),0,tr(""));
 
 #ifdef PLOT_3D
-    actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aCloseMap3D");
-    actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aMap3DMode");
-    actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aMap3DZoomPlus");
-    actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aMap3DZoomMinus");
-    actionGroup->addAction(CActionGroupProvider::Map3DMenu, "aMap3DLighting");
+    actionGroup->addAction(CMenus::Map3DMenu, "aCloseMap3D");
+    actionGroup->addAction(CMenus::Map3DMenu, "aMap3DMode");
+    actionGroup->addAction(CMenus::Map3DMenu, "aMap3DZoomPlus");
+    actionGroup->addAction(CMenus::Map3DMenu, "aMap3DZoomMinus");
+    actionGroup->addAction(CMenus::Map3DMenu, "aMap3DLighting");
     //    fsMap3D[5] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsMap3D[6] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsMap3D[7] = func_key_state_t(0,tr("-"),0,tr(""));
@@ -97,76 +97,76 @@ CMegaMenu::CMegaMenu(CCanvas * canvas)
     //    fsMap3D[10] = func_key_state_t(0,tr("-"),0,tr(""));
 #endif
 
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aSwitchToMain");
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aMoveArea");
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aZoomArea");
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aCenterMap");
+    actionGroup->addAction(CMenus::WptMenu, "aSwitchToMain");
+    actionGroup->addAction(CMenus::WptMenu, "aMoveArea");
+    actionGroup->addAction(CMenus::WptMenu, "aZoomArea");
+    actionGroup->addAction(CMenus::WptMenu, "aCenterMap");
     //    fsWpt[4] = func_key_state_t(0,tr("-"),0,tr(""));
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aNewWpt");
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aEditWpt");
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aMoveWpt");
+    actionGroup->addAction(CMenus::WptMenu, "aNewWpt");
+    actionGroup->addAction(CMenus::WptMenu, "aEditWpt");
+    actionGroup->addAction(CMenus::WptMenu, "aMoveWpt");
 #ifdef HAS_EXIF
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aImageWpt");
+    actionGroup->addAction(CMenus::WptMenu, "aImageWpt");
 #else
     //   fsWpt[8] = func_key_state_t(0, tr("-"), 0, tr(""));
 #endif
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aUploadWpt");
-    actionGroup->addAction(CActionGroupProvider::WptMenu, "aDownloadWpt");
+    actionGroup->addAction(CMenus::WptMenu, "aUploadWpt");
+    actionGroup->addAction(CMenus::WptMenu, "aDownloadWpt");
 
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aSwitchToMain");
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aMoveArea");
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aZoomArea");
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aCenterMap");
+    actionGroup->addAction(CMenus::TrackMenu, "aSwitchToMain");
+    actionGroup->addAction(CMenus::TrackMenu, "aMoveArea");
+    actionGroup->addAction(CMenus::TrackMenu, "aZoomArea");
+    actionGroup->addAction(CMenus::TrackMenu, "aCenterMap");
     //    fsTrack[4] = func_key_state_t(0,tr("-"),0,tr(""));
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aCombineTrack");
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aEditTrack");
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aCutTrack");
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aSelTrack");
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aUploadTrack");
-    actionGroup->addAction(CActionGroupProvider::TrackMenu, "aDownloadTrack");
+    actionGroup->addAction(CMenus::TrackMenu, "aCombineTrack");
+    actionGroup->addAction(CMenus::TrackMenu, "aEditTrack");
+    actionGroup->addAction(CMenus::TrackMenu, "aCutTrack");
+    actionGroup->addAction(CMenus::TrackMenu, "aSelTrack");
+    actionGroup->addAction(CMenus::TrackMenu, "aUploadTrack");
+    actionGroup->addAction(CMenus::TrackMenu, "aDownloadTrack");
 
-    actionGroup->addAction(CActionGroupProvider::LiveLogMenu, "aSwitchToMain");
-    actionGroup->addAction(CActionGroupProvider::LiveLogMenu, "aMoveArea");
-    actionGroup->addAction(CActionGroupProvider::LiveLogMenu, "aZoomArea");
-    actionGroup->addAction(CActionGroupProvider::LiveLogMenu, "aCenterMap");
+    actionGroup->addAction(CMenus::LiveLogMenu, "aSwitchToMain");
+    actionGroup->addAction(CMenus::LiveLogMenu, "aMoveArea");
+    actionGroup->addAction(CMenus::LiveLogMenu, "aZoomArea");
+    actionGroup->addAction(CMenus::LiveLogMenu, "aCenterMap");
     //    fsLiveLog[4] = func_key_state_t(0,tr("-"),0,tr(""));
-    actionGroup->addAction(CActionGroupProvider::LiveLogMenu, "aLiveLog");
-    actionGroup->addAction(CActionGroupProvider::LiveLogMenu, "aLockMap");
-    actionGroup->addAction(CActionGroupProvider::LiveLogMenu, "aAddWpt");
+    actionGroup->addAction(CMenus::LiveLogMenu, "aLiveLog");
+    actionGroup->addAction(CMenus::LiveLogMenu, "aLockMap");
+    actionGroup->addAction(CMenus::LiveLogMenu, "aAddWpt");
     //    fsLiveLog[8] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsLiveLog[9] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsLiveLog[10] = func_key_state_t(0,tr("-"),0,tr(""));
 
-    actionGroup->addAction(CActionGroupProvider::OverlayMenu, "aSwitchToMain");
-    actionGroup->addAction(CActionGroupProvider::OverlayMenu, "aMoveArea");
-    actionGroup->addAction(CActionGroupProvider::OverlayMenu, "aZoomArea");
-    actionGroup->addAction(CActionGroupProvider::OverlayMenu, "aCenterMap");
+    actionGroup->addAction(CMenus::OverlayMenu, "aSwitchToMain");
+    actionGroup->addAction(CMenus::OverlayMenu, "aMoveArea");
+    actionGroup->addAction(CMenus::OverlayMenu, "aZoomArea");
+    actionGroup->addAction(CMenus::OverlayMenu, "aCenterMap");
     //    fsOverlay[4] = func_key_state_t(0,tr("-"),0,tr(""));
-    actionGroup->addAction(CActionGroupProvider::OverlayMenu, "aText");
-    actionGroup->addAction(CActionGroupProvider::OverlayMenu, "aTextBox");
-    actionGroup->addAction(CActionGroupProvider::OverlayMenu, "aDistance");
+    actionGroup->addAction(CMenus::OverlayMenu, "aText");
+    actionGroup->addAction(CMenus::OverlayMenu, "aTextBox");
+    actionGroup->addAction(CMenus::OverlayMenu, "aDistance");
     //    fsOverlay[8] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsOverlay[9] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsOverlay[10] = func_key_state_t(0,tr("-"),0,tr(""));
 
-    actionGroup->addAction(CActionGroupProvider::MainMoreMenu, "aSwitchToMain");
-    actionGroup->addAction(CActionGroupProvider::MainMoreMenu, "aMoveArea");
-    actionGroup->addAction(CActionGroupProvider::MainMoreMenu, "aZoomArea");
-    actionGroup->addAction(CActionGroupProvider::MainMoreMenu, "aCenterMap");
+    actionGroup->addAction(CMenus::MainMoreMenu, "aSwitchToMain");
+    actionGroup->addAction(CMenus::MainMoreMenu, "aMoveArea");
+    actionGroup->addAction(CMenus::MainMoreMenu, "aZoomArea");
+    actionGroup->addAction(CMenus::MainMoreMenu, "aCenterMap");
     //    fsMainMore[4] = func_key_state_t(0,tr("-"),0,tr(""));
-    actionGroup->addAction(CActionGroupProvider::MainMoreMenu, "aDiary");
-    actionGroup->addAction(CActionGroupProvider::MainMoreMenu, "aColorPicker");
-    actionGroup->addAction(CActionGroupProvider::MainMoreMenu, "aWorldBasemap");
+    actionGroup->addAction(CMenus::MainMoreMenu, "aDiary");
+    actionGroup->addAction(CMenus::MainMoreMenu, "aColorPicker");
+    actionGroup->addAction(CMenus::MainMoreMenu, "aWorldBasemap");
     //    fsMainMore[8] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsMainMore[9] = func_key_state_t(0,tr("-"),0,tr(""));
     //    fsMainMore[10] = func_key_state_t(0,tr("-"),0,tr(""));
 
-    actionGroup->addAction(CActionGroupProvider::RouteMenu, "aSwitchToMain");
-    actionGroup->addAction(CActionGroupProvider::RouteMenu, "aMoveArea");
-    actionGroup->addAction(CActionGroupProvider::RouteMenu, "aZoomArea");
-    actionGroup->addAction(CActionGroupProvider::RouteMenu, "aCenterMap");
-    actionGroup->addAction(CActionGroupProvider::RouteMenu, "aUploadRoute");
-    actionGroup->addAction(CActionGroupProvider::RouteMenu, "aDownloadRoute");
+    actionGroup->addAction(CMenus::RouteMenu, "aSwitchToMain");
+    actionGroup->addAction(CMenus::RouteMenu, "aMoveArea");
+    actionGroup->addAction(CMenus::RouteMenu, "aZoomArea");
+    actionGroup->addAction(CMenus::RouteMenu, "aCenterMap");
+    actionGroup->addAction(CMenus::RouteMenu, "aUploadRoute");
+    actionGroup->addAction(CMenus::RouteMenu, "aDownloadRoute");
 
     connect(actionGroup, SIGNAL(stateChanged()), this, SLOT(switchState()));
 }

@@ -25,13 +25,13 @@ class CActions;
 class QWidget;
 class QLabel;
 
-class CActionGroupProvider: public QObject
+class CMenus: public QObject
 {
     Q_OBJECT
         Q_ENUMS(ActionGroupName)
         public:
-        CActionGroupProvider(QObject * parent);
-        virtual ~CActionGroupProvider();
+        CMenus(QObject * parent);
+        virtual ~CMenus();
         enum ActionGroupName
         {
             Map3DMenu,
@@ -64,4 +64,4 @@ class CActionGroupProvider: public QObject
         QHash<ActionGroupName, QList<QAction *> *> actionGroupHash;
         CActions* actions;
 };
-#endif                           /* CActionGroupProvider_H_ */
+#endif                           /* CMenus_H_ */

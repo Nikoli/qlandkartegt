@@ -14,7 +14,7 @@
 //C- GNU General Public License for more details.
 //C-  ------------------------------------------------------------------
 
-#include "CActionGroupProvider.h"
+#include "CMenus.h"
 #include "CMainWindow.h"
 #include "CActions.h"
 #include "CCanvas.h"
@@ -22,23 +22,23 @@
 #include <QtGui>
 #define SIZE_OF_MEGAMENU 11
 
-#define lqdebug(x) qDebug() << x
-//#define lqdebug(x)
+//#define lqdebug(x) qDebug() << x
+#define lqdebug(x)
 
-CActionGroupProvider::CActionGroupProvider(QObject *parent) : QObject(parent)
+CMenus::CMenus(QObject *parent) : QObject(parent)
 {
     activeGroup = MainMenu;
     actions = new CActions(this);
 }
 
 
-CActionGroupProvider::~CActionGroupProvider()
+CMenus::~CMenus()
 {
 
 }
 
 
-void CActionGroupProvider::addAction(ActionGroupName groupName, const QString& actionName, bool force /*= false*/)
+void CMenus::addAction(ActionGroupName groupName, const QString& actionName, bool force /*= false*/)
 {
     QAction *action = actions->getAction(actionName);
 
@@ -47,7 +47,7 @@ void CActionGroupProvider::addAction(ActionGroupName groupName, const QString& a
 }
 
 
-void CActionGroupProvider::addAction(ActionGroupName groupName, QAction *action, bool force /*= false*/)
+void CMenus::addAction(ActionGroupName groupName, QAction *action, bool force /*= false*/)
 {
     QList<QAction *> *actionGroup;
     if(!actionGroupHash.contains(groupName)) {
@@ -62,19 +62,19 @@ void CActionGroupProvider::addAction(ActionGroupName groupName, QAction *action,
 }
 
 
-void CActionGroupProvider::removeAction(ActionGroupName group, QAction *action)
+void CMenus::removeAction(ActionGroupName group, QAction *action)
 {
 
 }
 
 
-void CActionGroupProvider::removeAction(QAction *action)
+void CMenus::removeAction(QAction *action)
 {
 
 }
 
 
-void CActionGroupProvider::switchToActionGroup(ActionGroupName group)
+void CMenus::switchToActionGroup(ActionGroupName group)
 {
 
     if (!actionGroupHash.value(group)) {
@@ -105,7 +105,7 @@ void CActionGroupProvider::switchToActionGroup(ActionGroupName group)
 }
 
 
-bool CActionGroupProvider::addActionsToMenu(QMenu *menu)
+bool CMenus::addActionsToMenu(QMenu *menu)
 {
     menu->setTitle(actions->getMenuTitle());
     menu->addActions(getActiveActionsList(menu));
@@ -113,7 +113,7 @@ bool CActionGroupProvider::addActionsToMenu(QMenu *menu)
 }
 
 
-bool CActionGroupProvider::addActionsToWidget(QLabel *menu)
+bool CMenus::addActionsToWidget(QLabel *menu)
 {
     menu->setObjectName(actions->getMenuTitle());
     menu->addActions(getActiveActionsList(menu));
@@ -121,7 +121,7 @@ bool CActionGroupProvider::addActionsToWidget(QLabel *menu)
 }
 
 
-QList<QAction *> CActionGroupProvider::getActiveActionsList(QObject *menu)
+QList<QAction *> CMenus::getActiveActionsList(QObject *menu)
 {
     QList<QAction *> list;
     int i=0;
@@ -135,7 +135,7 @@ QList<QAction *> CActionGroupProvider::getActiveActionsList(QObject *menu)
                 lqdebug("add action Esc");
                 QAction *dummyAction = new QAction(menu);
                 dummyAction->setText(tr("-"));
-                dummyAction->setShortcut(tr("Esc").arg(i));
+                dummyAction->setShortcut(tr("Esc"));
                 list << dummyAction;
             }
             i++;
