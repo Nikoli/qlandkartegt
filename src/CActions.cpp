@@ -65,7 +65,7 @@ QObject(parent), parent(parent)
     createAction(tr("F9"), ":/icons/iconUpload16x16", tr("U&pload"), "aUploadMap", tr("Upload map selection to device."));
 
 #ifdef PLOT_3D
-    createAction(tr("F0"),":/icons/iconBack16x16",tr("&Close"),"aCloseMap3D",tr("Close 3D view."));
+    createAction(tr("ESC"),":/icons/iconBack16x16",tr("&Close"),"aCloseMap3D",tr("Close 3D view."));
     createAction(tr("F1"),0,tr("&Flat / 3D Mode"),"aMap3DMode",tr("Toggle between 3D track only and full map surface model."));
     createAction(tr("F2"),":/icons/iconInc16x16",tr("&Inc. Elevation"),"aMap3DZoomPlus",tr("Make elevations on the map higher as they are."));
     createAction(tr("F3"),":/icons/iconDec16x16",tr("&Dec. Elevation"),"aMap3DZoomMinus",tr("Make elevations on the map lower as they are."));
@@ -199,7 +199,7 @@ void CActions::funcSwitchToMap()
 
 void CActions::funcSwitchToMap3D()
 {
-    setMenuTitle(tr("&Maps</b>"));
+    setMenuTitle(tr("&Maps"));
     setMenuPixmap(QPixmap(":/icons/backMap128x128"));
     actionGroup->switchToActionGroup(CMenus::Map3DMenu);
     CMapDB::self().gainFocus();
@@ -360,7 +360,7 @@ void CActions::funcNewWpt()
 void CActions::funcCloseMap3D()
 {
     CMapDB::self().show3DMap(false);
-    setMenuTitle(tr("<b>Maps ...</b>"));
+    setMenuTitle(tr("Maps ..."));
     setMenuPixmap(QPixmap(":/icons/backMap128x128"));
     actionGroup->switchToActionGroup(CMenus::Map3DMenu);
     CMapDB::self().gainFocus();
