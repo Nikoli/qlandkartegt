@@ -108,7 +108,7 @@ void CMenus::switchToActionGroup(ActionGroupName group)
 bool CMenus::addActionsToMenu(QMenu *menu)
 {
     menu->setTitle(actions->getMenuTitle());
-    menu->addActions(getActiveActionsList(menu));
+    menu->addActions(getActiveActionsList(menu,ContextMenu|MenuBarMenu));
 
 }
 
@@ -116,50 +116,56 @@ bool CMenus::addActionsToMenu(QMenu *menu)
 bool CMenus::addActionsToWidget(QLabel *menu)
 {
     menu->setObjectName(actions->getMenuTitle());
-    menu->addActions(getActiveActionsList(menu));
+    menu->addActions(getActiveActionsList(menu,LeftSideMenu));
     menu->setPixmap(actions->getMenuPixmap());
 }
 
 
-QList<QAction *> CMenus::getActiveActionsList(QObject *menu)
+QList<QAction *> CMenus::getActiveActionsList(QObject *menu, MenuContextNames names)
 {
     QList<QAction *> list;
     int i=0;
     foreach(QAction *a, *getActiveActions()) {
         lqdebug(QString("enter menu: %1 ").arg(a->shortcut().toString()));
-        QRegExp re ("^F(\\d+)$");
-        if (i==0)
+        if ( names.testFlag(LeftSideMenu) )
         {
-            if (a->shortcut().toString() != "Esc")
+            QRegExp re ("^F(\\d+)$");
+            if (i==0)
             {
-                lqdebug("add action Esc");
-                QAction *dummyAction = new QAction(menu);
-                dummyAction->setText(tr("-"));
-                dummyAction->setShortcut(tr("Esc"));
-                list << dummyAction;
-            }
-            i++;
-        }
-        if (re.exactMatch(a->shortcut().toString()) ) {
-            int nextNumber = re.cap(1).toInt();
-            lqdebug(QString("match: i=%1, nextNumber=%2").arg(i).arg(nextNumber) << a->shortcut().toString());
-            while(i < nextNumber ) {
-                lqdebug("add action" << nextNumber << i);
-                QAction *dummyAction = new QAction(menu);
-                dummyAction->setText(tr("-"));
-                dummyAction->setShortcut(tr("F%1").arg(i));
-                list << dummyAction;
+                if (a->shortcut().toString() != "Esc")
+                {
+                    lqdebug("add action Esc");
+                    QAction *dummyAction = new QAction(menu);
+                    dummyAction->setText(tr("-"));
+                    dummyAction->setShortcut(tr("Esc"));
+                    list << dummyAction;
+                }
                 i++;
             }
-            i++;
-        }
-        else
-        {
-            lqdebug("not matched" << a->shortcut().toString());
-        }
+            if (re.exactMatch(a->shortcut().toString()) ) {
+                int nextNumber = re.cap(1).toInt();
+                lqdebug(QString("match: i=%1, nextNumber=%2").arg(i).arg(nextNumber) << a->shortcut().toString());
+                while(i < nextNumber ) {
+                    lqdebug("add action" << nextNumber << i);
+                    QAction *dummyAction = new QAction(menu);
+                    dummyAction->setText(tr("-"));
+                    dummyAction->setShortcut(tr("F%1").arg(i));
+                    list << dummyAction;
+                    i++;
+                }
+                i++;
+            }
+            else
+            {
+                lqdebug("not matched" << a->shortcut().toString());
+            }
 
-        if (i> SIZE_OF_MEGAMENU) {
-            return list;
+            if (i> SIZE_OF_MEGAMENU) {
+                return list;
+            }
+        } else
+        {
+            i++;
         }
         list << a;
     }

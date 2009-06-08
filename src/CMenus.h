@@ -21,6 +21,8 @@
 #include <QPointer>
 #include <QHash>
 #include <QSet>
+#include <QFlags>
+
 class CActions;
 class QWidget;
 class QLabel;
@@ -45,6 +47,15 @@ class CMenus: public QObject
             MainMenu
         };
 
+        enum MenuContextName
+        {
+            LeftSideMenu= 0x1,
+            ContextMenu = 0x2,
+            MenuBarMenu = 0x4
+        };
+
+        Q_DECLARE_FLAGS(MenuContextNames, MenuContextName)
+
         void addAction(ActionGroupName group, QAction *action, bool force = false);
         void addAction(ActionGroupName group, const QString& actionName, bool force = false);
 
@@ -58,10 +69,12 @@ class CMenus: public QObject
         signals:
         void stateChanged();
     private:
-        QList<QAction *> getActiveActionsList(QObject *menu);
+        QList<QAction *> getActiveActionsList(QObject *menu, MenuContextNames names );
         QSet<QAction *>  controlledActions;
         ActionGroupName activeGroup;
         QHash<ActionGroupName, QList<QAction *> *> actionGroupHash;
         CActions* actions;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(CMenus::MenuContextNames)
 #endif                           /* CMenus_H_ */
