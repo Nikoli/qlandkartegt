@@ -53,11 +53,12 @@ class CActionGroupProvider: public QObject
         void switchToActionGroup(ActionGroupName group);
         CActions* getActions() {return actions;};
         QList<QAction *> *getActiveActions() { return actionGroupHash.value(activeGroup,new QList<QAction* >());};
-        bool addActionsToMenu(QMenu *menu, bool isMegaMenu = false);
+        bool addActionsToMenu(QMenu *menu);
         bool addActionsToWidget(QLabel *menu);
         signals:
         void stateChanged();
     private:
+        QList<QAction *> getActiveActionsList(QObject *menu);
         QSet<QAction *>  controlledActions;
         ActionGroupName activeGroup;
         QHash<ActionGroupName, QList<QAction *> *> actionGroupHash;

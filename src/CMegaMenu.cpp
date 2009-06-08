@@ -108,7 +108,7 @@ CMegaMenu::CMegaMenu(CCanvas * canvas)
 #ifdef HAS_EXIF
     actionGroup->addAction(CActionGroupProvider::WptMenu, "aImageWpt");
 #else
-    fsWpt[8] = func_key_state_t(0, tr("-"), 0, tr(""));
+    //   fsWpt[8] = func_key_state_t(0, tr("-"), 0, tr(""));
 #endif
     actionGroup->addAction(CActionGroupProvider::WptMenu, "aUploadWpt");
     actionGroup->addAction(CActionGroupProvider::WptMenu, "aDownloadWpt");
@@ -182,7 +182,7 @@ void CMegaMenu::switchState()
 {
     QList<QAction *> acts = QWidget::actions();
     QAction * act;
-    foreach(act,acts){
+    foreach(act,acts) {
         removeAction(act);
     }
     actionGroup->addActionsToWidget(this);
@@ -231,6 +231,7 @@ void CMegaMenu::switchByKeyWord(const QString& key)
 
 }
 
+
 /*!
     Initialize \a option with the values from this menu and information from \a action. This method
     is useful for subclasses when they need a QStyleOptionMenuItem, but don't want
@@ -250,7 +251,7 @@ void CMegaMenu::initStyleOption(QStyleOptionMenuItem *option, const QAction *act
     if (window()->isActiveWindow())
         option->state |= QStyle::State_Active;
     if (isEnabled() && action->isEnabled()
-            && (!action->menu() || action->menu()->isEnabled()))
+        && (!action->menu() || action->menu()->isEnabled()))
         option->state |= QStyle::State_Enabled;
     else
         option->palette.setCurrentColorGroup(QPalette::Disabled);
@@ -261,12 +262,13 @@ void CMegaMenu::initStyleOption(QStyleOptionMenuItem *option, const QAction *act
         option->state |= QStyle::State_Selected | (mouseDown ? QStyle::State_Sunken : QStyle::State_None);
     }
 
-//     option->menuHasCheckableItems = d->hasCheckableItems;
+    //     option->menuHasCheckableItems = d->hasCheckableItems;
     if (!action->isCheckable()) {
         option->checkType = QStyleOptionMenuItem::NotCheckable;
-    } else {
+    }
+    else {
         option->checkType = (action->actionGroup() && action->actionGroup()->isExclusive())
-                            ? QStyleOptionMenuItem::Exclusive : QStyleOptionMenuItem::NonExclusive;
+            ? QStyleOptionMenuItem::Exclusive : QStyleOptionMenuItem::NonExclusive;
         option->checked = action->isChecked();
     }
     if (action->menu())
@@ -287,10 +289,11 @@ void CMegaMenu::initStyleOption(QStyleOptionMenuItem *option, const QAction *act
     }
 
     option->text = textAndAccel;
-//     option->tabWidth = d->tabWidth;
+    //     option->tabWidth = d->tabWidth;
     option->maxIconWidth = 16;
     option->menuRect = rect();
 }
+
 
 void CMegaMenu::paintEvent(QPaintEvent *e)
 {
@@ -310,7 +313,7 @@ void CMegaMenu::paintEvent(QPaintEvent *e)
     int idx = 0;
     QList<QAction *> acts = QWidget::actions();
     QAction * act;
-    foreach(act,acts){
+    foreach(act,acts) {
         p.setClipRegion(rectF[idx]);
 
         QStyleOptionMenuItem opt;
@@ -324,6 +327,7 @@ void CMegaMenu::paintEvent(QPaintEvent *e)
     }
 }
 
+
 void CMegaMenu::resizeEvent(QResizeEvent * e)
 {
     QFont f = font();
@@ -335,7 +339,7 @@ void CMegaMenu::resizeEvent(QResizeEvent * e)
     int h       = fm.height();
 
     rectTitle = QRect(0,yoff, w, h);
-    for(int i=0; i < 11; ++i){
+    for(int i=0; i < 11; ++i) {
         yoff += 2 + h;
         rectF[i] = QRect(0,yoff, w, h);
     }
@@ -352,11 +356,13 @@ void CMegaMenu::leaveEvent ( QEvent * event )
     update();
 }
 
+
 void CMegaMenu::mousePressEvent(QMouseEvent * e)
 {
     mouseDown = true;
     update();
 }
+
 
 void CMegaMenu::mouseReleaseEvent(QMouseEvent * e)
 {
@@ -364,8 +370,8 @@ void CMegaMenu::mouseReleaseEvent(QMouseEvent * e)
 
     QPoint pos = e->pos();
     currentItemIndex = -1;
-    for(int i = 0; i < 11; ++i){
-        if(rectF[i].contains(pos)){
+    for(int i = 0; i < 11; ++i) {
+        if(rectF[i].contains(pos)) {
             acts[i]->trigger();
             break;
         }
@@ -375,12 +381,13 @@ void CMegaMenu::mouseReleaseEvent(QMouseEvent * e)
     update();
 }
 
+
 void CMegaMenu::mouseMoveEvent(QMouseEvent * e)
 {
     QPoint pos = e->pos();
     currentItemIndex = -1;
-    for(int i = 0; i < 11; ++i){
-        if(rectF[i].contains(pos)){
+    for(int i = 0; i < 11; ++i) {
+        if(rectF[i].contains(pos)) {
             currentItemIndex = i;
             update();
             return;

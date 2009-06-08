@@ -276,7 +276,7 @@ void CMainWindow::switchState()
 {
     if (groupProvidedMenu) {
         groupProvidedMenu->clear();
-        actionGroupProvider->addActionsToMenu(groupProvidedMenu, true);
+        actionGroupProvider->addActionsToMenu(groupProvidedMenu);
     }
 }
 

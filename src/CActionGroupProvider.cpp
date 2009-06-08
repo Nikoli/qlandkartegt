@@ -20,10 +20,10 @@
 #include "CCanvas.h"
 
 #include <QtGui>
-#define SIZE_OF_MEGAMENU 10
+#define SIZE_OF_MEGAMENU 11
 
-//#define lqdebug(x) qDebug() << x
-#define lqdebug(x)
+#define lqdebug(x) qDebug() << x
+//#define lqdebug(x)
 
 CActionGroupProvider::CActionGroupProvider(QObject *parent) : QObject(parent)
 {
@@ -105,65 +105,64 @@ void CActionGroupProvider::switchToActionGroup(ActionGroupName group)
 }
 
 
-bool CActionGroupProvider::addActionsToMenu(QMenu *menu, bool isMegaMenu /*= false*/)
+bool CActionGroupProvider::addActionsToMenu(QMenu *menu)
 {
-    int i=0;
     menu->setTitle(actions->getMenuTitle());
-    foreach(QAction *a, *getActiveActions()) {
-        if (isMegaMenu) {
-            lqdebug("isMegamenu");
-            QRegExp re ("^F(\\d+)$");
-            if (re.exactMatch(a->shortcut().toString())) {
-                int nextNumber = re.cap(1).toInt();
-                lqdebug("match" << nextNumber << i);
-                while(i < nextNumber) {
-                    lqdebug("add action" << nextNumber << i);
-                    QAction *dummyAction = new QAction(menu);
-                    dummyAction->setText(tr("-"));
-                    dummyAction->setShortcut(tr("F%1").arg(i));
-                    menu->addAction(dummyAction);
-                    i++;
-                }
-            }
-            if (i> SIZE_OF_MEGAMENU)
-                return true;
-        }
-        menu->addAction(a);
-        i++;
-    }
-    // Howto set the pixmap as background of the menu?
-    // menu->render(&actions->getMenuPixmap());
+    menu->addActions(getActiveActionsList(menu));
+
 }
 
 
 bool CActionGroupProvider::addActionsToWidget(QLabel *menu)
 {
-    int i=0;
     menu->setObjectName(actions->getMenuTitle());
+    menu->addActions(getActiveActionsList(menu));
+    menu->setPixmap(actions->getMenuPixmap());
+}
+
+
+QList<QAction *> CActionGroupProvider::getActiveActionsList(QObject *menu)
+{
+    QList<QAction *> list;
+    int i=0;
     foreach(QAction *a, *getActiveActions()) {
-        lqdebug("isMegamenu");
+        lqdebug(QString("enter menu: %1 ").arg(a->shortcut().toString()));
         QRegExp re ("^F(\\d+)$");
-        if (re.exactMatch(a->shortcut().toString())) {
+        if (i==0)
+        {
+            if (a->shortcut().toString() != "Esc")
+            {
+                lqdebug("add action Esc");
+                QAction *dummyAction = new QAction(menu);
+                dummyAction->setText(tr("-"));
+                dummyAction->setShortcut(tr("Esc").arg(i));
+                list << dummyAction;
+            }
+            i++;
+        }
+        if (re.exactMatch(a->shortcut().toString()) ) {
             int nextNumber = re.cap(1).toInt();
-            lqdebug("match" << nextNumber << i);
-            while(i < nextNumber) {
+            lqdebug(QString("match: i=%1, nextNumber=%2").arg(i).arg(nextNumber) << a->shortcut().toString());
+            while(i < nextNumber ) {
                 lqdebug("add action" << nextNumber << i);
                 QAction *dummyAction = new QAction(menu);
                 dummyAction->setText(tr("-"));
                 dummyAction->setShortcut(tr("F%1").arg(i));
-                menu->addAction(dummyAction);
+                list << dummyAction;
                 i++;
             }
+            i++;
         }
-        if (i> SIZE_OF_MEGAMENU) {
-            return true;
+        else
+        {
+            lqdebug("not matched" << a->shortcut().toString());
         }
 
-        menu->addAction(a);
-        i++;
+        if (i> SIZE_OF_MEGAMENU) {
+            return list;
+        }
+        list << a;
     }
 
-    menu->setPixmap(actions->getMenuPixmap());
-    // Howto set the pixmap as background of the menu?
-    // menu->render(&actions->getMenuPixmap());
+    return list;
 }
