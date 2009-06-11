@@ -109,6 +109,7 @@ class CActions : public QObject
         void funcMoveDown();
         void funcCopyToClipboard();
         void funcPasteFromClipboard();
-
+        void funcRedo();
+        void funcUndo();
 };
 #endif                           /* CACTIONS_H_ */

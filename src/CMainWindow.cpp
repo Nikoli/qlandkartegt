@@ -40,6 +40,7 @@
 #include "CMenus.h"
 
 #include <QtGui>
+#include <QUndoStack>
 
 CMainWindow * theMainWindow = 0;
 
@@ -54,7 +55,6 @@ CMainWindow::CMainWindow()
     setWindowIcon(QIcon(":/icons/iconGlobe16x16.png"));
 
     resources = new CResources(this);
-
 
     // setup splitter views
     mainSplitter = new QSplitter(Qt::Horizontal,this);
@@ -76,7 +76,6 @@ CMainWindow::CMainWindow()
 
     actionGroupProvider = new CMenus(this);
 
-
     megaMenu = new CMegaMenu(canvas);
     leftSplitter->addWidget(megaMenu);
 
@@ -90,7 +89,8 @@ CMainWindow::CMainWindow()
     canvas->addAction(actions->getAction("aMoveRight"));
     canvas->addAction(actions->getAction("aMoveUp"));
     canvas->addAction(actions->getAction("aMoveDown"));
-
+    addAction(actions->getAction("aRedo"));
+    addAction(actions->getAction("aUndo"));
     //    canvas->addAction(actionGroupProvider->getActions()->getAction("aCopyToClipboard"));
     //    canvas->addAction(actionGroupProvider->getActions()->getAction("aPasteFromClipboard"));
     switchState();
@@ -300,9 +300,9 @@ void CMainWindow::setupMenuBar()
     menu->addAction(QIcon(":/icons/iconExit16x16.png"),tr("Exit"),this,SLOT(close()));
     menuBar()->addMenu(menu);
 
-//    groupProvidedMenu = new QMenu(this);
-//    groupProvidedMenu->setTitle(tr("-"));
-//    menuBar()->addMenu(groupProvidedMenu);
+    //    groupProvidedMenu = new QMenu(this);
+    //    groupProvidedMenu->setTitle(tr("-"));
+    //    menuBar()->addMenu(groupProvidedMenu);
 
     menu = new QMenu(this);
     actionGroupProvider->addActionsToMenu(menu,CMenus::MenuBarMenu,CMenus::MapMenu);
@@ -332,14 +332,12 @@ void CMainWindow::setupMenuBar()
     menu = new QMenu(this);
     actionGroupProvider->addActionsToMenu(menu,CMenus::MenuBarMenu,CMenus::OverlayMenu);
     menu->setTitle(tr("&Overlay"));
+    menuBar()->addMenu(menu);
 
     menu = new QMenu(this);
     actionGroupProvider->addActionsToMenu(menu,CMenus::MenuBarMenu,CMenus::MainMoreMenu);
     menu->setTitle(tr("&more"));
-
-
     menuBar()->addMenu(menu);
-
 
     menu = new QMenu(this);
     menu->setTitle(tr("&Setup"));
@@ -700,8 +698,8 @@ void CMainWindow::saveData(const QString& fn, const QString& filter)
         ext = "GPX";
     }
     else {
-//         filename += ".qlb";
-//         ext = "QLB";
+        //         filename += ".qlb";
+        //         ext = "QLB";
         if (ext == ".gpx") {
             ext = "GPX";
         }

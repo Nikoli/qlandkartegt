@@ -29,6 +29,8 @@
 #include "IMap.h"
 
 #include <QtGui>
+#include "CUndoStack.h"
+#include "CUndoCommandTrackDelete.h"
 
 CTrackDB * CTrackDB::m_self = 0;
 
@@ -38,6 +40,7 @@ CTrackDB::CTrackDB(QTabWidget * tb, QObject * parent)
 {
     m_self      = this;
     toolview    = new CTrackToolWidget(tb);
+    undoStack = CUndoStack::getInstance();
 }
 
 
@@ -459,7 +462,9 @@ void CTrackDB::addTrack(CTrack* track, bool silent)
 void CTrackDB::delTrack(const QString& key, bool silent)
 {
     if(!tracks.contains(key)) return;
-    delete tracks.take(key);
+
+    undoStack->push(new CUndoCommandTrackDelete(&tracks,key));
+
     if(!silent) {
         emit sigChanged();
         emit sigModified();
@@ -469,11 +474,11 @@ void CTrackDB::delTrack(const QString& key, bool silent)
 
 void CTrackDB::delTracks(const QStringList& keys)
 {
-    QString key;
-    foreach(key,keys) {
-        if(!tracks.contains(key)) continue;
-        delete tracks.take(key);
+    undoStack->beginMacro("delTracks");
+    foreach(QString key,keys) {
+        delTrack(key,true);
     }
+    undoStack->endMacro();
     emit sigChanged();
     emit sigModified();
 }

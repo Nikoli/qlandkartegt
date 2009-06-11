@@ -25,6 +25,7 @@
 class QToolBox;
 class CTrack;
 class CTrackToolWidget;
+class QUndoStack;
 
 class CTrackDB : public IDB
 {
@@ -91,5 +92,6 @@ class CTrackDB : public IDB
         static CTrackDB * m_self;
 
         QMap<QString,CTrack*> tracks;
+        QUndoStack *undoStack;
 };
 #endif                           //CTRACKDB_H

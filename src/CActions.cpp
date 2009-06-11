@@ -34,6 +34,7 @@
 #include "CResources.h"
 #include "IDevice.h"
 #include "CDlgCreateWorldBasemap.h"
+#include "CUndoStack.h"
 
 CActions::CActions(QObject *parent) :
 QObject(parent), parent(parent)
@@ -114,6 +115,8 @@ QObject(parent), parent(parent)
     createAction(QKeySequence ( Qt::Key_Down).toString(), ":/icons/editcopy.png", tr("&Move down"), "aMoveDown", tr("Move down."));
     createAction(tr("ctrl+c"), ":/icons/editcopy.png", tr("&Copy"), "aCopyToClipboard", tr("Copy selected trackpoints to clipboard."));
     createAction(tr("ctrl+v"), ":/icons/editpaste.png", tr("&Paste"), "aPasteFromClipboard", tr("Paste Track."));
+    createAction(tr("ctrl+z"), ":/icons/editpaste.png", tr("&Undo"), "aUndo", tr("Undo a command."));
+    createAction(tr("ctrl+y"), ":/icons/editpaste.png", tr("&Redo"), "aRedo", tr("Redo a command."));
 }
 
 
@@ -421,6 +424,7 @@ void CActions::funcImageWpt()
 #endif
 }
 
+
 void CActions::funcUploadWpt()
 {
     CWptDB::self().upload();
@@ -579,4 +583,20 @@ void CActions::funcCopyToClipboard()
 void CActions::funcPasteFromClipboard()
 {
     CTrackDB::self().pasteFromClipboard();
+}
+
+
+void CActions::funcRedo()
+{
+    CUndoStack::getInstance()->redo();
+    //    emit CTrackDB::m_self.sigChanged();
+    //    emit CTrackDB::m_self->sigModified();
+}
+
+
+void CActions::funcUndo()
+{
+    CUndoStack::getInstance()->undo();
+    //    emit CTrackDB::m_self()->sigChanged();
+    //    emit CTrackDB::m_self()->sigModified();
 }

@@ -89,6 +89,8 @@ set(qlandkarte_SRCS
     CMapDB.cpp
     CMapToolWidget.cpp
     CMapEditWidget.cpp
+    CUndoStack.cpp
+    CUndoCommandTrackDelete.cpp
     CTrack.cpp
     CTrackDB.cpp
     CTrackToolWidget.cpp
@@ -219,6 +221,8 @@ set(qlandkarte_HDRS
     CMapDB.h
     CMapToolWidget.h
     CMapEditWidget.h
+    CUndoStack.h
+    CUndoCommandTrackDelete.h
     CTrack.h
     CTrackDB.h
     CTrackToolWidget.h
