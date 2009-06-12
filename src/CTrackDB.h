@@ -79,10 +79,13 @@ class CTrackDB : public IDB
 
         void copyToClipboard(bool deleteSelection = false);
         void pasteFromClipboard();
+        CTrack *take(const QString& key, bool silent);
+        void insert(const QString& key, CTrack *track, bool silent);
         signals:
         void sigHighlightTrack(CTrack * track);
 
     private:
+
         friend class CMainWindow;
         friend class CTrackEditWidget;
 

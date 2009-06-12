@@ -1,9 +1,18 @@
-/*
- * CUndoCommandTrackDelete.cpp
- *
- *  Created on: 11.06.2009
- *      Author: feld
- */
+//C-  -*- C++ -*-
+//C- -------------------------------------------------------------------
+//C- Copyright (c) 2009 Marc Feld
+//C-
+//C- This software is subject to, and may be distributed under, the
+//C- GNU General Public License, either version 2 of the license,
+//C- or (at your option) any later version. The license should have
+//C- accompanied the software or you may obtain a copy of the license
+//C- from the Free Software Foundation at http://www.fsf.org .
+//C-
+//C- This program is distributed in the hope that it will be useful,
+//C- but WITHOUT ANY WARRANTY; without even the implied warranty of
+//C- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//C- GNU General Public License for more details.
+//C-  ------------------------------------------------------------------
 
 #include "CUndoCommandTrackDelete.h"
 #include <QMap>
@@ -13,8 +22,8 @@
 #include "CTrackDB.h"
 #include "CTrackToolWidget.h"
 
-CUndoCommandTrackDelete::CUndoCommandTrackDelete(QMap<QString,CTrack*> *tracks, const QString &key)
-: tracks(tracks), key(key)
+CUndoCommandTrackDelete::CUndoCommandTrackDelete(CTrackDB *trackDB, const QString &key, bool silent)
+: trackDB(trackDB) , key(key), silent(silent)
 {
     setText("delte track");
     track = 0;
@@ -32,18 +41,14 @@ CUndoCommandTrackDelete::~CUndoCommandTrackDelete()
 void CUndoCommandTrackDelete::redo()
 {
     qDebug() << Q_FUNC_INFO;
-    track = tracks->take(key);
+    track = trackDB->take(key, silent);
     track->ref++;
-    // Just for testing slotDBChanged should be private and done only once
-    CTrackDB::self().getToolWidget()->slotDBChanged();
 }
 
 
 void CUndoCommandTrackDelete::undo()
 {
     qDebug() << Q_FUNC_INFO << track;
-    tracks->insert(key, track);
+    trackDB->insert(key, track, silent);
     track->ref--;
-    // Just for testing slotDBChanged should be private
-    CTrackDB::self().getToolWidget()->slotDBChanged();
 }

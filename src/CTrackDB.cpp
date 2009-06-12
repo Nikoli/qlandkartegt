@@ -462,13 +462,7 @@ void CTrackDB::addTrack(CTrack* track, bool silent)
 void CTrackDB::delTrack(const QString& key, bool silent)
 {
     if(!tracks.contains(key)) return;
-
-    undoStack->push(new CUndoCommandTrackDelete(&tracks,key));
-
-    if(!silent) {
-        emit sigChanged();
-        emit sigModified();
-    }
+    undoStack->push(new CUndoCommandTrackDelete(this,key,silent));
 }
 
 
@@ -476,11 +470,9 @@ void CTrackDB::delTracks(const QStringList& keys)
 {
     undoStack->beginMacro("delTracks");
     foreach(QString key,keys) {
-        delTrack(key,true);
+        delTrack(key,false);
     }
     undoStack->endMacro();
-    emit sigChanged();
-    emit sigModified();
 }
 
 
@@ -765,5 +757,27 @@ void CTrackDB::pasteFromClipboard()
         qlb.load(&buffer);
         CTrackDB::self().loadQLB(qlb);
         clipboard->clear();
+    }
+}
+
+
+CTrack *CTrackDB::take(const QString& key, bool silent)
+{
+    CTrack *track =  tracks.take(key);
+
+    if (!silent) {
+        emit sigChanged();
+        emit sigModified();
+    }
+    return track;
+}
+
+
+void CTrackDB::insert(const QString& key, CTrack *track, bool silent)
+{
+    tracks.insert(key,track);
+    if (!silent) {
+        emit sigChanged();
+        emit sigModified();
     }
 }
