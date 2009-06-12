@@ -30,7 +30,7 @@
 
 #include <QtGui>
 #include "CUndoStack.h"
-#include "CUndoCommandTrackDelete.h"
+#include "CTrackUndoCommandDelete.h"
 
 CTrackDB * CTrackDB::m_self = 0;
 
@@ -462,7 +462,7 @@ void CTrackDB::addTrack(CTrack* track, bool silent)
 void CTrackDB::delTrack(const QString& key, bool silent)
 {
     if(!tracks.contains(key)) return;
-    undoStack->push(new CUndoCommandTrackDelete(this,key,silent));
+    undoStack->push(new CTrackUndoCommandDelete(this,key,silent));
 }
 
 

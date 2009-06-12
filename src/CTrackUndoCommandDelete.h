@@ -14,41 +14,25 @@
 //C- GNU General Public License for more details.
 //C-  ------------------------------------------------------------------
 
-#include "CUndoCommandTrackDelete.h"
-#include <QMap>
+#ifndef CTRACKUNDOCOMMANDDELETE_H_
+#define CTRACKUNDOCOMMANDDELETE_H_
+#include <QUndoCommand>
 #include <QString>
-#include <QDebug>
-#include "CTrack.h"
-#include "CTrackDB.h"
-#include "CTrackToolWidget.h"
+#include <QMap>
+class CTrack;
+class CTrackDB;
 
-CUndoCommandTrackDelete::CUndoCommandTrackDelete(CTrackDB *trackDB, const QString &key, bool silent)
-: trackDB(trackDB) , key(key), silent(silent)
+class CTrackUndoCommandDelete :  public QUndoCommand
 {
-    setText("delte track");
-    track = 0;
-}
-
-
-CUndoCommandTrackDelete::~CUndoCommandTrackDelete()
-{
-    qDebug() << Q_FUNC_INFO << track << track->ref;
-    if (track->ref < 1)
-        delete track;
-}
-
-
-void CUndoCommandTrackDelete::redo()
-{
-    qDebug() << Q_FUNC_INFO;
-    track = trackDB->take(key, silent);
-    track->ref++;
-}
-
-
-void CUndoCommandTrackDelete::undo()
-{
-    qDebug() << Q_FUNC_INFO << track;
-    trackDB->insert(key, track, silent);
-    track->ref--;
-}
+    public:
+        CTrackUndoCommandDelete(CTrackDB *trackdb, const QString & key, bool silent);
+        virtual ~CTrackUndoCommandDelete();
+        virtual void undo();
+        virtual void redo();
+    private:
+        CTrackDB *trackDB;
+        CTrack *track;
+        QString key;
+        bool silent;
+};
+#endif                           /* CUNDOCOMMANDTRACKDELETE_H_ */
