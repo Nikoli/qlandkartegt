@@ -35,6 +35,7 @@
 #include "IDevice.h"
 #include "CDlgCreateWorldBasemap.h"
 #include "CUndoStack.h"
+#include "CTrackUndoCommandDeletePt_ts.h"
 
 CActions::CActions(QObject *parent) :
 QObject(parent), parent(parent)
@@ -88,6 +89,7 @@ QObject(parent), parent(parent)
     createAction(tr("F8"), ":/icons/iconSelect16x16", tr("&Select Points"), "aSelTrack", tr("Select track points by rectangle."));
     createAction(tr("F9"), ":/icons/iconUpload16x16", tr("U&pload"), "aUploadTrack", tr("Upload tracks to device."));
     createAction(tr("F10"), ":/icons/iconDownload16x16", tr("Down&load"), "aDownloadTrack", tr("Download tracks from device."));
+    createAction(tr("Del"), ":/icons/iconDownload16x16", tr("Delete Selection"), "aDeleteTrackSelection", tr("Deletes the selected points of the track."));
     //
     createAction(tr("F5"), ":/icons/iconPlayPause16x16", tr("&Start / Stop"), "aLiveLog", tr("Start / stop live log recording."));
     createAction(tr("F6"), ":/icons/iconLock16x16", tr("Move Map to &Pos."), "aLockMap", tr("Move the map to keep the positon cursor centered."));
@@ -472,6 +474,12 @@ void CActions::funcUploadTrack()
 void CActions::funcDownloadTrack()
 {
     CTrackDB::self().download();
+}
+
+
+void CActions::funcDeleteTrackSelection()
+{
+    CUndoStack::getInstance()->push(new CTrackUndoCommandDeletePt_ts(CTrackDB::self().highlightedTrack()));
 }
 
 

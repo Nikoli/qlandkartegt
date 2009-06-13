@@ -31,6 +31,7 @@
 #include <QtGui>
 #include "CUndoStack.h"
 #include "CTrackUndoCommandDelete.h"
+#include "CTrackUndoCommandSelect.h"
 
 CTrackDB * CTrackDB::m_self = 0;
 
@@ -692,22 +693,12 @@ void CTrackDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 }
 
 
-void CTrackDB::select(const QRect& rect)
+void CTrackDB::select(const QRect& rect, bool select /*= true*/)
 {
     CTrack * track = highlightedTrack();
     if(track == 0) return;
 
-    QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
-    QList<CTrack::pt_t>::iterator trkpt = trkpts.begin();
-    while(trkpt != trkpts.end()) {
-        if(rect.contains(trkpt->px) && !(trkpt->flags & CTrack::pt_t::eDeleted)) {
-            trkpt->flags |= CTrack::pt_t::eSelected;
-        }
-
-        ++trkpt;
-    }
-
-    emit track->sigChanged();
+    undoStack->push(new CTrackUndoCommandSelect(track, rect, select));
 }
 
 
@@ -780,4 +771,16 @@ void CTrackDB::insert(const QString& key, CTrack *track, bool silent)
         emit sigChanged();
         emit sigModified();
     }
+}
+
+
+void CTrackDB::emitSigChanged()
+{
+    emit sigChanged();
+}
+
+
+void CTrackDB::emitSigModified()
+{
+    emit sigModified();
 }

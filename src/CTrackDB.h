@@ -75,12 +75,15 @@ class CTrackDB : public IDB
 
         void draw(QPainter& p, const QRect& rect, bool& needsRedraw);
 
-        void select(const QRect& rect);
+        void select(const QRect& rect, bool select = true);
 
         void copyToClipboard(bool deleteSelection = false);
         void pasteFromClipboard();
         CTrack *take(const QString& key, bool silent);
         void insert(const QString& key, CTrack *track, bool silent);
+        void emitSigChanged();
+        void emitSigModified();
+
         signals:
         void sigHighlightTrack(CTrack * track);
 
