@@ -23,6 +23,7 @@ set(qlandkarte_SRCS
     CCopyright.cpp
     CMainWindow.cpp
     CCanvas.cpp
+    CCanvasUndoCommandZoom.cpp
     CStatusDEM.cpp
     IMouse.cpp
     CMouseMoveMap.cpp
@@ -86,6 +87,7 @@ set(qlandkarte_SRCS
     CCreateMapGeoTiff.cpp
     CCreateMapGridTool.cpp
     CCreateMapWMS.cpp
+    CMapUndoCommandMove.cpp
     CMapDB.cpp
     CMapToolWidget.cpp
     CMapEditWidget.cpp
