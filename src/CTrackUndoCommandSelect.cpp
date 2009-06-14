@@ -37,8 +37,9 @@ void CTrackUndoCommandSelect::redo()
 
     selectionList.clear();
     QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
-    QList<CTrack::pt_t>::iterator trkpt = trkpts.begin();
-    while(trkpt != trkpts.end()) {
+    // trkpt = trkpts.begin();
+    for (trkpt = trkpts.begin(); trkpt != trkpts.end(); ++trkpt) {
+        //     qDebug() << &*trkpt ;//<< *trkpt ;
         if(rect.contains(trkpt->px) && !(trkpt->flags & CTrack::pt_t::eDeleted)) {
             if (select)
                 trkpt->flags |= CTrack::pt_t::eSelected;
@@ -46,7 +47,6 @@ void CTrackUndoCommandSelect::redo()
                 trkpt->flags &= ~CTrack::pt_t::eSelected;
             selectionList.insert(trkpt->idx);
         }
-        ++trkpt;
     }
 
     emit CTrackDB::self().emitSigModified();
@@ -59,16 +59,13 @@ void CTrackUndoCommandSelect::undo()
     //qDebug() << Q_FUNC_INFO;
 
     QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
-    QList<CTrack::pt_t>::iterator trkpt = trkpts.begin();
-    while(trkpt != trkpts.end()) {
-        if(selectionList.contains(trkpt->idx)) {
+    for (trkpt = trkpts.begin(); trkpt != trkpts.end(); ++trkpt) {
+        if (selectionList.contains(trkpt->idx)) {
             if (!select)
                 trkpt->flags |= CTrack::pt_t::eSelected;
             else
                 trkpt->flags &= ~CTrack::pt_t::eSelected;
-            selectionList.insert(trkpt->idx);
         }
-        ++trkpt;
     }
 
     emit CTrackDB::self().emitSigModified();

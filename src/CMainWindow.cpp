@@ -79,9 +79,6 @@ CMainWindow::CMainWindow()
     megaMenu = new CMegaMenu(canvas);
     leftSplitter->addWidget(megaMenu);
 
-    actionGroupProvider->addAction(CMenus::TrackMenu, "aCopyToClipboard");
-    actionGroupProvider->addAction(CMenus::TrackMenu, "aPasteFromClipboard");
-
     CActions *actions = actionGroupProvider->getActions();
     canvas->addAction(actions->getAction("aZoomIn"));
     canvas->addAction(actions->getAction("aZoomOut"));
@@ -159,6 +156,8 @@ CMainWindow::CMainWindow()
     actionGroupProvider->addAction(CMenus::TrackMenu, "aSelTrack");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aUploadTrack");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aDownloadTrack");
+    actionGroupProvider->addAction(CMenus::TrackMenu, "aCopyToClipboard");
+    actionGroupProvider->addAction(CMenus::TrackMenu, "aPasteFromClipboard");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aDeleteTrackSelection");
 
     actionGroupProvider->addAction(CMenus::LiveLogMenu, "aSwitchToMain");

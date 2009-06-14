@@ -59,7 +59,7 @@ void CTrackUndoCommandDeletePt_ts::undo()
     foreach(CTrack::pt_t tp, oldList) {
         trkpts.append(tp);
     }
-    //track->rebuild(false);
+    track->rebuild(true);
     emit CTrackDB::self().emitSigModified();
     emit CTrackDB::self().emitSigChanged();
 }

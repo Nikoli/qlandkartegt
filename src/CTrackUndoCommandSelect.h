@@ -18,6 +18,7 @@
 #define CTRACKUNDOCOMMANDSELECT_H_
 #include <QUndoCommand>
 #include <QSet>
+#include <QList>
 #include "CTrack.h"
 
 class CTrackUndoCommandSelect : public QUndoCommand
@@ -29,7 +30,8 @@ class CTrackUndoCommandSelect : public QUndoCommand
         virtual void redo();
     private:
         CTrack *track;
-        QSet<qint32> selectionList;
+        QSet<int> selectionList;
+        QList<CTrack::pt_t>::iterator trkpt;
         bool select;
         QRect rect;
 };
