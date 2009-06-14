@@ -35,7 +35,7 @@
 #include "IDevice.h"
 #include "CDlgCreateWorldBasemap.h"
 #include "CUndoStack.h"
-#include "CTrackUndoCommandDeletePt_ts.h"
+#include "CTrackUndoCommandDeletePts.h"
 
 CActions::CActions(QObject *parent) :
 QObject(parent), parent(parent)
@@ -479,7 +479,7 @@ void CActions::funcDownloadTrack()
 
 void CActions::funcDeleteTrackSelection()
 {
-    CUndoStack::getInstance()->push(new CTrackUndoCommandDeletePt_ts(CTrackDB::self().highlightedTrack()));
+    CUndoStack::getInstance()->push(new CTrackUndoCommandDeletePts(CTrackDB::self().highlightedTrack()));
 }
 
 

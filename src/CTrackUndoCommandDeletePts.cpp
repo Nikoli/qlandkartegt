@@ -14,24 +14,24 @@
 //C- GNU General Public License for more details.
 //C-  ------------------------------------------------------------------
 
-#include "CTrackUndoCommandDeletePt_ts.h"
+#include "CTrackUndoCommandDeletePts.h"
 #include <QObject>
 #include "CTrackDB.h"
 #include <QDebug>
-CTrackUndoCommandDeletePt_ts::CTrackUndoCommandDeletePt_ts(CTrack *track)
+CTrackUndoCommandDeletePts::CTrackUndoCommandDeletePts(CTrack *track)
 : track(track)
 {
     setText(QObject::tr("Delete Selection"));
 }
 
 
-CTrackUndoCommandDeletePt_ts::~CTrackUndoCommandDeletePt_ts()
+CTrackUndoCommandDeletePts::~CTrackUndoCommandDeletePts()
 {
 
 }
 
 
-void CTrackUndoCommandDeletePt_ts::redo()
+void CTrackUndoCommandDeletePts::redo()
 {
     //qDebug() << Q_FUNC_INFO;
     oldList.clear();
@@ -51,7 +51,7 @@ void CTrackUndoCommandDeletePt_ts::redo()
 }
 
 
-void CTrackUndoCommandDeletePt_ts::undo()
+void CTrackUndoCommandDeletePts::undo()
 {
     //qDebug() << Q_FUNC_INFO;
     QList<CTrack::pt_t>& trkpts           = track->getTrackPoints();

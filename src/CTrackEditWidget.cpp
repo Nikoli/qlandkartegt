@@ -29,7 +29,7 @@
 #include "CTabWidget.h"
 #include "IUnit.h"
 #include "CUndoStack.h"
-#include "CTrackUndoCommandDeletePt_ts.h"
+#include "CTrackUndoCommandDeletePts.h"
 
 #include <QtGui>
 
@@ -377,7 +377,7 @@ void CTrackEditWidget::slotApply()
         //                ++trkpt;
         //            }
         //        }
-        CUndoStack::getInstance()->push(new CTrackUndoCommandDeletePt_ts(track));
+        CUndoStack::getInstance()->push(new CTrackUndoCommandDeletePts(track));
         checkRemoveDelTrkPt->setChecked(false);
         originator = false;
     }

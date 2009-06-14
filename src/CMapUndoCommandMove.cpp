@@ -35,13 +35,13 @@ CMapUndoCommandMove::~CMapUndoCommandMove()
 
 void CMapUndoCommandMove::redo()
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
     map->move(from,to);
 }
 
 
 void CMapUndoCommandMove::undo()
 {
-    qDebug() << Q_FUNC_INFO ;
+    //qDebug() << Q_FUNC_INFO ;
     map->move(to, from);
 }

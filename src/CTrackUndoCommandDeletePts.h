@@ -20,11 +20,11 @@
 #include <QList>
 #include "CTrack.h"
 
-class CTrackUndoCommandDeletePt_ts : public QUndoCommand
+class CTrackUndoCommandDeletePts : public QUndoCommand
 {
     public:
-        CTrackUndoCommandDeletePt_ts(CTrack *track);
-        virtual ~CTrackUndoCommandDeletePt_ts();
+        CTrackUndoCommandDeletePts(CTrack *track);
+        virtual ~CTrackUndoCommandDeletePts();
         virtual void undo();
         virtual void redo();
     private:
