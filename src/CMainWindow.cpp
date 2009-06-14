@@ -40,7 +40,7 @@
 #include "CMenus.h"
 
 #include <QtGui>
-#include <QUndoStack>
+#include "CUndoStack.h"
 
 CMainWindow * theMainWindow = 0;
 
@@ -415,6 +415,12 @@ void CMainWindow::setupMenuBar()
     //    groupProvidedMenu = new QMenu(this);
     //    groupProvidedMenu->setTitle(tr("-"));
     //    menuBar()->addMenu(groupProvidedMenu);
+
+    menu = new QMenu(this);
+    menu->addAction(CUndoStack::getInstance()->createUndoAction(this));
+    menu->addAction(CUndoStack::getInstance()->createRedoAction(this));
+    menu->setTitle(tr("&Edit"));
+    menuBar()->addMenu(menu);
 
     menu = new QMenu(this);
     actionGroupProvider->addActionsToMenu(menu,CMenus::MenuBarMenu,CMenus::MapMenu);
