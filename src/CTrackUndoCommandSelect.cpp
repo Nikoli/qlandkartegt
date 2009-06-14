@@ -15,12 +15,17 @@
 //C-  ------------------------------------------------------------------
 
 #include "CTrackUndoCommandSelect.h"
-#include "CTrackDB.h"
+#include <QObject>
 #include <QDebug>
+#include "CTrackDB.h"
 
 CTrackUndoCommandSelect::CTrackUndoCommandSelect(CTrack *track, const QRect& rect, bool select)
 : track(track), select(select) , rect(rect)
 {
+    if(select)
+        setText(QObject::tr("Select Trackpoints"));
+    else
+        setText(QObject::tr("Unselect Trackpoints"));
 
 }
 
@@ -41,11 +46,17 @@ void CTrackUndoCommandSelect::redo()
     for (trkpt = trkpts.begin(); trkpt != trkpts.end(); ++trkpt) {
         //     qDebug() << &*trkpt ;//<< *trkpt ;
         if(rect.contains(trkpt->px) && !(trkpt->flags & CTrack::pt_t::eDeleted)) {
-            if (select)
+            if (select) {
                 trkpt->flags |= CTrack::pt_t::eSelected;
-            else
-                trkpt->flags &= ~CTrack::pt_t::eSelected;
-            selectionList.insert(trkpt->idx);
+                selectionList.insert(trkpt->idx);
+            }
+            else {
+                if (trkpt->flags & CTrack::pt_t::eSelected) {
+                    selectionList.insert(trkpt->idx);
+                    trkpt->flags &= ~CTrack::pt_t::eSelected;
+                }
+            }
+
         }
     }
 

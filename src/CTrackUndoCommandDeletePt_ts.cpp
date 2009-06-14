@@ -15,12 +15,13 @@
 //C-  ------------------------------------------------------------------
 
 #include "CTrackUndoCommandDeletePt_ts.h"
+#include <QObject>
 #include "CTrackDB.h"
 #include <QDebug>
 CTrackUndoCommandDeletePt_ts::CTrackUndoCommandDeletePt_ts(CTrack *track)
 : track(track)
 {
-
+    setText(QObject::tr("Delete Selection"));
 }
 
 
