@@ -1,4 +1,4 @@
-project(QLandkarteGT)
+project(QLandkarteGT_new_geodb)
 
 # Required cmake version
 cmake_minimum_required(VERSION 2.6.0)
@@ -7,7 +7,7 @@ set(APPLICATION_NAME ${PROJECT_NAME})
 
 set(APPLICATION_VERSION_MAJOR "0")
 set(APPLICATION_VERSION_MINOR "19")
-set(APPLICATION_VERSION_PATCH "0.post")
+set(APPLICATION_VERSION_PATCH "0.new_geodb")
 
 add_definitions(-DVER_MAJOR=${APPLICATION_VERSION_MAJOR} -DVER_MINOR=${APPLICATION_VERSION_MINOR} -DVER_STEP=${APPLICATION_VERSION_PATCH})
 
