@@ -97,7 +97,7 @@ void CRouteDB::delRoutes(const QStringList& keys)
 }
 
 
-CRoute * CRouteDB::getRoute(const QString& key)
+CRoute * CRouteDB::getRouteByKey(const QString& key)
 {
     if(routes.contains(key))
     {
@@ -489,4 +489,31 @@ QList<CRouteDB::keys_t> CRouteDB::keys()
     }
 
     return k;
+}
+
+void CRouteDB::makeVisible(const QStringList& keys)
+{
+    QRectF r;
+    QString key;
+    foreach(key, keys)
+    {
+
+        CRoute * rte =  routes[key];
+
+        if(r.isNull())
+        {
+            r = rte->getBoundingRectF();
+        }
+        else
+        {
+            r |= rte->getBoundingRectF();
+        }
+
+    }
+
+    if (!r.isNull ())
+    {
+        CMapDB::self().getMap().zoom(r.left() * DEG_TO_RAD, r.top() * DEG_TO_RAD, r.right() * DEG_TO_RAD, r.bottom() * DEG_TO_RAD);
+    }
+
 }

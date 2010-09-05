@@ -837,3 +837,38 @@ void CWptDB::createWaypointsFromImages()
     emit sigModified();
 }
 #endif
+
+void CWptDB::makeVisible(const QStringList& keys)
+{
+
+
+    if(keys.isEmpty())
+    {
+        return;
+    }
+
+    QRectF r;
+    QString key;
+    foreach(key, keys)
+    {
+
+        CWpt * wpt =  wpts[key];
+
+        if(r.isNull())
+        {
+            r = QRectF(wpt->lon, wpt->lat, 0.0001, 0.0001);
+        }
+        else
+        {
+            r |= QRectF(wpt->lon, wpt->lat, 0.0001, 0.0001);
+        }
+
+    }
+
+    if (!r.isNull ())
+    {
+        CMapDB::self().getMap().zoom(r.left() * DEG_TO_RAD, r.top() * DEG_TO_RAD, r.right() * DEG_TO_RAD, r.bottom() * DEG_TO_RAD);
+    }
+
+
+}

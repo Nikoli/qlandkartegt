@@ -103,7 +103,8 @@ class COverlayDB : public IDB
         /// get all keys in the database
         QList<keys_t> keys();
 
-        void makeVisible(const QString& key);
+
+        void makeVisible(const QStringList& keys);
 
     private slots:
         void slotModified();

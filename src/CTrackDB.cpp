@@ -1236,3 +1236,30 @@ CTrack * CTrackDB::getTrackByKey(const QString& key)
     return tracks[key];
 
 }
+
+void CTrackDB::makeVisible(const QStringList& keys)
+{
+    QRectF r;
+    QString key;
+    foreach(key, keys)
+    {
+
+        CTrack * trk =  tracks[key];
+
+        if(r.isNull())
+        {
+            r = trk->getBoundingRectF();
+        }
+        else
+        {
+            r |= trk->getBoundingRectF();
+        }
+
+    }
+
+    if (!r.isNull ())
+    {
+        CMapDB::self().getMap().zoom(r.left() * DEG_TO_RAD, r.top() * DEG_TO_RAD, r.right() * DEG_TO_RAD, r.bottom() * DEG_TO_RAD);
+    }
+
+}

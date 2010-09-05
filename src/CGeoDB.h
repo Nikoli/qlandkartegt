@@ -38,18 +38,61 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void gainFocus();
 
     private slots:
+        void loadWorkspace();
         /// save all elements in the workspace branch to be restored in next application start
         void saveWorkspace();
-        /// initialize database from scratch
-        void initDB();
-        /// move database from one version to most resent version
-        void migrateDB(int version);
 
+        /// this slot is called each time CWptDB signales a change
+        void slotWptDBChanged();
+        /// this slot is called each time CTrackDB signales a change
+        void slotTrkDBChanged();
+        /// this slot is called each time CRouteDB signales a change
+        void slotRteDBChanged();
+        /// this slot is called each time COverlayDB signales a change
+        void slotOvlDBChanged();
 
+        /// this slot is called when a waypoint is modified
+        void slotModifiedWpt(const QString&);
+        /// this slot is called when a track is modified
+        void slotModifiedTrk(const QString&);
+        /// this slot is called when a route is modified
+        void slotModifiedRte(const QString&);
+        /// this slot is called when an overlay is modified
+        void slotModifiedOvl(const QString&);
+
+        /// query children when folder is expanded
+        void slotItemExpanded(QTreeWidgetItem * item);
+        /// make clicked item visible
+        void slotItemDoubleClicked(QTreeWidgetItem * item, int column);
+        /// test for name change on folders or checkstate change
+        void slotItemChanged(QTreeWidgetItem * item, int column);
     private:
         friend class CGeoDBInternalEditLock;
         friend class CDlgSelGeoDBFolder;
         friend class CDlgEditFolder;
+
+        /// initialize database from scratch
+        void initDB();
+        /// move database from one version to most resent version
+        void migrateDB(int version);
+        /// call each time the workspace changed
+        void changedWorkspace();
+        /// update the item text in workspace with a "*" for chnaged items
+        void updateModifyMarker();
+        /// update the item text in workspace with a "*" for chnaged items
+        void updateModifyMarker(QTreeWidgetItem * item, QSet<QString>& keys, const QString& label);
+        /// initialize database treewidget on startup
+        void initTreeWidget();
+        /// build up the treewidget from a given parent item up to a given depth of levels
+        void queryChildrenFromDB(QTreeWidgetItem * parent, int levels);
+        /// parse database for items with no relation to a folder
+        void updateLostFound();
+        /// update checkmarks according to loaded items
+        void updateCheckmarks();
+        /// update checkmarks according to loaded items
+        void updateCheckmarks(QTreeWidgetItem * item);
+        /// update all folders with same ID
+        void updateFolderById(quint64 id);
 
         enum EntryType_e {
             eWpt        = QTreeWidgetItem::UserType + 3,
@@ -65,13 +108,13 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         };
 
         enum ColumnType_e {
-            eCoName       = 0,
+            eCoName     = 0,
             eCoState    = 1,
         };
         enum UserRoles_e {
             eUrDBKey  = Qt::UserRole,
             eUrQLKey  = Qt::UserRole + 1,
-            eUrFolder = Qt::UserRole + 2
+            eUrType   = Qt::UserRole + 2
         };
 
 
@@ -93,6 +136,15 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         QTreeWidgetItem * itemWksRte;
         QTreeWidgetItem * itemWksOvl;
 
+        QSet<QString> keysWptModified;
+        QSet<QString> keysTrkModified;
+        QSet<QString> keysRteModified;
+        QSet<QString> keysOvlModified;
+
+        QSet<quint64> keysWksWpt;
+        QSet<quint64> keysWksTrk;
+        QSet<quint64> keysWksRte;
+        QSet<quint64> keysWksOvl;
 
 //    private slots:
 //        void slotAddFolder();
@@ -109,59 +161,18 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 //        void slotHardCopyItem();
 
 //        void slotContextMenu(const QPoint&);
-//        void slotItemExpanded(QTreeWidgetItem * item);
-//        void slotItemChanged(QTreeWidgetItem * item, int column);
-//        void slotItemDoubleClicked(QTreeWidgetItem * item, int column);
 
-//        void slotWptDBChanged();
-//        void slotTrkDBChanged();
-//        void slotRteDBChanged();
-//        void slotOvlDBChanged();
+
+
 
 //        void slotMoveLost();
 //        void slotDelLost();
 
-//        void slotModifiedWpt(const QString&);
-//        void slotModifiedTrk(const QString&);
-//        void slotModifiedRte(const QString&);
-//        void slotModifiedOvl(const QString&);
 
 //    private:
-//        friend class CGeoDBInternalEditLock;
-//        friend class CDlgSelGeoDBFolder;
-//        friend class CDlgEditFolder;
 //        friend bool sortItemsLessThan(QTreeWidgetItem * item1, QTreeWidgetItem * item2);
 
-//        enum EntryType_e {
-//            //eFolder     = QTreeWidgetItem::UserType + 1,
-//            //eTypFolder  = QTreeWidgetItem::UserType + 2,
-//            eWpt        = QTreeWidgetItem::UserType + 3,
-//            eTrk        = QTreeWidgetItem::UserType + 4,
-//            eRte        = QTreeWidgetItem::UserType + 5,
-//            eOvl        = QTreeWidgetItem::UserType + 6,
 
-//            eFolder0    = QTreeWidgetItem::UserType + 100,
-//            eFolderT    = QTreeWidgetItem::UserType + 101,
-//            eFolder1    = QTreeWidgetItem::UserType + 102,
-//            eFolder2    = QTreeWidgetItem::UserType + 103,
-//            eFolderN    = QTreeWidgetItem::UserType + 104,
-//        };
-
-//        enum ColumnType_e {
-//            eName       = 0,
-//            eDBState    = 1,
-//        };
-//        enum UserRoles_e {
-//            eUserRoleDBKey  = Qt::UserRole,
-//            eUserRoleQLKey  = Qt::UserRole + 1,
-//            eUserRoleFolder = Qt::UserRole + 2
-//        };
-
-//        void initDB();
-//        void migrateDB(int version);
-//        void queryChildrenFromDB(QTreeWidgetItem * parent, int levels);
-
-//        void setupTreeWidget();
 //        void addFolder(QTreeWidgetItem * parent, const QString& name, const QString& comment, qint32 type);
 //        void delFolder(QTreeWidgetItem * item, bool isTopLevel);
 
@@ -176,11 +187,7 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 //        /// search treeWidget for items with parentId and delete items
 //        void delItemById(quint64 parentId, quint64 childId);
 
-//        void updateLostFound();
-//        void updateModifyMarker();
-//        void updateModifyMarker(QTreeWidgetItem * item, QSet<QString>& keys, const QString& label);
-//        void updateCheckmarks();
-//        void updateCheckmarks(QTreeWidgetItem * item);
+
 
 //        void moveChildrenToWks(quint64 parentId);
 //        void delChildrenFromWks(quint64 parentId);
@@ -190,23 +197,9 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 ////        void addRteToDB(quint64 parentId, QTreeWidgetItem * item);
 //        void addOvlToDB(quint64 parentId, QTreeWidgetItem * item);
 
-//        void saveWorkspace();
-//        void loadWorkspace();
-//        void updateWorkspace();
 
 //        void sortItems(QTreeWidgetItem * item);
 
-//        QTabWidget * tabbar;
-//        QTreeWidgetItem * itemDatabase;
-//        QTreeWidgetItem * itemLostFound;
-//        QTreeWidgetItem * itemWorkspace;
-
-//        QTreeWidgetItem * itemWksWpt;
-//        QTreeWidgetItem * itemWksTrk;
-//        QTreeWidgetItem * itemWksRte;
-//        QTreeWidgetItem * itemWksOvl;
-
-//        QSqlDatabase db;
 
 //        QMenu * contextMenuFolder;
 //        QAction * actAddDir;
@@ -230,19 +223,6 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 //        QAction * actMoveLost;
 //        QAction * actDelLost;
 
-//        quint32 isInternalEdit;
-
-//        QSet<QString> keysWptModified;
-//        QSet<QString> keysTrkModified;
-//        QSet<QString> keysRteModified;
-//        QSet<QString> keysOvlModified;
-
-//        QSet<quint64> keysWksWpt;
-//        QSet<quint64> keysWksTrk;
-//        QSet<quint64> keysWksRte;
-//        QSet<quint64> keysWksOvl;
-
-//        bool saveOnExit;
 };
 
 #endif //CGEODB_H
