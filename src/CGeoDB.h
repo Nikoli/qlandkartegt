@@ -74,6 +74,16 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void slotAddFolder();
         /// delete folder and all it's content from database
         void slotDelFolder();
+        /// edit folder properties
+        void slotEditFolder();
+        /// add a new relation for a folder
+        void slotCopyFolder();
+        /// delete current relation and add new one
+        void slotMoveFolder();
+        /// remove item/folder relation
+        void slotDelItems();
+        /// add new folder relation for selected items
+        void slotCopyItems();
 
     private:
         friend class CGeoDBInternalEditLock;
@@ -92,7 +102,7 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         /// update the item text in workspace with a "*" for chnaged items
         void updateModifyMarker();
         /// update the item text in workspace with a "*" for chnaged items
-        void updateModifyMarker(QTreeWidgetItem * item, QSet<QString>& keys, const QString& label);
+        void updateModifyMarker(QTreeWidgetItem * item, QSet<QString>& keys, const QString& label);                
         /// initialize database treewidget on startup
         void initTreeWidget();
         /// build up the treewidget from a given parent item up to a given depth of levels
@@ -111,12 +121,16 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void delChildrenFromWks(quint64 parentId);
         /// add a new folder to the tree widget and the database
         void addFolder(QTreeWidgetItem * parent, const QString& name, const QString& comment, qint32 type);
-        /// serach tree widget for the parent id and add item as clone
+        /// serach tree widget for the parent id and add folder as clone
         void addFolderById(quint64 parentId, QTreeWidgetItem * child);
         /// delete a folder and all sub items recursively from database and tree widget
         void delFolder(QTreeWidgetItem * item, bool isTopLevel);
         /// delete folder items from treewidget with given parent/child relation
         void delFolderById(quint64 parentId, quint64 childId);
+        /// search tree widget for the parent id and add item as clone
+        void addItemById(quint64 parentId, QTreeWidgetItem * child);
+        /// remove items from tree widget with geven parent / item relation
+        void delItemById(quint64 parentId, quint64 childId);
 
         enum EntryType_e {
             eWpt        = QTreeWidgetItem::UserType + 3,
@@ -177,18 +191,20 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         QAction * actMoveDir;
         QAction * actCopyDir;
 
+        QMenu * contextMenuItem;
+        QAction * actMoveItem;
+        QAction * actCopyItem;
+        QAction * actDelItem;
+
 
 //    private slots:
 
 
-//        void slotEditFolder();
-//        void slotMoveFolder();
-//        void slotCopyFolder();
 
 //        void slotAddItems();
-//        void slotDelItems();
+
 //        void slotMoveItems();
-//        void slotCopyItems();
+
 //        void slotSaveItems();
 //        void slotHardCopyItem();
 
@@ -218,18 +234,8 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 ////        void addRteToDB(quint64 parentId, QTreeWidgetItem * item);
 //        void addOvlToDB(quint64 parentId, QTreeWidgetItem * item);
 
-//        QMenu * contextMenuFolder;
-//        QAction * actAddDir;
-//        QAction * actDelDir;
-//        QAction * actEditDirComment;
-//        QAction * actMoveDir;
-//        QAction * actCopyDir;
 
 
-//        QMenu * contextMenuItem;
-//        QAction * actMoveItem;
-//        QAction * actCopyItem;
-//        QAction * actDelItem;
 
 //        QMenu * contextMenuWks;
 //        QAction * actAddToDB;
