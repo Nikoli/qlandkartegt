@@ -84,6 +84,8 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void slotDelItems();
         /// add new folder relation for selected items
         void slotCopyItems();
+        /// delete current relation and add new one
+        void slotMoveItems();
 
     private:
         friend class CGeoDBInternalEditLock;
@@ -102,7 +104,7 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         /// update the item text in workspace with a "*" for chnaged items
         void updateModifyMarker();
         /// update the item text in workspace with a "*" for chnaged items
-        void updateModifyMarker(QTreeWidgetItem * item, QSet<QString>& keys, const QString& label);                
+        void updateModifyMarker(QTreeWidgetItem * item, QSet<QString>& keys, const QString& label);
         /// initialize database treewidget on startup
         void initTreeWidget();
         /// build up the treewidget from a given parent item up to a given depth of levels
@@ -203,7 +205,7 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 
 //        void slotAddItems();
 
-//        void slotMoveItems();
+
 
 //        void slotSaveItems();
 //        void slotHardCopyItem();
