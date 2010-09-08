@@ -86,6 +86,11 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void slotCopyItems();
         /// delete current relation and add new one
         void slotMoveItems();
+        /// add new relation to item without relations
+        void slotMoveLost();
+
+//        void slotDelLost();
+
 
     private:
         friend class CGeoDBInternalEditLock;
@@ -198,21 +203,18 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         QAction * actCopyItem;
         QAction * actDelItem;
 
+        QMenu * contextMenuLost;
+        QAction * actMoveLost;
+        QAction * actDelLost;
 
 //    private slots:
 
 
 
 //        void slotAddItems();
-
-
-
 //        void slotSaveItems();
 //        void slotHardCopyItem();
 
-
-//        void slotMoveLost();
-//        void slotDelLost();
 
 
 //    private:
@@ -244,9 +246,6 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 //        QAction * actSaveToDB;
 //        QAction * actHardCopy;
 
-//        QMenu * contextMenuLost;
-//        QAction * actMoveLost;
-//        QAction * actDelLost;
 
 };
 

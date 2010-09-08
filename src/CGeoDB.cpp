@@ -173,14 +173,16 @@ CGeoDB::CGeoDB(QTabWidget * tb, QWidget * parent)
     actMoveItem         = contextMenuItem->addAction(QPixmap(":/icons/iconWptMove16x16"), tr("Move"), this, SLOT(slotMoveItems()));
     actDelItem          = contextMenuItem->addAction(QPixmap(":/icons/iconDelete16x16"), tr("Delete"), this, SLOT(slotDelItems()));
 
+    contextMenuLost     = new QMenu(this);
+    actMoveLost         = contextMenuLost->addAction(QPixmap(":/icons/iconWptMove16x16"), tr("Move"), this, SLOT(slotMoveLost()));
+    actDelLost          = contextMenuLost->addAction(QPixmap(":/icons/iconDelete16x16"), tr("Delete"), this, SLOT(slotDelLost()));
+
+
 //    contextMenuWks      = new QMenu(this);
 //    actAddToDB          = contextMenuWks->addAction(QPixmap(":/icons/iconAdd16x16"), tr("Add to database..."), this, SLOT(slotAddItems()));
 //    actSaveToDB         = contextMenuWks->addAction(QPixmap(":/icons/iconFileSave16x16"), tr("Save changes..."), this, SLOT(slotSaveItems()));
 //    actHardCopy         = contextMenuWks->addAction(QPixmap(":/icons/editcopy"), tr("Check-out as copy"), this, SLOT(slotHardCopyItem()));
 
-//    contextMenuLost     = new QMenu(this);
-//    actMoveLost         = contextMenuLost->addAction(QPixmap(":/icons/iconWptMove16x16"), tr("Move..."), this, SLOT(slotMoveLost()));
-//    actDelLost          = contextMenuLost->addAction(QPixmap(":/icons/iconDelete16x16"), tr("Delete"), this, SLOT(slotDelLost()));
 
     connect(treeDatabase,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenuDatabase(const QPoint&)));
     connect(treeDatabase,SIGNAL(itemExpanded(QTreeWidgetItem *)),this,SLOT(slotItemExpanded(QTreeWidgetItem *)));
@@ -644,9 +646,9 @@ void CGeoDB::updateModifyMarker(QTreeWidgetItem * itemWks, QSet<QString>& keys, 
 
 void CGeoDB::changedWorkspace()
 {
-    updateModifyMarker();
     updateCheckmarks();
-    updateLostFound();
+    updateModifyMarker();
+
 
     treeWorkspace->header()->setResizeMode(eCoName,QHeaderView::ResizeToContents);
     treeWorkspace->header()->setResizeMode(eCoState,QHeaderView::ResizeToContents);
@@ -775,6 +777,7 @@ void CGeoDB::updateLostFound()
         item->setIcon(eCoName, pixmap);
         item->setText(eCoName, query.value(3).toString());
         item->setToolTip(eCoName, query.value(4).toString());
+        item->setCheckState(eCoState, Qt::Unchecked);
 
         items << item;
     }
@@ -795,6 +798,7 @@ void CGeoDB::updateCheckmarks()
 {
     CGeoDBInternalEditLock lock(this);
     updateCheckmarks(itemDatabase);
+    updateCheckmarks(itemLostFound);
 }
 
 void CGeoDB::updateCheckmarks(QTreeWidgetItem * parent)
@@ -1764,8 +1768,8 @@ void CGeoDB::slotContextMenuDatabase(const QPoint& pos)
 
     if(top == itemLostFound)
     {
-//        QPoint p = treeDatabase->mapToGlobal(pos);
-//        contextMenuLost->exec(p);
+        QPoint p = treeDatabase->mapToGlobal(pos);
+        contextMenuLost->exec(p);
     }
     else if(top == itemDatabase)
     {
@@ -1871,6 +1875,7 @@ void CGeoDB::slotDelFolder()
     }
 
     changedWorkspace();
+    updateLostFound();
 }
 
 
@@ -2043,6 +2048,7 @@ void CGeoDB::slotDelItems()
     }
 
     changedWorkspace();
+    updateLostFound();
 }
 
 
@@ -2158,6 +2164,52 @@ void CGeoDB::slotMoveItems()
 
     changedWorkspace();
 }
+
+void CGeoDB::slotMoveLost()
+{
+    CGeoDBInternalEditLock lock(this);
+    QSqlQuery query(db);
+
+    quint64 parentId, childId = 0;
+    CDlgSelGeoDBFolder dlg(db, parentId);
+
+    dlg.exec();
+
+    if(parentId == 0)
+    {
+        return;
+    }
+
+    bool moveAll = treeDatabase->currentItem() == itemLostFound;
+
+    QTreeWidgetItem * item;
+    const int size = itemLostFound->childCount();
+
+    PROGRESS_SETUP(tr("Move items."), size);
+
+    for(int i = 0; i < size; i++)
+    {
+        PROGRESS(i, break);
+
+        item = itemLostFound->child(i);
+        if(!item->isSelected() && !moveAll)
+        {
+            continue;
+        }
+
+        childId = item->data(eCoName, eUrDBKey).toULongLong();
+
+        query.prepare("INSERT INTO folder2item (parent, child) VALUES (:parent, :child)");
+        query.bindValue(":parent", parentId);
+        query.bindValue(":child", childId);
+        QUERY_EXEC(return);
+        // update tree widget
+        addFolderById(parentId, item);
+    }
+
+    changedWorkspace();
+}
+
 
 
 //void CGeoDB::updateItemById(quint64 id)
@@ -2714,45 +2766,6 @@ void CGeoDB::slotMoveItems()
 //}
 
 
-//void CGeoDB::slotMoveLost()
-//{
-//    CGeoDBInternalEditLock lock(this);
-//    QSqlQuery query(db);
-
-//    quint64 parentId, childId = 0;
-//    CDlgSelGeoDBFolder dlg(db, parentId);
-
-//    dlg.exec();
-
-//    if(parentId == 0)
-//    {
-//        return;
-//    }
-
-//    bool moveAll = treeDatabase->currentItem() == itemLostFound;
-
-//    QTreeWidgetItem * item;
-//    const int size = itemLostFound->childCount();
-//    for(int i = 0; i < size; i++)
-//    {
-//        item = itemLostFound->child(i);
-//        if(!item->isSelected() && !moveAll)
-//        {
-//            continue;
-//        }
-
-//        childId = item->data(eCoName, eUrDBKey).toULongLong();
-
-//        query.prepare("INSERT INTO folder2item (parent, child) VALUES (:parent, :child)");
-//        query.bindValue(":parent", parentId);
-//        query.bindValue(":child", childId);
-//        QUERY_EXEC(return);
-//        // update tree widget
-//        addFolderById(parentId, item);
-//    }
-
-//    updateWorkspace();
-//}
 
 //void CGeoDB::slotDelLost()
 //{
