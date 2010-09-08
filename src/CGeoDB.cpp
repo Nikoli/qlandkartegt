@@ -177,11 +177,10 @@ CGeoDB::CGeoDB(QTabWidget * tb, QWidget * parent)
     actMoveLost         = contextMenuLost->addAction(QPixmap(":/icons/iconWptMove16x16"), tr("Move"), this, SLOT(slotMoveLost()));
     actDelLost          = contextMenuLost->addAction(QPixmap(":/icons/iconDelete16x16"), tr("Delete"), this, SLOT(slotDelLost()));
 
-
-//    contextMenuWks      = new QMenu(this);
-//    actAddToDB          = contextMenuWks->addAction(QPixmap(":/icons/iconAdd16x16"), tr("Add to database..."), this, SLOT(slotAddItems()));
-//    actSaveToDB         = contextMenuWks->addAction(QPixmap(":/icons/iconFileSave16x16"), tr("Save changes..."), this, SLOT(slotSaveItems()));
-//    actHardCopy         = contextMenuWks->addAction(QPixmap(":/icons/editcopy"), tr("Check-out as copy"), this, SLOT(slotHardCopyItem()));
+    contextMenuWks      = new QMenu(this);
+    actAddToDB          = contextMenuWks->addAction(QPixmap(":/icons/iconAdd16x16"), tr("Add to database"), this, SLOT(slotAddItems()));
+    actSaveToDB         = contextMenuWks->addAction(QPixmap(":/icons/iconFileSave16x16"), tr("Save changes"), this, SLOT(slotSaveItems()));
+    actHardCopy         = contextMenuWks->addAction(QPixmap(":/icons/editcopy"), tr("Check-out as copy"), this, SLOT(slotHardCopyItem()));
 
 
     connect(treeDatabase,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenuDatabase(const QPoint&)));
@@ -190,7 +189,6 @@ CGeoDB::CGeoDB(QTabWidget * tb, QWidget * parent)
 
     connect(treeWorkspace,SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)),this,SLOT(slotItemDoubleClicked(QTreeWidgetItem *, int)));
     connect(treeWorkspace,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenuWorkspace(const QPoint&)));
-
 
     connect(&CWptDB::self(), SIGNAL(sigChanged()), this, SLOT(slotWptDBChanged()));
     connect(&CTrackDB::self(), SIGNAL(sigChanged()), this, SLOT(slotTrkDBChanged()));
@@ -402,7 +400,7 @@ void CGeoDB::migrateDB(int version)
                 }
 
                 quint32 progCnt = 0;
-                PROGRESS_SETUP("Mirgrating database from version 4 to 5.", query.size());
+                PROGRESS_SETUP(tr("Mirgrating database from version 4 to 5."), query.size());
 
                 while(query.next())
                 {
@@ -453,7 +451,7 @@ void CGeoDB::migrateDB(int version)
                 }
 
                 quint32 progCnt = 0;
-                PROGRESS_SETUP("Mirgrating database from version 5 to 6.", query.size());
+                PROGRESS_SETUP(tr("Mirgrating database from version 5 to 6."), query.size());
 
                 while(query.next())
                 {
@@ -591,12 +589,13 @@ void CGeoDB::loadWorkspace()
     CTrackDB::self().loadQLB(qlb, false);
     CRouteDB::self().loadQLB(qlb, false);
     COverlayDB::self().loadQLB(qlb, false);
+
+    changedWorkspace();
 }
 
 
 void CGeoDB::updateModifyMarker()
 {
-    CGeoDBInternalEditLock lock(this);
     // reset modify marker in text label
     itemWorkspace->setText(eCoName, tr("Workspace"));
     updateModifyMarker(itemWksWpt, keysWptModified, tr("Waypoints"));
@@ -607,8 +606,7 @@ void CGeoDB::updateModifyMarker()
 }
 
 void CGeoDB::updateModifyMarker(QTreeWidgetItem * itemWks, QSet<QString>& keys, const QString& label)
-{
-    CGeoDBInternalEditLock lock(this);
+{    
     QTreeWidgetItem * item;
     bool modified = false;
 
@@ -644,14 +642,59 @@ void CGeoDB::updateModifyMarker(QTreeWidgetItem * itemWks, QSet<QString>& keys, 
 
 }
 
+void CGeoDB::updateDatabaseMarker()
+{
+    updateDatabaseMarker(itemWksWpt, keysWksWpt);
+    updateDatabaseMarker(itemWksTrk, keysWksTrk);
+    updateDatabaseMarker(itemWksRte, keysWksRte);
+    updateDatabaseMarker(itemWksOvl, keysWksOvl);
+}
+
+void CGeoDB::updateDatabaseMarker(QTreeWidgetItem * itemWks, QSet<quint64> &keysWks)
+{
+    QSqlQuery query(db);
+    QTreeWidgetItem * item;
+
+    keysWks.clear();
+
+    const int size = itemWks->childCount();
+
+    PROGRESS_SETUP(tr("Update workspace."), size);
+
+    for(int i = 0; i < size; i++)
+    {
+        PROGRESS(i, break);
+
+        item = itemWks->child(i);
+
+        query.prepare("SELECT id FROM items WHERE key=:key");
+        query.bindValue(":key", item->data(eCoName, eUrQLKey));
+        QUERY_EXEC(continue);
+
+        if(query.next())
+        {
+            item->setData(eCoName, eUrDBKey, query.value(0));
+            item->setIcon(eCoState, QIcon(":/icons/iconGeoDB16x16"));
+            keysWks << query.value(0).toULongLong();
+        }
+        else
+        {
+            item->setData(eCoName, eUrDBKey, 0);
+            item->setIcon(eCoState, QIcon());
+        }
+    }
+}
+
 void CGeoDB::changedWorkspace()
 {
-    updateCheckmarks();
+    updateDatabaseMarker();
     updateModifyMarker();
-
+    updateCheckmarks();
 
     treeWorkspace->header()->setResizeMode(eCoName,QHeaderView::ResizeToContents);
     treeWorkspace->header()->setResizeMode(eCoState,QHeaderView::ResizeToContents);
+
+    CGeoDBInternalEditLock lock(this);
     treeDatabase->header()->setResizeMode(eCoName,QHeaderView::ResizeToContents);
     treeDatabase->header()->setResizeMode(eCoState,QHeaderView::ResizeToContents);
 }
@@ -894,7 +937,7 @@ void CGeoDB::updateFolderById(quint64 id)
     }
 }
 
-void CGeoDB::moveChildrenToWks(quint64 parentId)
+void CGeoDB::addChildrenToWks(quint64 parentId)
 {
     QSqlQuery query(db);
 
@@ -941,7 +984,7 @@ void CGeoDB::moveChildrenToWks(quint64 parentId)
     while(query.next())
     {
         quint64 childId = query.value(0).toULongLong();
-        moveChildrenToWks(childId);
+        addChildrenToWks(childId);
     }
 }
 
@@ -1271,6 +1314,116 @@ void CGeoDB::delItemById(quint64 parentId, quint64 childId)
     qDeleteAll(itemsToDelete);
 }
 
+void CGeoDB::addItemToDB(quint64 parentId, QTreeWidgetItem * item)
+{
+    quint64 childId;
+    QSqlQuery query(db);
+
+    // test for item with qlandkarte key
+    QString key = item->data(eCoName, eUrQLKey).toString();
+    query.prepare("SELECT id FROM items WHERE key=:key");
+    query.bindValue(":key", key);
+    QUERY_EXEC();
+
+    if(query.next())
+    {
+        childId = query.value(0).toULongLong();
+    }
+    else
+    {
+        // insert item
+        IItem * qlItem = 0;
+        QString key  = item->data(eCoName, eUrQLKey).toString();
+        qint32  type = item->data(eCoName, eUrType).toInt();
+
+        QByteArray icon;
+        QBuffer buffer(&icon);
+        buffer.open(QIODevice::WriteOnly);
+
+        QByteArray data;
+        QDataStream stream(&data, QIODevice::WriteOnly);
+
+        switch(type)
+        {
+            case eWpt:
+            {
+                CWpt * wpt = CWptDB::self().getWptByKey(key);
+                stream << *wpt;
+                qlItem = wpt;
+                break;
+            }
+            case eTrk:
+            {
+                CTrack * trk = CTrackDB::self().getTrackByKey(key);
+                stream << *trk;
+                qlItem = trk;
+                break;
+            }
+            case eRte:
+            {
+                CRoute * rte = CRouteDB::self().getRouteByKey(key);
+                stream << *rte;
+                qlItem = rte;
+                break;
+            }
+            case eOvl:
+            {
+                IOverlay * ovl = COverlayDB::self().getOverlayByKey(key);
+                stream << *ovl;
+                qlItem = ovl;
+                break;
+            }
+        }
+
+        QPixmap pixmap = qlItem->getIcon();
+        pixmap.save(&buffer, "XPM");
+
+        // add item to database
+        query.prepare("INSERT INTO items (type, key, date, icon, name, comment, data) "
+                      "VALUES (:type, :key, :date, :icon, :name, :comment, :data)");
+
+        query.bindValue(":type", type);
+        query.bindValue(":key", qlItem->getKey());
+        query.bindValue(":date", QDateTime::fromTime_t(qlItem->getTimestamp()).toString("yyyy-MM-dd hh-mm-ss"));
+        query.bindValue(":icon", icon);
+        query.bindValue(":name", qlItem->getName());
+        query.bindValue(":comment", qlItem->getComment());
+        query.bindValue(":data", data);
+        QUERY_EXEC();
+
+        if(!query.exec("SELECT last_insert_rowid() from items"))
+        {
+            qDebug() << query.lastQuery();
+            qDebug() << query.lastError();
+            return;
+        }
+        query.next();
+        childId = query.value(0).toULongLong();
+        if(childId == 0)
+        {
+            qDebug() << "childId equals 0. bad.";
+            return;
+        }
+    }
+    item->setData(eCoName, eUrDBKey, childId);
+
+    // create link folder <-> item
+    query.prepare("SELECT id FROM folder2item WHERE parent=:parent AND child=:child");
+    query.bindValue(":parent", parentId);
+    query.bindValue(":child", childId);
+    QUERY_EXEC();
+
+    if(!query.next() && parentId != 0)
+    {
+        query.prepare("INSERT INTO folder2item (parent, child) VALUES (:parent, :child)");
+        query.bindValue(":parent", parentId);
+        query.bindValue(":child", childId);
+        QUERY_EXEC(return);
+        // update tree widget
+        addItemById(parentId, item);
+    }
+}
+
 
 // /////////////////////////////////////////////////////////////////
 // /////////////////////////////////////////////////////////////////
@@ -1388,9 +1541,7 @@ void CGeoDB::slotWptDBChanged()
 {
     CGeoDBInternalEditLock lock(this);
 
-    QSqlQuery query(db);
     qDeleteAll(itemWksWpt->takeChildren());
-    keysWksWpt.clear();
 
     CWptDB& wptdb = CWptDB::self();
     CWptDB::keys_t key;
@@ -1407,40 +1558,30 @@ void CGeoDB::slotWptDBChanged()
             continue;
         }
 
-        // query for item in database
-        query.prepare("SELECT id FROM items WHERE key=:key");
-        query.bindValue(":key", key.key);
-        QUERY_EXEC();
-
         QTreeWidgetItem * item = new QTreeWidgetItem();
         item->setData(eCoName, eUrType, eWpt);
-        if(query.next())
-        {
-            item->setData(eCoName, eUrDBKey, query.value(0));
-            item->setIcon(eCoState, QIcon(":/icons/iconGeoDB16x16"));
-        }
         item->setData(eCoName, eUrQLKey, wpt->getKey());
         item->setIcon(eCoName, wpt->getIcon());
         item->setText(eCoName, wpt->getName());
         item->setToolTip(eCoName, wpt->getInfo());
 
-        items << item;
-
-        keysWksWpt << query.value(0).toULongLong();
+        items << item;        
     }
 
     itemWksWpt->addChildren(items);
     itemWksWpt->setHidden(itemWksWpt->childCount() == 0);
 
-    changedWorkspace();
+    if(!isInternalEdit)
+    {
+        changedWorkspace();
+    }
 }
 
 void CGeoDB::slotTrkDBChanged()
 {
     CGeoDBInternalEditLock lock(this);
-    QSqlQuery query(db);
+
     qDeleteAll(itemWksTrk->takeChildren());
-    keysWksTrk.clear();
 
     CTrackDB& trkdb = CTrackDB::self();
     CTrackDB::keys_t key;
@@ -1452,39 +1593,30 @@ void CGeoDB::slotTrkDBChanged()
     {
         CTrack * trk = trkdb.getTrackByKey(key.key);
 
-        query.prepare("SELECT id FROM items WHERE key=:key");
-        query.bindValue(":key", key.key);
-        QUERY_EXEC();
-
         QTreeWidgetItem * item = new QTreeWidgetItem();
         item->setData(eCoName, eUrType, eTrk);
-        if(query.next())
-        {
-            item->setData(eCoName, eUrDBKey, query.value(0));
-            item->setIcon(eCoState, QIcon(":/icons/iconGeoDB16x16"));
-        }
         item->setData(eCoName, eUrQLKey, trk->getKey());
         item->setIcon(eCoName, trk->getIcon());
         item->setText(eCoName, trk->getName());
         item->setToolTip(eCoName, trk->getInfo());
 
         items << item;
-
-        keysWksTrk << query.value(0).toULongLong();
     }
 
     itemWksTrk->addChildren(items);
     itemWksTrk->setHidden(itemWksTrk->childCount() == 0);
 
-    changedWorkspace();
+    if(!isInternalEdit)
+    {
+        changedWorkspace();
+    }
 }
 
 void CGeoDB::slotRteDBChanged()
 {
     CGeoDBInternalEditLock lock(this);
-    QSqlQuery query(db);
+
     qDeleteAll(itemWksRte->takeChildren());
-    keysWksRte.clear();
 
     CRouteDB& rtedb = CRouteDB::self();
     CRouteDB::keys_t key;
@@ -1496,39 +1628,30 @@ void CGeoDB::slotRteDBChanged()
     {
         CRoute * rte = rtedb.getRouteByKey(key.key);
 
-        query.prepare("SELECT id FROM items WHERE key=:key");
-        query.bindValue(":key", key.key);
-        QUERY_EXEC();
-
         QTreeWidgetItem * item = new QTreeWidgetItem();
         item->setData(eCoName, eUrType, eRte);
-        if(query.next())
-        {
-            item->setData(eCoName, eUrDBKey, query.value(0));
-            item->setIcon(eCoState, QIcon(":/icons/iconGeoDB16x16"));
-        }
         item->setData(eCoName, eUrQLKey, rte->getKey());
         item->setIcon(eCoName, rte->getIcon());
         item->setText(eCoName, rte->getName());
         item->setToolTip(eCoName, rte->getInfo());
 
         items << item;
-
-        keysWksRte << query.value(0).toULongLong();
     }
 
     itemWksRte->addChildren(items);
     itemWksRte->setHidden(itemWksRte->childCount() == 0);
 
-    changedWorkspace();
+    if(!isInternalEdit)
+    {
+        changedWorkspace();
+    }
 }
 
 void CGeoDB::slotOvlDBChanged()
 {
     CGeoDBInternalEditLock lock(this);
-    QSqlQuery query(db);
+
     qDeleteAll(itemWksOvl->takeChildren());
-    keysWksOvl.clear();
 
     COverlayDB& ovldb = COverlayDB::self();
     COverlayDB::keys_t key;
@@ -1540,31 +1663,23 @@ void CGeoDB::slotOvlDBChanged()
     {
         IOverlay * ovl = ovldb.getOverlayByKey(key.key);
 
-        query.prepare("SELECT id FROM items WHERE key=:key");
-        query.bindValue(":key", key.key);
-        QUERY_EXEC();
-
         QTreeWidgetItem * item = new QTreeWidgetItem();
         item->setData(eCoName, eUrType, eOvl);
-        if(query.next())
-        {
-            item->setData(eCoName, eUrDBKey, query.value(0));
-            item->setIcon(eCoState, QIcon(":/icons/iconGeoDB16x16"));
-        }
         item->setData(eCoName, eUrQLKey, ovl->getKey());
         item->setIcon(eCoName, ovl->getIcon());
         item->setText(eCoName, ovl->getName());
         item->setToolTip(eCoName, ovl->getInfo());
 
         items << item;
-
-        keysWksOvl << query.value(0).toULongLong();
     }
 
     itemWksOvl->addChildren(items);
     itemWksOvl->setHidden(itemWksOvl->childCount() == 0);
 
-    changedWorkspace();
+    if(!isInternalEdit)
+    {
+        changedWorkspace();
+    }
 }
 
 void CGeoDB::slotModifiedWpt(const QString& key)
@@ -1687,7 +1802,7 @@ void CGeoDB::slotItemChanged(QTreeWidgetItem * item, int column)
         {
             if(item->data(eCoName, eUrType).toInt() >= eFolder0)
             {
-                moveChildrenToWks(item->data(eCoName, eUrDBKey).toULongLong());
+                addChildrenToWks(item->data(eCoName, eUrDBKey).toULongLong());
             }
             else
             {
@@ -1756,6 +1871,7 @@ void CGeoDB::slotItemChanged(QTreeWidgetItem * item, int column)
                 }
             }
         }
+        changedWorkspace();
     }
 }
 
@@ -1812,29 +1928,28 @@ void CGeoDB::slotContextMenuDatabase(const QPoint& pos)
 
 }
 
-void CGeoDB::slotContextMenuWorkspace(const QPoint&)
+void CGeoDB::slotContextMenuWorkspace(const QPoint& pos)
 {
-    QTreeWidgetItem * item = treeDatabase->currentItem();
-    //        if(item->data(eCoName, eUrType).toInt() >= eFolder0)
-    //        {
-    //            actHardCopy->setVisible(false);
-    //        }
-    //        else
-    //        {
-    //            if(item->data(eCoName,eUrDBKey).toULongLong() == 0)
-    //            {
-    //                actHardCopy->setVisible(false);
-    //            }
-    //            else
-    //            {
-    //                actHardCopy->setVisible(true);
-    //            }
+    QTreeWidgetItem * item = treeWorkspace->currentItem();
+    if(item->data(eCoName, eUrType).toInt() >= eFolder0)
+    {
+        actHardCopy->setVisible(false);
+    }
+    else
+    {
+        if(item->data(eCoName,eUrDBKey).toULongLong() == 0)
+        {
+            actHardCopy->setVisible(false);
+        }
+        else
+        {
+            actHardCopy->setVisible(true);
+        }
 
-    //        }
+    }
 
-
-    //        QPoint p = treeDatabase->mapToGlobal(pos);
-    //        contextMenuWks->exec(p);
+    QPoint p = treeWorkspace->mapToGlobal(pos);
+    contextMenuWks->exec(p);
 }
 
 
@@ -2207,6 +2322,128 @@ void CGeoDB::slotMoveLost()
         addFolderById(parentId, item);
     }
 
+    updateLostFound();
+    changedWorkspace();
+}
+
+void CGeoDB::slotDelLost()
+{
+    CGeoDBInternalEditLock lock(this);
+    QSqlQuery query(db);
+
+    bool delAll = treeDatabase->currentItem() == itemLostFound;
+
+    QTreeWidgetItem * item;
+    const int size = itemLostFound->childCount();
+
+    PROGRESS_SETUP(tr("Delete items."), size);
+
+    for(int i = 0; i < size; i++)
+    {
+        PROGRESS(i, break);
+
+        item = itemLostFound->child(i);
+        if(!item->isSelected() && !delAll)
+        {
+            continue;
+        }
+
+        query.prepare("DELETE FROM items WHERE id=:id");
+        query.bindValue(":id",item->data(eCoName, eUrDBKey));
+        QUERY_EXEC(continue);
+    }
+
+    updateLostFound();
+    changedWorkspace();
+}
+
+void CGeoDB::slotAddItems()
+{
+    CGeoDBInternalEditLock lock(this);
+
+
+    quint64 parentId;
+    CDlgSelGeoDBFolder dlg(db, parentId);
+
+    dlg.exec();
+
+    if(parentId == 0)
+    {
+        return;
+    }
+
+    quint32 total = itemWksWpt->childCount() + itemWksTrk->childCount() + itemWksRte->childCount() + itemWksOvl->childCount();
+    quint32 progCnt = 0;
+
+    PROGRESS_SETUP(tr("Add items to database."), total);
+
+    int size, i;
+    QTreeWidgetItem * item;
+
+    bool addAll     = treeWorkspace->currentItem() == itemWorkspace;
+    bool addAllWpt  = treeWorkspace->currentItem() == itemWksWpt;
+    bool addAllTrk  = treeWorkspace->currentItem() == itemWksTrk;
+    bool addAllRte  = treeWorkspace->currentItem() == itemWksRte;
+    bool addAllOvl  = treeWorkspace->currentItem() == itemWksOvl;
+
+    //////////// add waypoints ////////////
+    size = itemWksWpt->childCount();
+    for(i = 0; i < size; i++)
+    {
+        PROGRESS(progCnt++, goto slotAddItems_end);
+
+        item = itemWksWpt->child(i);
+        if(!item->isSelected() && !addAll && !addAllWpt)
+        {
+            continue;
+        }
+
+        addItemToDB(parentId, item);
+    }
+    //////////// add tracks ////////////
+    size = itemWksTrk->childCount();
+    for(i = 0; i < size; i++)
+    {
+        PROGRESS(progCnt++, goto slotAddItems_end);
+
+        item = itemWksTrk->child(i);
+        if(!item->isSelected() && !addAll && !addAllTrk)
+        {
+            continue;
+        }
+
+        addItemToDB(parentId, item);
+    }
+    //////////// add tracks ////////////
+    size = itemWksRte->childCount();
+    for(i = 0; i < size; i++)
+    {
+        PROGRESS(progCnt++, goto slotAddItems_end);
+
+        item = itemWksRte->child(i);
+        if(!item->isSelected() && !addAll && !addAllRte)
+        {
+            continue;
+        }
+
+        addItemToDB(parentId, item);
+    }
+    //////////// add overlays ////////////
+    size = itemWksOvl->childCount();
+    for(i = 0; i < size; i++)
+    {
+        PROGRESS(progCnt++, goto slotAddItems_end);
+
+        item = itemWksOvl->child(i);
+        if(!item->isSelected() && !addAll&& !addAllOvl)
+        {
+            continue;
+        }
+
+        addItemToDB(parentId, item);
+    }
+
+ slotAddItems_end:
     changedWorkspace();
 }
 
@@ -2269,313 +2506,7 @@ void CGeoDB::slotMoveLost()
 
 
 
-//void CGeoDB::slotAddItems()
-//{
-//    CGeoDBInternalEditLock lock(this);
 
-
-//    quint64 parentId;
-//    CDlgSelGeoDBFolder dlg(db, parentId);
-
-//    dlg.exec();
-
-//    if(parentId == 0)
-//    {
-//        return;
-//    }
-
-
-//    int size, i;
-//    QTreeWidgetItem * item;
-
-//    bool addAll = treeDatabase->currentItem() == itemWorkspace;
-
-//    //////////// add waypoints ////////////
-//    size = itemWksWpt->childCount();
-//    for(i = 0; i < size; i++)
-//    {
-//        item = itemWksWpt->child(i);
-//        if(!item->isSelected() && !addAll)
-//        {
-//            continue;
-//        }
-
-//        addWptToDB(parentId, item);
-//    }
-//    //////////// add tracks ////////////
-//    size = itemWksTrk->childCount();
-//    for(i = 0; i < size; i++)
-//    {
-//        item = itemWksTrk->child(i);
-//        if(!item->isSelected() && !addAll)
-//        {
-//            continue;
-//        }
-
-//        addTrkToDB(parentId, item);
-//    }
-//    //////////// add overlays ////////////
-//    size = itemWksOvl->childCount();
-//    for(i = 0; i < size; i++)
-//    {
-//        item = itemWksOvl->child(i);
-//        if(!item->isSelected() && !addAll)
-//        {
-//            continue;
-//        }
-
-//        addOvlToDB(parentId, item);
-//    }
-
-//    updateCheckmarks();
-//}
-
-//void CGeoDB::addWptToDB(quint64 parentId, QTreeWidgetItem * item)
-//{
-//    quint64 childId;
-//    QSqlQuery query(db);
-//    // test for item with qlandkarte key
-//    QString key = item->data(eCoName, eUrQLKey).toString();
-//    query.prepare("SELECT id FROM items WHERE key=:key");
-//    query.bindValue(":key", key);
-//    QUERY_EXEC();
-
-//    if(query.next())
-//    {
-//        childId = query.value(0).toULongLong();
-//    }
-//    else
-//    {
-//        // insert item
-//        QString key = item->data(eCoName, eUrQLKey).toString();
-//        CWpt * wpt  = CWptDB::self().getWptByKey(key);
-
-
-//        QBuffer buffer;
-//        CQlb qlb(this);
-//        qlb << *wpt;
-//        qlb.save(&buffer);
-
-//        // add item to database
-//        query.prepare("INSERT INTO items (type, key, date, icon, name, comment, data) "
-//                      "VALUES (:type, :key, :date, :icon, :name, :comment, :data)");
-
-//        query.bindValue(":type", eWpt);
-//        query.bindValue(":key", wpt->getKey());
-//        query.bindValue(":date", QDateTime::fromTime_t(wpt->getTimestamp()).toString("yyyy-MM-dd hh-mm-ss"));
-//        query.bindValue(":icon", wpt->getIconString());
-//        query.bindValue(":name", wpt->getName());
-//        query.bindValue(":comment", wpt->getComment());
-//        query.bindValue(":data", buffer.data());
-//        QUERY_EXEC();
-
-//        if(!query.exec("SELECT last_insert_rowid() from items"))
-//        {
-//            qDebug() << query.lastQuery();
-//            qDebug() << query.lastError();
-//            return;
-//        }
-//        query.next();
-//        childId = query.value(0).toULongLong();
-//        if(childId == 0)
-//        {
-//            qDebug() << "childId equals 0. bad.";
-//            return;
-//        }
-
-//        keysWksWpt << childId;
-//    }
-//    item->setData(eCoName, eUrDBKey, childId);
-//    item->setIcon(eCoState, QIcon(":/icons/iconGeoDB16x16"));
-//    // create link folder <-> item
-//    query.prepare("SELECT id FROM folder2item WHERE parent=:parent AND child=:child");
-//    query.bindValue(":parent", parentId);
-//    query.bindValue(":child", childId);
-//    QUERY_EXEC();
-
-//    if(!query.next() && parentId != 0)
-//    {
-//        query.prepare("INSERT INTO folder2item (parent, child) VALUES (:parent, :child)");
-//        query.bindValue(":parent", parentId);
-//        query.bindValue(":child", childId);
-//        QUERY_EXEC(return);
-//        // update tree widget
-//        addFolderById(parentId, item);
-//    }
-
-//}
-
-//void CGeoDB::addTrkToDB(quint64 parentId, QTreeWidgetItem * item)
-//{
-//    quint64 childId;
-//    QSqlQuery query(db);
-//    // test for item with qlandkarte key
-//    QString key = item->data(eCoName, eUrQLKey).toString();
-//    query.prepare("SELECT id FROM items WHERE key=:key");
-//    query.bindValue(":key", key);
-//    QUERY_EXEC();
-
-//    if(query.next())
-//    {
-//        childId = query.value(0).toULongLong();
-//    }
-//    else
-//    {
-//        // insert item
-//        QString key = item->data(eCoName, eUrQLKey).toString();
-//        CTrack * trk  = CTrackDB::self().getTrackByKey(key);
-
-
-//        QBuffer buffer;
-//        CQlb qlb(this);
-//        qlb << *trk;
-//        qlb.save(&buffer);
-
-//        // add item to database
-//        query.prepare("INSERT INTO items (type, key, date, icon, name, comment, data) "
-//                      "VALUES (:type, :key, :date, :icon, :name, :comment, :data)");
-
-//        query.bindValue(":type", eTrk);
-//        query.bindValue(":key", trk->getKey());
-//        query.bindValue(":date", trk->getStartTimestamp().toString("yyyy-MM-dd hh-mm-ss"));
-//        query.bindValue(":icon", trk->getColor());
-//        query.bindValue(":name", trk->getName());
-//        query.bindValue(":comment", trk->getComment());
-//        query.bindValue(":data", buffer.data());
-//        QUERY_EXEC();
-
-//        if(!query.exec("SELECT last_insert_rowid() from items"))
-//        {
-//            qDebug() << query.lastQuery();
-//            qDebug() << query.lastError();
-//            return;
-//        }
-//        query.next();
-//        childId = query.value(0).toULongLong();
-//        if(childId == 0)
-//        {
-//            qDebug() << "childId equals 0. bad.";
-//            return;
-//        }
-
-//        keysWksTrk << childId;
-//    }
-//    item->setData(eCoName, eUrDBKey, childId);
-//    item->setIcon(eCoState, QIcon(":/icons/iconGeoDB16x16"));
-//    // create link folder <-> item
-//    query.prepare("SELECT id FROM folder2item WHERE parent=:parent AND child=:child");
-//    query.bindValue(":parent", parentId);
-//    query.bindValue(":child", childId);
-//    QUERY_EXEC();
-
-//    if(!query.next() && parentId != 0)
-//    {
-//        query.prepare("INSERT INTO folder2item (parent, child) VALUES (:parent, :child)");
-//        query.bindValue(":parent", parentId);
-//        query.bindValue(":child", childId);
-//        QUERY_EXEC(return);
-//        // update tree widget
-//        addFolderById(parentId, item);
-//    }
-//}
-
-//void CGeoDB::addOvlToDB(quint64 parentId, QTreeWidgetItem * item)
-//{
-//    quint64 childId;
-//    QSqlQuery query(db);
-//    // test for item with qlandkarte key
-//    QString key = item->data(eCoName, eUrQLKey).toString();
-//    query.prepare("SELECT id FROM items WHERE key=:key");
-//    query.bindValue(":key", key);
-//    QUERY_EXEC();
-
-//    if(query.next())
-//    {
-//        childId = query.value(0).toULongLong();
-//    }
-//    else
-//    {
-//        // insert item
-//        QString key = item->data(eCoName, eUrQLKey).toString();
-//        IOverlay * ovl  = COverlayDB::self().getOverlayByKey(key);
-
-
-//        QBuffer buffer;
-//        CQlb qlb(this);
-//        qlb << *ovl;
-//        qlb.save(&buffer);
-
-//        // add item to database
-//        query.prepare("INSERT INTO items (type, key, date, icon, name, comment, data) "
-//                      "VALUES (:type, :key, :date, :icon, :name, :comment, :data)");
-
-//        query.bindValue(":type", eOvl);
-//        query.bindValue(":key", ovl->getKey());
-
-//        qDebug() <<"type" << ovl->type;
-//        if(ovl->type == "Text")
-//        {
-//            COverlayText * _ovl_ = qobject_cast<COverlayText*>(ovl);
-//            query.bindValue(":icon", ":/icons/iconText16x16");
-//            query.bindValue(":name", tr("Static text"));
-//            query.bindValue(":comment", _ovl_->getInfo());
-
-//        }
-//        else if(ovl->type == "TextBox")
-//        {
-//            COverlayTextBox * _ovl_ = qobject_cast<COverlayTextBox*>(ovl);
-//            query.bindValue(":icon", ":/icons/iconTextBox16x16");
-//            query.bindValue(":name", tr("Geo ref. text"));
-//            query.bindValue(":comment", _ovl_->getInfo());
-
-//        }
-//        else if(ovl->type == "Distance")
-//        {
-//            COverlayDistance * _ovl_ = qobject_cast<COverlayDistance*>(ovl);
-//            query.bindValue(":icon", ":/icons/iconDistance16x16");
-//            query.bindValue(":name", _ovl_->getName());
-//            query.bindValue(":comment", _ovl_->getInfo());
-
-//        }
-
-//        query.bindValue(":data", buffer.data());
-//        QUERY_EXEC();
-
-//        if(!query.exec("SELECT last_insert_rowid() from items"))
-//        {
-//            qDebug() << query.lastQuery();
-//            qDebug() << query.lastError();
-//            return;
-//        }
-//        query.next();
-//        childId = query.value(0).toULongLong();
-//        if(childId == 0)
-//        {
-//            qDebug() << "childId equals 0. bad.";
-//            return;
-//        }
-
-//        keysWksOvl << childId;
-//    }
-//    item->setData(eCoName, eUrDBKey, childId);
-//    item->setIcon(eCoState, QIcon(":/icons/iconGeoDB16x16"));
-//    // create link folder <-> item
-//    query.prepare("SELECT id FROM folder2item WHERE parent=:parent AND child=:child");
-//    query.bindValue(":parent", parentId);
-//    query.bindValue(":child", childId);
-//    QUERY_EXEC();
-
-//    if(!query.next() && parentId != 0)
-//    {
-//        query.prepare("INSERT INTO folder2item (parent, child) VALUES (:parent, :child)");
-//        query.bindValue(":parent", parentId);
-//        query.bindValue(":child", childId);
-//        QUERY_EXEC(return);
-//        // update tree widget
-//        addFolderById(parentId, item);
-//    }
-
-//}
 
 
 //void CGeoDB::slotSaveItems()
@@ -2765,36 +2696,6 @@ void CGeoDB::slotMoveLost()
 //    updateLostFound();
 //}
 
-
-
-//void CGeoDB::slotDelLost()
-//{
-//    CGeoDBInternalEditLock lock(this);
-//    QSqlQuery query(db);
-
-//    bool delAll = treeDatabase->currentItem() == itemLostFound;
-
-//    QTreeWidgetItem * item;
-//    const int size = itemLostFound->childCount();
-//    for(int i = 0; i < size; i++)
-//    {
-//        item = itemLostFound->child(i);
-//        if(!item->isSelected() && !delAll)
-//        {
-//            continue;
-//        }
-
-//        query.prepare("DELETE FROM items WHERE id=:id");
-//        query.bindValue(":id",item->data(eCoName, eUrDBKey));
-//        QUERY_EXEC(continue);
-//    }
-
-//    updateWorkspace();
-//}
-
-
-
-
 //void CGeoDB::slotHardCopyItem()
 //{
 //    QTreeWidgetItem * item;
@@ -2858,18 +2759,4 @@ void CGeoDB::slotMoveLost()
 
 
 
-
-
-
-//void CGeoDB::updateWorkspace()
-//{
-//    slotWptDBChanged();
-//    slotTrkDBChanged();
-//    slotRteDBChanged();
-//    slotOvlDBChanged();
-
-//    updateLostFound();
-//    updateCheckmarks();
-//    updateModifyMarker();
-//}
 

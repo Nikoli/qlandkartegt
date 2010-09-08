@@ -128,7 +128,10 @@ void CTrackDB::loadQLB(CQlb& qlb)
         addTrack(track, true);
     }
 
-    emit sigChanged();
+    if(qlb.tracks().size())
+    {
+        emit sigChanged();
+    }
 
 }
 
@@ -149,7 +152,10 @@ void CTrackDB::loadQLB(CQlb& qlb, bool asDuplicat)
         addTrack(track, true);
     }
 
-    emit sigChanged();
+    if(qlb.tracks().size())
+    {
+        emit sigChanged();
+    }
 
 }
 
@@ -167,10 +173,12 @@ void CTrackDB::saveQLB(CQlb& qlb)
 
 void CTrackDB::loadGPX(CGpx& gpx)
 {
+    bool hasItems = false;
     QDomElement tmpelem;
     QDomElement trk = gpx.firstChildElement("gpx").firstChildElement("trk");
     while (!trk.isNull())
     {
+        hasItems = true;
         CTrack* track = new CTrack(this);
                                  //preset a random color
         track->setColor((rand() % 13)+1);
@@ -414,7 +422,10 @@ void CTrackDB::loadGPX(CGpx& gpx)
     }
 
     CTrack::resetKeyCnt();
-    emit sigChanged();
+    if(hasItems)
+    {
+        emit sigChanged();
+    }
 }
 
 
@@ -608,10 +619,14 @@ void CTrackDB::delTracks(const QStringList& keys)
     undoStack->beginMacro("delTracks");
     foreach(QString key,keys)
     {
-        delTrack(key,false);
+        delTrack(key,true);
     }
     undoStack->endMacro();
-    emit sigChanged();
+    if(!keys.isEmpty())
+    {
+        emit sigChanged();
+        emit sigModified();
+    }
 }
 
 

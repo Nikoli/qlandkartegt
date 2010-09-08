@@ -88,8 +88,10 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void slotMoveItems();
         /// add new relation to item without relations
         void slotMoveLost();
-
-//        void slotDelLost();
+        /// remove item from database
+        void slotDelLost();
+        /// add items to database
+        void slotAddItems();
 
 
     private:
@@ -110,6 +112,10 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void updateModifyMarker();
         /// update the item text in workspace with a "*" for chnaged items
         void updateModifyMarker(QTreeWidgetItem * item, QSet<QString>& keys, const QString& label);
+        /// update "in database" icon
+        void updateDatabaseMarker();
+        /// update "in database" icon
+        void updateDatabaseMarker(QTreeWidgetItem * itemWks, QSet<quint64> &keysWks);
         /// initialize database treewidget on startup
         void initTreeWidget();
         /// build up the treewidget from a given parent item up to a given depth of levels
@@ -123,7 +129,7 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         /// update all folders with same ID
         void updateFolderById(quint64 id);
         /// load all items attached to given parent id into the workspace
-        void moveChildrenToWks(quint64 parentId);
+        void addChildrenToWks(quint64 parentId);
         /// remove all items attached to given parent id from the workspace
         void delChildrenFromWks(quint64 parentId);
         /// add a new folder to the tree widget and the database
@@ -138,6 +144,8 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void addItemById(quint64 parentId, QTreeWidgetItem * child);
         /// remove items from tree widget with geven parent / item relation
         void delItemById(quint64 parentId, quint64 childId);
+        /// write item data to database
+        void addItemToDB(quint64 parentId, QTreeWidgetItem * item);
 
         enum EntryType_e {
             eWpt        = QTreeWidgetItem::UserType + 3,
@@ -207,11 +215,15 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         QAction * actMoveLost;
         QAction * actDelLost;
 
+        QMenu * contextMenuWks;
+        QAction * actAddToDB;
+        QAction * actSaveToDB;
+        QAction * actHardCopy;
+
 //    private slots:
 
 
 
-//        void slotAddItems();
 //        void slotSaveItems();
 //        void slotHardCopyItem();
 
@@ -239,12 +251,6 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 //        void addOvlToDB(quint64 parentId, QTreeWidgetItem * item);
 
 
-
-
-//        QMenu * contextMenuWks;
-//        QAction * actAddToDB;
-//        QAction * actSaveToDB;
-//        QAction * actHardCopy;
 
 
 };

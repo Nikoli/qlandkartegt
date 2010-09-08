@@ -75,7 +75,8 @@ void CRouteDB::addRoute(CRoute * route, bool silent)
 void CRouteDB::delRoute(const QString& key, bool silent)
 {
     if(!routes.contains(key)) return;
-    delete routes.take(key);
+    CRoute * rte = routes.take(key);
+    rte->deleteLater();
     if(!silent)
     {
         emit sigChanged();
@@ -89,11 +90,13 @@ void CRouteDB::delRoutes(const QStringList& keys)
     QString key;
     foreach(key,keys)
     {
-        if(!routes.contains(key)) continue;
-        delete routes.take(key);
+        delRoute(key, true);
     }
-    emit sigChanged();
-    emit sigModified();
+    if(!keys.isEmpty())
+    {
+        emit sigChanged();
+        emit sigModified();
+    }
 }
 
 
@@ -157,10 +160,12 @@ QRectF CRouteDB::getBoundingRectF(const QString key)
 /// load database data from gpx
 void CRouteDB::loadGPX(CGpx& gpx)
 {
+    bool hasItems = false;
     const QDomNodeList& rtes = gpx.elementsByTagName("rte");
     uint N = rtes.count();
     for(uint n = 0; n < N; ++n)
     {
+        hasItems = true;
         const QDomNode& rte = rtes.item(n);
 
         CRoute * r = 0;
@@ -218,7 +223,10 @@ void CRouteDB::loadGPX(CGpx& gpx)
 
     }
 
-    emit sigChanged();
+    if(hasItems)
+    {
+        emit sigChanged();
+    }
 }
 
 
@@ -303,7 +311,10 @@ void CRouteDB::loadQLB(CQlb& qlb, bool newKey)
         addRoute(route, true);
     }
 
-    emit sigChanged();
+    if(qlb.routes().size())
+    {
+        emit sigChanged();
+    }
 }
 
 
