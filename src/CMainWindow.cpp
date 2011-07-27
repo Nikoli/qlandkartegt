@@ -909,7 +909,7 @@ bool CMainWindow::convertData(const QString& inFormat, const QString& inFile, co
 
     if(inFormat == "unicsv")
     {
-        arguments /* << "-t" */ << "-w" << "-r" << "-i" << inFormat << "-f" << inFile << "-o" << outFormat << "-F" << outFile;
+        arguments  << "-w" << "-i" << inFormat << "-f" << inFile << "-x" << "transform,wpt=trk" << "-o" << outFormat << "-F" << outFile;
     }
     else
     {
