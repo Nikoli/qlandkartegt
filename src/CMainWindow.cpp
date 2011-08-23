@@ -47,6 +47,9 @@
 #ifdef HAS_GEODB
 #include "CGeoDB.h"
 #endif
+#ifdef HAS_POWERDB
+#include "CPowerDB.h"
+#endif
 #ifdef HAS_DBUS
 #include "CDBus.h"
 #endif
@@ -166,6 +169,9 @@ CMainWindow::CMainWindow()
 #endif
     actionGroupProvider->addAction(CMenus::WptMenu, "aUploadWpt");
     actionGroupProvider->addAction(CMenus::WptMenu, "aDownloadWpt");
+#ifdef HAS_POWERDB
+    actionGroupProvider->addAction(CMenus::WptMenu, "aEditElectricWpt");
+#endif
 
     actionGroupProvider->addAction(CMenus::TrackMenu, "aSwitchToMain");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aMoveArea");
@@ -274,6 +280,9 @@ CMainWindow::CMainWindow()
         geodb       = new CGeoDB(tabbar, this);
     }
 #endif
+#ifdef HAS_POWERDB
+    powerdb     = new CPowerDB(this);
+#endif
 
     connect(searchdb, SIGNAL(sigChanged()), canvas, SLOT(update()));
     connect(wptdb, SIGNAL(sigChanged()), canvas, SLOT(update()));
@@ -290,6 +299,9 @@ CMainWindow::CMainWindow()
     connect(diarydb, SIGNAL(sigModified()), this, SLOT(slotModified()));
     connect(overlaydb, SIGNAL(sigModified()), this, SLOT(slotModified()));
     connect(routedb, SIGNAL(sigModified()), this, SLOT(slotModified()));
+#ifdef HAS_POWERDB
+    connect(powerdb, SIGNAL(sigModified()), this, SLOT(slotModified()));
+#endif
 
 
 #ifdef HAS_GEODB
@@ -633,6 +645,10 @@ void CMainWindow::setupMenuBar()
 
 void CMainWindow::closeEvent(QCloseEvent * e)
 {
+#ifdef HAS_POWERDB
+    delete(CPowerDB::self().db); // This is necessary to eliminate removeDatabase() warning
+#endif
+
     if(!modified)
     {
         e->accept();
@@ -741,6 +757,9 @@ void CMainWindow::slotLoadData()
     CRouteDB::self().clear();
     CDiaryDB::self().clear();
     COverlayDB::self().clear();
+#ifdef HAS_POWERDB
+    CPowerDB::self().clear();
+#endif
 
     QString filename;
     foreach(filename, filenames)
@@ -843,6 +862,12 @@ void CMainWindow::loadData(const QString& filename, const QString& filter)
                 }
             }
         }
+#ifdef HAS_POWERDB
+        else if(ext == "QDB")
+        {
+            CPowerDB::self().load(filename);
+        }
+#endif
         else
         {
 
@@ -970,7 +995,7 @@ void CMainWindow::slotSaveData()
 
     QString filename = QFileDialog::getSaveFileName( 0, tr("Select output file")
         ,pathData
-        ,"QLandkarte (*.qlb);;GPS Exchange (*.gpx)"
+        ,"QLandkarte (*.qlb);;GPS Exchange (*.gpx);;QLandkarte DB (*.qdb)"
         ,&filter
         , FILE_DIALOG_FLAGS
         );
@@ -1025,6 +1050,8 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
     QFileInfo fileInfo(filename);
     QString ext = fileInfo.suffix().toUpper();
 
+    qDebug() << "Filename1: " << filename;
+
     if(!exportFlag)
     {
         if ((filter == "GPS Exchange (*.gpx)") || (ext == "GPX"))
@@ -1035,6 +1062,12 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
                 ext = "GPX";
             }
         }
+#ifdef HAS_POWERDB
+        else if (ext=="QDB")
+        {
+                //filename += ".qdb"; // That is already the case
+        }
+#endif
         else
         {
             if(ext != "QLB")
@@ -1062,6 +1095,12 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
             }
             ext = "OZI";
         }
+#ifdef HAS_POWERDB
+        else if (ext == "QDB")
+        {
+                // filename += ".qdb"; That is already the case
+        }
+#endif
         else
         {
             if(ext != "QLB")
@@ -1070,8 +1109,10 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
             }
             ext = "QLB";
         }
+
     }
 
+qDebug() << "Filename3: " << filename;
     fileInfo.setFile(filename);
     pathData = fileInfo.absolutePath();
 
@@ -1088,6 +1129,12 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
             COverlayDB::self().saveQLB(qlb);
             qlb.save(filename);
         }
+#ifdef HAS_POWERDB
+        if(ext == "QDB")
+        {
+            CPowerDB::self().save(filename);
+        }
+#endif
         if(ext == "GPX" || ext == "OZI")
         {
             QStringList keysWpt, keysTrk, keysRte;
@@ -1535,11 +1582,11 @@ QString CMainWindow::getGeoDataFormats() {
     QString formats;
     if(haveGPSBabel)
     {
-        formats = "All supported files (*.qlb *.gpx *.tcx *.loc *.gdb *.kml *.plt *.rte *.wpt *.tk1);;QLandkarte (*.qlb);;GPS Exchange (*.gpx);;TCX TrainingsCenterExchange (*.tcx);;Geocaching.com - EasyGPS (*.loc);;Mapsource (*.gdb);;Google Earth (*.kml);;Ozi Track (*.plt);;Ozi Route (*.rte);;Ozi Waypoint (*.wpt);;Wintec WBT201/1000 (*.tk1);;Universal CSV (*.csv)";
+        formats = "All supported files (*.qlb *.gpx *.tcx *.loc *.gdb *.kml *.plt *.rte *.wpt *.tk1);;QLandkarte (*.qlb);;GPS Exchange (*.gpx);;TCX TrainingsCenterExchange (*.tcx);;Geocaching.com - EasyGPS (*.loc);;Mapsource (*.gdb);;Google Earth (*.kml);;Ozi Track (*.plt);;Ozi Route (*.rte);;Ozi Waypoint (*.wpt);;Wintec WBT201/1000 (*.tk1);;Universal CSV (*.csv);;QLandkarte DB(*.qdb)";
     }
     else
     {
-        formats = "All supported files (*.qlb *.gpx *.tcx);;QLandkarte (*.qlb);;GPS Exchange (*.gpx);;TCX TrainingsCenterExchange (*.tcx)";
+        formats = "All supported files (*.qlb *.gpx *.tcx);;QLandkarte (*.qlb);;GPS Exchange (*.gpx);;TCX TrainingsCenterExchange (*.tcx);;QLandkarte DB(*.qdb)";
     }
     return formats;
 }
