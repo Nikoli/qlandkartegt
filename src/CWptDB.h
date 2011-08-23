@@ -76,6 +76,9 @@ class CWptDB : public IDB
         void saveGPX(CGpx& gpx, const QStringList& keys);
         void loadQLB(CQlb& qlb, bool newKey);
         void saveQLB(CQlb& qlb);
+#ifdef HAS_POWERDB
+        void loadFromDB(bool newKey);
+#endif
 
         void upload(const QStringList& keys);
         void download();
@@ -119,6 +122,9 @@ class CWptDB : public IDB
         friend class CMainWindow;
         friend class CDlgEditWpt;
         friend class CMouseMoveWpt;
+#ifdef HAS_POWERDB
+        friend class CPowerDB; // required to be able to access addWpt
+#endif
 
         CWptDB(QTabWidget * tb, QObject * parent);
         void addWpt(CWpt * wpt, bool silent);
