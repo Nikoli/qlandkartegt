@@ -183,7 +183,7 @@ void COsmTilesHash::startNewDrawing( double lon, double lat, int osm_zoom, const
 
     //qDebug() << xCount << yCount << window;
 
-    image = QImage(window.size(),QImage::Format_ARGB32_Premultiplied);
+    image = QPixmap(window.size());
     image.fill(Qt::white);
     for(int x=0; x<xCount; x++)
     {
@@ -212,7 +212,7 @@ void COsmTilesHash::getImage(int osm_zoom, int osm_x, int osm_y, QPoint point)
     if (tiles.contains(osmUrlPart))
     {
         QPainter p(&image);
-        p.drawImage(point,tiles.value(osmUrlPart));
+        p.drawPixmap(point,tiles.value(osmUrlPart));
 #ifdef COSMTILESHASHDEBUG
         p.drawRect(QRect(point,QSize(255,255)));
         p.drawText(point + QPoint(10,10), "cached " + osmUrlPart);
@@ -224,13 +224,13 @@ void COsmTilesHash::getImage(int osm_zoom, int osm_x, int osm_y, QPoint point)
         QFile f(osmFilePath);
         if (f.open(QIODevice::ReadOnly))
         {
-            QImage img1;
+            QPixmap img1;
             img1.loadFromData(f.readAll());
 
-            if(img1.format() != QImage::Format_Invalid)
+            if(img1.isNull())
             {
                 QPainter p(&image);
-                p.drawImage(point,img1);
+                p.drawPixmap(point,img1);
                 tiles.insert(osmUrlPart,img1);
                 int days = QFileInfo(osmFilePath).lastModified().daysTo(QDateTime::currentDateTime());
                 if ( days < 8)
@@ -271,12 +271,12 @@ void COsmTilesHash::slotRequestFinished(int id, bool error)
         return;
 
     //qDebug() << osmUrlPartHash.value(id) << id << error << tilesConnection->state();
-    QImage img1;
+    QPixmap img1;
 
     QByteArray ba = tilesConnection->readAll();
     img1.loadFromData(ba);
 
-    if(img1.format() == QImage::Format_Invalid)
+    if(img1.isNull())
     {
         // that:
         // link->setHost("tah.openstreetmap.org")
@@ -312,7 +312,7 @@ void COsmTilesHash::slotRequestFinished(int id, bool error)
     tiles.insert(osmUrlPart,img1);
     // if (osmUrlPart.startsWith(QString("/%1/").arg(osm_zoom))) {
     QPainter p(&image);
-    p.drawImage(startPointHash.value(id),img1);
+    p.drawPixmap(startPointHash.value(id),img1);
 #ifdef COSMTILESHASHDEBUG
     p.drawRect(QRect(startPointHash.value(id),QSize(255,255)));
     p.drawText(startPointHash.value(id) + QPoint(10,10), QString::number(id) + osmUrlPartHash.value(id));

@@ -47,7 +47,7 @@ CMapDEM::CMapDEM(const QString& filename, CCanvas * parent)
 #endif
     if(dataset == 0)
     {
-        QMessageBox::warning(0, tr("Error..."), 
+        QMessageBox::warning(0, tr("Error..."),
             tr("Failed to load file: %1\n\n").arg(filename).append(tr(CPLGetLastErrorMsg())));
         status = 0;
         return;
@@ -370,7 +370,7 @@ void CMapDEM::draw(QPainter& p)
     if(pjsrc == 0) return;
 
     draw();
-    p.drawImage(0,0, buffer);
+    p.drawPixmap(0,0, buffer);
     //     qDebug() << "--------------------------";
 }
 

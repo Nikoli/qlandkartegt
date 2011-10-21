@@ -65,93 +65,93 @@ void CMapSearchThread::cancel()
 
 void CMapSearchThread::run()
 {
-    qDebug() << "thread start...";
-    emit sigProgress(tr("Start..."), 0);
+//    qDebug() << "thread start...";
+//    emit sigProgress(tr("Start..."), 0);
 
-    QList<QPoint> syms;
-    QSize size = QSize(1024,1024) + mask->mask().size();
+//    QList<QPoint> syms;
+//    QSize size = QSize(1024,1024) + mask->mask().size();
 
-    int n,m;
-//    QImage buffer(size, QImage::Format_ARGB32);
-    double x1 = area.lon1;
-    double y1 = area.lat1;
-    double x2 = area.lon2;
-    double y2 = area.lat2;
+//    int n,m;
+////    QImage buffer(size, QImage::Format_ARGB32);
+//    double x1 = area.lon1;
+//    double y1 = area.lat1;
+//    double x2 = area.lon2;
+//    double y2 = area.lat2;
 
-    double u1 = area.lon1;
-    double v1 = area.lat1;
-    double u2 = area.lon2;
-    double v2 = area.lat2;
+//    double u1 = area.lon1;
+//    double v1 = area.lat1;
+//    double u2 = area.lon2;
+//    double v2 = area.lat2;
 
-    QFileInfo fi(area.mapkey);
+//    QFileInfo fi(area.mapkey);
 
-    if(fi.suffix() != "qmap")
-    {
-        emit sigProgress(tr("Error. This only works on a *.qmap map collection."), 0);
-        return;
-    }
+//    if(fi.suffix() != "qmap")
+//    {
+//        emit sigProgress(tr("Error. This only works on a *.qmap map collection."), 0);
+//        return;
+//    }
 
-    CMapQMAP map("", area.mapkey, 0);
-    map.resize(size);
-    map.zoom(zoomlevel);
+//    CMapQMAP map("", area.mapkey, 0);
+//    map.resize(size);
+//    map.zoom(zoomlevel);
 
-    map.convertRad2Pt(x1, y1);
-    map.convertRad2Pt(x2, y2);
+//    map.convertRad2Pt(x1, y1);
+//    map.convertRad2Pt(x2, y2);
 
-    map.convertRad2M(u1, v1);
-    map.convertRad2M(u2, v2);
-    QRect rectArea(QPoint(u1,v1), QPoint(u2,v2));
+//    map.convertRad2M(u1, v1);
+//    map.convertRad2M(u2, v2);
+//    QRect rectArea(QPoint(u1,v1), QPoint(u2,v2));
 
-    double w = x2 - x1;
-    double h = y2 - y1;
+//    double w = x2 - x1;
+//    double h = y2 - y1;
 
-    int maxN = ceil(h/1024);
-    int maxM = ceil(w/1024);
+//    int maxN = ceil(h/1024);
+//    int maxM = ceil(w/1024);
 
-    map.move(QPoint(x1,y1), QPoint(0, 0));
+//    map.move(QPoint(x1,y1), QPoint(0, 0));
 
-    symbols.clear();
+//    symbols.clear();
 
-    for(n = 0; n < maxN; ++n)
-    {
+//    for(n = 0; n < maxN; ++n)
+//    {
 
-        for(m = 0; m < maxM; ++m)
-        {
-            {
-                                 // tmp. mutex lock context
-                QMutexLocker lock(&mutex);
-                if(!go)
-                {
-                    emit sigProgress(tr("Canceled!"), 0);
-                    return;
-                }
-            }
+//        for(m = 0; m < maxM; ++m)
+//        {
+//            {
+//                                 // tmp. mutex lock context
+//                QMutexLocker lock(&mutex);
+//                if(!go)
+//                {
+//                    emit sigProgress(tr("Canceled!"), 0);
+//                    return;
+//                }
+//            }
 
-            map.draw();
+//            map.draw();
 
-            CImage img(map.getBuffer());
-            img.binarize(threshold);
-            img.findSymbol(syms, *mask);
+//            CImage img(map.getBuffer());
+//            img.binarize(threshold);
+//            img.findSymbol(syms, *mask);
 
-            QPoint sym;
-            foreach(sym, syms)
-            {
-                double x = sym.x();
-                double y = sym.y();
-                map.convertPt2M(x,y);
-                if(rectArea.contains(x,y))
-                {
-                    symbols << QPointF(x,y);
-                }
-            }
+//            QPoint sym;
+//            foreach(sym, syms)
+//            {
+//                double x = sym.x();
+//                double y = sym.y();
+//                map.convertPt2M(x,y);
+//                if(rectArea.contains(x,y))
+//                {
+//                    symbols << QPointF(x,y);
+//                }
+//            }
 
-            emit sigProgress(tr("Parsing..."), (100 * (n * maxM + m + 1)) / (maxN * maxM));
+//            emit sigProgress(tr("Parsing..."), (100 * (n * maxM + m + 1)) / (maxN * maxM));
 
-            map.move(QPoint(1024, 0), QPoint(0,0));
-        }
-        map.move(QPoint(-(maxM * 1024), 1024), QPoint(0,0));
-    }
+//            map.move(QPoint(1024, 0), QPoint(0,0));
+//        }
+//        map.move(QPoint(-(maxM * 1024), 1024), QPoint(0,0));
+//    }
 
-    emit sigProgress(tr("Done! Found %1 items.").arg(symbols.count()), 0);
-    qDebug() << "...thread stop";
+//    emit sigProgress(tr("Done! Found %1 items.").arg(symbols.count()), 0);
+//    qDebug() << "...thread stop";
 }

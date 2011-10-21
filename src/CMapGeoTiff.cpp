@@ -194,7 +194,7 @@ void CMapGeoTiff::draw(QPainter& p)
     draw();
 
 
-    p.drawImage(0,0,buffer);
+    p.drawPixmap(0,0,buffer);
 
     // render overlay
     if(!ovlMap.isNull() && !doFastDraw)

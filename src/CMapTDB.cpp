@@ -1889,7 +1889,8 @@ void CMapTDB::draw(QPainter& p)
     if(needsRedraw)
     {
         draw();
-        pixBuffer = QPixmap::fromImage(buffer);
+//        pixBuffer = QPixmap::fromImage(buffer);
+        pixBuffer = buffer;
         // wenn man Speicher sparen will/muss
         //buffer = QImage();
     }
@@ -1967,18 +1968,18 @@ void CMapTDB::draw(const QSize& s, bool needsRedraw, QPainter& p)
         draw();
 
         // make map semi transparent
-        quint32 * ptr  = (quint32*)buffer.bits();
-        for(int i = 0; i < (buffer.numBytes()>>2); ++i)
-        {
-            if(*ptr & 0xFF000000)
-            {
-                *ptr = (*ptr & 0x00FFFFFF) | 0xB0000000;
-            }
-            ++ptr;
-        }
+//        quint32 * ptr  = (quint32*)buffer.bits();
+//        for(int i = 0; i < (buffer.numBytes()>>2); ++i)
+//        {
+//            if(*ptr & 0xFF000000)
+//            {
+//                *ptr = (*ptr & 0x00FFFFFF) | 0xB0000000;
+//            }
+//            ++ptr;
+//        }
     }
 
-    p.drawImage(0,0,buffer);
+    p.drawPixmap(0,0,buffer);
 
     if(ovlMap) ovlMap->draw(s, needsRedraw, p);
 }

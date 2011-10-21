@@ -49,14 +49,14 @@ class CMapOSM : public IMap
         bool rebuildServerList();
 
     public slots:
-        void newImageReady(QImage image, bool lastTileLoaded);
+        void newImageReady(QPixmap image, bool lastTileLoaded);
         void setNewTileUrl(int cbIndex = -1);
     private:
         QComboBox *cb;
         QWidget *parent;
         int currentTileListIndex;
         QList<CMapOSMType> tileList;
-        QImage image;
+        QPixmap image;
         bool lastTileLoaded;
         void draw();
         COsmTilesHash *osmTiles;

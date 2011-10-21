@@ -1,4 +1,4 @@
-project(QLandkarteGT)
+project(QLandkarteGT_pixmap)
 
 # Required cmake version
 cmake_minimum_required(VERSION 2.6.0)

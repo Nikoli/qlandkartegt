@@ -207,7 +207,7 @@ void CMapRaster::draw(QPainter& p)
 
     draw();
 
-    p.drawImage(0,0,buffer);
+    p.drawPixmap(0,0,buffer);
 
     QString str;
     if(zoomfactor < 1.0)

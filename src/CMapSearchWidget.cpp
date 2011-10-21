@@ -222,10 +222,10 @@ void CMapSearchWidget::binarizeViewport(int t)
         return;
     }
 
-    CImage xxx(CMapDB::self().getMap().getBuffer());
-    canvas->setBuffer(QPixmap::fromImage(xxx.binarize(t)));
+//    CImage xxx(CMapDB::self().getMap().getBuffer());
+//    canvas->setBuffer(QPixmap::fromImage(xxx.binarize(t)));
 
-    if(t < 0)sliderThreshold->setValue(xxx.getThreshold());
+//    if(t < 0)sliderThreshold->setValue(xxx.getThreshold());
 }
 
 

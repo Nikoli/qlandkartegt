@@ -59,16 +59,16 @@ void CMouseColorPicker::draw(QPainter& p)
 
 void CMouseColorPicker::mouseMoveEvent(QMouseEvent * e)
 {
-    IMap& map           = CMapDB::self().getMap();
-    const QImage& img   = map.getBuffer();
+//    IMap& map           = CMapDB::self().getMap();
+//    const QImage& img   = map.getBuffer();
 
-    QColor c = img.pixel(e->pos());
+//    QColor c = img.pixel(e->pos());
 
-    if(c != color)
-    {
-        color = c;
-        theMainWindow->getCanvas()->update();
-    }
+//    if(c != color)
+//    {
+//        color = c;
+//        theMainWindow->getCanvas()->update();
+//    }
 }
 
 

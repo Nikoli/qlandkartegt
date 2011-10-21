@@ -432,7 +432,7 @@ void CMapJnx::draw(QPainter& p)
     }
 
 
-    p.drawImage(0,0,buffer);
+    p.drawPixmap(0,0,buffer);
 
     if(!ovlMap.isNull() && !doFastDraw)
     {
@@ -543,10 +543,10 @@ void CMapJnx::draw()
 
     QByteArray data(1024*1024*4,0);
     //(char) typecast needed to avoid MSVC compiler warning
-    //in MSVC, char is a signed type. 
+    //in MSVC, char is a signed type.
     //Maybe the QByteArray declaration should be fixed ;-)
-    data[0] = (char) 0xFF; 
-    data[1] = (char) 0xD8; 
+    data[0] = (char) 0xFF;
+    data[1] = (char) 0xD8;
     char * pData = data.data() + 2;
 
     QImage image;
