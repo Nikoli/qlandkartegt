@@ -95,8 +95,8 @@ class IGarminTyp : public QObject
             QPen    penBorderNight;
 
             bool    hasPixmap;
-            QImage  imgDay;
-            QImage  imgNight;
+            QPixmap imgDay;
+            QPixmap imgNight;
 
             QMap<int,QString> strings;
             label_type_e labelType;

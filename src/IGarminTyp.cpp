@@ -548,8 +548,8 @@ bool IGarminTyp::parsePolyline(QDataStream& in, QMap<quint32, polyline_property>
                     in >> b >> g >> r;
                     xpm.setColor(0, qRgb(r,g,b) );
                     decodeBitmap(in, xpm, 32, rows, 1);
-                    property.imgDay     = xpm;
-                    property.imgNight   = xpm;
+                    property.imgDay     = QPixmap::fromImage(xpm);
+                    property.imgNight   = QPixmap::fromImage(xpm);
                     property.hasPixmap  = true;
                     property.known      = true;
                 }
@@ -590,8 +590,8 @@ bool IGarminTyp::parsePolyline(QDataStream& in, QMap<quint32, polyline_property>
                     xpm2.setColor(0, qRgb(r,g,b) );
                     decodeBitmap(in, xpm1, 32, rows, 1);
                     memcpy(xpm2.bits(), xpm1.bits(), (32*rows));
-                    property.imgDay     = xpm1;
-                    property.imgNight   = xpm2;
+                    property.imgDay     = QPixmap::fromImage(xpm1);
+                    property.imgNight   = QPixmap::fromImage(xpm2);
                     property.hasPixmap  = true;
                     property.known      = true;
                 }
@@ -632,8 +632,8 @@ bool IGarminTyp::parsePolyline(QDataStream& in, QMap<quint32, polyline_property>
                     xpm2.setColor(0, qRgb(r,g,b) );
                     decodeBitmap(in, xpm1, 32, rows, 1);
                     memcpy(xpm2.bits(), xpm1.bits(), (32*rows));
-                    property.imgDay     = xpm1;
-                    property.imgNight   = xpm2;
+                    property.imgDay     = QPixmap::fromImage(xpm1);
+                    property.imgNight   = QPixmap::fromImage(xpm2);
                     property.hasPixmap  = true;
                     property.known      = true;
                 }
@@ -674,8 +674,8 @@ bool IGarminTyp::parsePolyline(QDataStream& in, QMap<quint32, polyline_property>
                     xpm2.setColor(0, qRgba(255,255,255,0) );
                     decodeBitmap(in, xpm1, 32, rows, 1);
                     memcpy(xpm2.bits(), xpm1.bits(), (32*rows));
-                    property.imgDay     = xpm1;
-                    property.imgNight   = xpm2;
+                    property.imgDay     = QPixmap::fromImage(xpm1);
+                    property.imgNight   = QPixmap::fromImage(xpm2);
                     property.hasPixmap  = true;
                     property.known      = true;
                 }
@@ -707,8 +707,8 @@ bool IGarminTyp::parsePolyline(QDataStream& in, QMap<quint32, polyline_property>
                     xpm.setColor(1, qRgb(r,g,b) );
                     xpm.setColor(0, qRgba(255,255,255,0) );
                     decodeBitmap(in, xpm, 32, rows, 1);
-                    property.imgDay     = xpm;
-                    property.imgNight   = xpm;
+                    property.imgDay     = QPixmap::fromImage(xpm);
+                    property.imgNight   = QPixmap::fromImage(xpm);
                     property.hasPixmap  = true;
                     property.known      = true;
                 }
@@ -743,8 +743,8 @@ bool IGarminTyp::parsePolyline(QDataStream& in, QMap<quint32, polyline_property>
                     xpm2.setColor(0, qRgba(255,255,255,0) );
                     decodeBitmap(in, xpm1, 32, rows, 1);
                     memcpy(xpm2.bits(), xpm1.bits(), (32*rows));
-                    property.imgDay     = xpm1;
-                    property.imgNight   = xpm2;
+                    property.imgDay     = QPixmap::fromImage(xpm1);
+                    property.imgNight   = QPixmap::fromImage(xpm2);
                     property.hasPixmap  = true;
                     property.known      = true;
                 }
@@ -777,8 +777,8 @@ bool IGarminTyp::parsePolyline(QDataStream& in, QMap<quint32, polyline_property>
                 qDebug() << "Failed polyline" <<  hex << ":" << typ <<  ctyp << rows ;
                 continue;
         }
-        property.imgDay     = property.imgDay.convertToFormat(QImage::Format_ARGB32_Premultiplied);
-        property.imgNight   = property.imgNight.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+//        property.imgDay     = property.imgDay.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+//        property.imgNight   = property.imgNight.convertToFormat(QImage::Format_ARGB32_Premultiplied);
         if(hasLocalization)
         {
             qint16 len;

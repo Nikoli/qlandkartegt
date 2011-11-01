@@ -569,7 +569,7 @@ QString CMapTDB::getLegendLines()
                 int x = 0;
                 while(x < pixmap.width())
                 {
-                    p.drawImage(x,10,prop.imgDay);
+                    p.drawPixmap(x,10,prop.imgDay);
                     x += prop.imgDay.width();
                 }
 
@@ -602,7 +602,7 @@ QString CMapTDB::getLegendLines()
                 int x = 0;
                 while(x < pixmap.width())
                 {
-                    p.drawImage(x,10,prop.imgNight);
+                    p.drawPixmap(x,10,prop.imgNight);
                     x += prop.imgNight.width();
                 }
 
@@ -2136,31 +2136,31 @@ void CMapTDB::drawLine(QPainter& p, const CGarminPolygon& l)
 }
 
 
-static inline QImage img2line(const QImage &img, int width)
+static inline QPixmap img2line(const QPixmap &img, int width)
 {
-    Q_ASSERT(img.format() == QImage::Format_ARGB32_Premultiplied);
 
-    QImage newImage(width, img.height(), QImage::Format_ARGB32_Premultiplied);
+//    QImage newImage(width, img.height(), QImage::Format_ARGB32_Premultiplied);
 
-    const int bpl_src = img.bytesPerLine();
-    const int bpl_dst = newImage.bytesPerLine();
-    const uchar *_srcBits = img.bits();
-    uchar *_dstBits = newImage.bits();
+//    const int bpl_src = img.bytesPerLine();
+//    const int bpl_dst = newImage.bytesPerLine();
+//    const uchar *_srcBits = img.bits();
+//    uchar *_dstBits = newImage.bits();
 
-    for(int i = 0; i < img.height(); i++)
-    {
-        const uchar *srcBits = _srcBits + bpl_src * i;
-        uchar *dstBits = _dstBits + bpl_dst * i;
+//    for(int i = 0; i < img.height(); i++)
+//    {
+//        const uchar *srcBits = _srcBits + bpl_src * i;
+//        uchar *dstBits = _dstBits + bpl_dst * i;
 
-        int bytesToCopy = bpl_dst;
-        while(bytesToCopy > 0)
-        {
-            memcpy(dstBits, srcBits, CMAPTDB_MIN(bytesToCopy, bpl_src));
-            dstBits += bpl_src;
-            bytesToCopy -= bpl_src;
-        }
-    }
-    return newImage;
+//        int bytesToCopy = bpl_dst;
+//        while(bytesToCopy > 0)
+//        {
+//            memcpy(dstBits, srcBits, CMAPTDB_MIN(bytesToCopy, bpl_src));
+//            dstBits += bpl_src;
+//            bytesToCopy -= bpl_src;
+//        }
+//    }
+
+    return img.copy(0,0,width,img.height());
 }
 
 
@@ -2205,7 +2205,7 @@ void CMapTDB::drawPolylines(QPainter& p, polytype_t& lines)
 
         if(property.hasPixmap)
         {
-            const QImage &pixmap    = nightView ? property.imgNight : property.imgDay;
+            const QPixmap &pixmap   = nightView ? property.imgNight : property.imgDay;
             const double h          = pixmap.height();
 
             QList<quint32>::const_iterator it = dict[type].constBegin();
@@ -2303,7 +2303,7 @@ void CMapTDB::drawPolylines(QPainter& p, polytype_t& lines)
                             l += w;
                         }
 #else
-                        p.drawImage(0,-h/2, img2line(pixmap, segLength));
+                        p.drawPixmap(0,-h/2, img2line(pixmap, segLength));
 #endif
 
                         p.restore();
