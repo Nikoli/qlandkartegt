@@ -24,6 +24,13 @@
 #include "CSearchDB.h"
 #include "CTrackDB.h"
 #include "CDlgEditWpt.h"
+#ifdef HAS_POWERDB
+#include "CDlgEditElectricWpt.h"
+#include "CDlgEditPowerLine.h"
+#include "CPowerDB.h"
+#include "CPowerLine.h"
+#include "CPowerNW.h"
+#endif
 #include "GeoMath.h"
 #include "CTrackToolWidget.h"
 
@@ -189,11 +196,15 @@ void CMouseMoveMap::draw(QPainter& p)
 
 void CMouseMoveMap::contextMenu(QMenu& menu)
 {
+    qDebug() << "selLine == NULL ? " << (selLine == NULL ? "true" : "false");
     if(!selWpt.isNull())
     {
         menu.addSeparator();
         menu.addAction(QPixmap(":/icons/iconClipboard16x16.png"),tr("Copy Pos. Waypoint"),this,SLOT(slotCopyPositionWpt()));
         menu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit Waypoint ..."),this,SLOT(slotEditWpt()));
+#ifdef HAS_POWERDB
+        menu.addAction(QPixmap(""),tr("Edit El. Data Waypoint"),this,SLOT(slotEditElectricWpt()));
+#endif
 
         if(selWpt->isMovable())
         {
@@ -205,6 +216,28 @@ void CMouseMoveMap::contextMenu(QMenu& menu)
             menu.addAction(QPixmap(":/icons/iconClear16x16.png"),tr("Delete Waypoint"),this,SLOT(slotDeleteWpt()));
         }
     }
+#ifdef HAS_POWERDB
+    else if(!(selLine == NULL)) {
+        menu.addSeparator();
+        menu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit Power line ..."),this,SLOT(slotEditPowerLine()));
+        menu.addAction(QPixmap(":/icons/iconClear16x16.png"),tr("Delete Power line"),this,SLOT(slotDeletePowerLine()));
+        menu.addSeparator();
+        menu.addAction(QPixmap(":/icons/iconChange16x16.png"),tr("Assign to network ..."));
+
+        QString key;
+        QStringList keys = CPowerDB::self().getPowerNWs();
+
+        foreach(key, keys)
+        {
+            CPowerNW* nw = CPowerDB::self().getPowerNWByKey(key);
+            //if (nw->getName() == "unassigned power lines") continue; // But we might want to un-assign lines!
+            if (selLine->keyNetwork == nw->getKey()) continue;
+            QAction* theAction = new QAction(QPixmap(":/icons/iconPowerNW16x16.png"), "  " + nw->getName(),this);
+            menu.addAction(theAction);
+            connect(&menu, SIGNAL(triggered(QAction*)), this, SLOT(slotAssignToPowerNW(QAction*)));
+        }
+    }
+#endif
     else
     {
         menu.addSeparator();
@@ -215,7 +248,7 @@ void CMouseMoveMap::contextMenu(QMenu& menu)
     {
         menu.addSeparator();
         menu.addAction(QPixmap(":/icons/iconGoogleMaps16x16.png"),tr("Open Pos. with Google Maps"),this,SLOT(slotOpenGoogleMaps())); //TODO: Google Maps right click
-                menu.addAction(QPixmap(":/icons/iconClipboard16x16.png"),tr("Copy Pos. Trackpoint"),this,SLOT(slotCopyPositionTrack()));
+        menu.addAction(QPixmap(":/icons/iconClipboard16x16.png"),tr("Copy Pos. Trackpoint"),this,SLOT(slotCopyPositionTrack()));
         menu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit Track ..."),this,SLOT(slotEditTrack()));
     }
     menu.addSeparator();
@@ -340,6 +373,38 @@ void CMouseMoveMap::slotEditWpt()
     dlg.exec();
 }
 
+#ifdef HAS_POWERDB
+void CMouseMoveMap::slotEditElectricWpt()
+{
+    if(selWpt.isNull()) return;
+
+    CDlgEditElectricWpt dlg(*selWpt,canvas);
+    dlg.exec();
+}
+
+void CMouseMoveMap::slotEditPowerLine()
+{
+    if(selLine == NULL) return;
+
+    CDlgEditPowerLine dlg(*selLine,canvas);
+    dlg.exec();
+}
+
+void CMouseMoveMap::slotAssignToPowerNW(QAction* action)
+{
+    if(selLine == NULL) return;
+    qDebug() << "slotAssignToPowerNW " << selLine->getName() << " to " << action->text().remove(0,2);
+
+    CPowerNW* nw = CPowerDB::self().getPowerNWByName(action->text().remove(0,2));
+    if (nw != NULL)
+    {
+        selLine->keyNetwork = nw->getKey();
+        CPowerDB::self().setPowerLineData(*selLine);
+        delete nw;
+    }
+}
+#endif
+
 
 void CMouseMoveMap::slotCopyPositionWpt()
 {
@@ -360,6 +425,16 @@ void CMouseMoveMap::slotDeleteWpt()
     QString key = selWpt->getKey();
     CWptDB::self().delWpt(key);
 }
+
+#ifdef HAS_POWERDB
+void CMouseMoveMap::slotDeletePowerLine()
+{
+    if(selLine == NULL) return;
+
+    QString key = selLine->getKey();
+    CPowerDB::self().delPowerLine(key);
+}
+#endif
 
 
 void CMouseMoveMap::slotMoveWpt()

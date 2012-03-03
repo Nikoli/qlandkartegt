@@ -42,6 +42,7 @@ class CMenus;
 class QSocketNotifier;
 class QAction;
 class CGeoDB;
+//class CPower;
 class CPowerDB;
 #ifdef HAS_DBUS
 class CDBus;
@@ -166,6 +167,8 @@ class CMainWindow : public QMainWindow
 
         CGeoDB * geodb;
 
+//        CPower * power;
+        
         CPowerDB * powerdb;
 
         /// the current loaded geo data (workspace) file

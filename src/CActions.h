@@ -47,6 +47,9 @@ class CActions : public QObject
         void funcSwitchToMap3D();
 
         void funcSwitchToWpt();
+#ifdef HAS_POWERDB
+        void funcSwitchToElectric();
+#endif
         void funcSwitchToTrack();
         void funcSwitchToRoute();
 
@@ -75,6 +78,12 @@ class CActions : public QObject
 
         void funcNewWpt();
         void funcEditWpt();
+#ifdef HAS_POWERDB
+        void funcNewPowerNW();
+        void funcNewPowerLine();
+        void funcEditPower();
+        void funcPhaseBalance();
+#endif
         void funcMoveWpt();
         void funcImageWpt();
         void funcUploadWpt();

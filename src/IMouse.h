@@ -32,6 +32,9 @@ class QKeyEvent;
 class QMenu;
 class CCanvas;
 class CWpt;
+#ifdef HAS_POWERDB
+class CPowerLine;
+#endif
 class IOverlay;
 class CSearch;
 class IMapSelection;
@@ -151,6 +154,11 @@ class IMouse : public QObject
         static QPointer<IOverlay> selOverlay;
         /// current selected map area
         QPointer<IMapSelection>selMap;
+#ifdef HAS_POWERDB
+        // current selected power line
+        CPowerLine* selLine; // TODO: Use QPointer< >, but this gives compile error in CMouseEditPowerLine.cpp
+        QPoint selLine_middle;
+#endif
 
         QPointer<CSearch> selSearch;
 

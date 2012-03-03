@@ -28,6 +28,11 @@
 #include "CLiveLogDB.h"
 #include "COverlayDB.h"
 #include "CRouteDB.h"
+#ifdef HAS_POWERDB
+    #include "CPowerDB.h"
+    #include "CPowerToolWidget.h"
+    #include "CPowerNW.h"
+#endif
 #include "CTrackToolWidget.h"
 #include "CCreateMapGeoTiff.h"
 #include "CMainWindow.h"
@@ -65,6 +70,9 @@ QObject(parent), parent(parent)
     createAction(tr("F8"), ":/icons/iconClear16x16.png", tr("&Clear all"), "aClearAll", tr("Remove all waypoints, tracks, ..."));
     createAction(tr("F9"), ":/icons/iconUpload16x16.png", tr("U&pload all"), "aUploadAll", tr("Upload all data to device."));
     createAction(tr("F10"), ":/icons/iconDownload16x16.png", tr("Down&load all"), "aDownloadAll", tr("Download all data from device."));
+#ifdef HAS_POWERDB
+    createAction(tr("F11"), "", tr("Electr&ic"), "aSwitchToElectric", tr("Electric distribution network."));
+#endif
 
     createAction(tr("ESC"), ":/icons/iconBack16x16.png", tr("&Back"), "aSwitchToMain", tr("Go back to main menu."));
     createAction(tr("F1"), ":/icons/iconMoveMap16x16.png", tr("Mo&ve Map"), "aMoveArea", tr("Move the map. Press down the left mouse button and move the mouse."));
@@ -95,6 +103,13 @@ QObject(parent), parent(parent)
 #endif
     createAction(tr("F9"), ":/icons/iconUpload16x16.png", tr("U&pload"), "aUploadWpt", tr("Upload waypoints to device."));
     createAction(tr("F10"), ":/icons/iconDownload16x16.png", tr("Down&load"), "aDownloadWpt", tr("Download waypoints from device."));
+    //
+#ifdef HAS_POWERDB
+    createAction(tr("F4"), ":/icons/iconAdd16x16.png", tr("New Net&work"), "aNewPowerNW", tr("Create a new power network. The power house position will be the currently selected position."));
+    createAction(tr("F5"), ":/icons/iconAdd16x16.png", tr("&New Power Line"), "aNewPowerLine", tr("Create a new power line. The default position will be the current cursor position."));
+    createAction(tr("F6"), ":/icons/iconEdit16x16.png", tr("&Edit Power Data"), "aEditPower", tr("Switch cursor to 'Edit Power' mode. Point-n-click to edit the electric data"));
+    createAction(tr("F7"), ":/icons/iconBalance16x16.png", tr("Check Phase &Balance"), "aPhaseBalance", tr("Check the load balance on the phases"));
+#endif
     //
     createAction(tr("F5"), ":/icons/iconAdd16x16.png", tr("Join &Tracks"), "aCombineTrack", tr("Join multiple selected tracks to one."));
     createAction(tr("F6"), ":/icons/iconEdit16x16.png", tr("&Edit Track"), "aEditTrack", tr("Toggle track edit dialog."));
@@ -265,6 +280,16 @@ void CActions::funcSwitchToWpt()
     funcMoveArea();
 }
 
+#ifdef HAS_POWERDB
+void CActions::funcSwitchToElectric()
+{
+    setMenuTitle(tr("&Electric"));
+    setMenuPixmap(QPixmap(":/icons/backElectric128x128.png"));
+    actionGroup->switchToActionGroup(CMenus::ElectricMenu);
+    CPowerDB::self().gainFocus();
+    funcMoveArea();
+}
+#endif
 
 void CActions::funcSwitchToTrack()
 {
@@ -420,6 +445,18 @@ void CActions::funcNewWpt()
     canvas->setMouseMode(CCanvas::eMouseAddWpt);
 }
 
+#ifdef HAS_POWERDB
+void CActions::funcNewPowerNW()
+{
+    canvas->setMouseMode(CCanvas::eMouseAddPowerNW);
+}
+
+void CActions::funcNewPowerLine()
+{
+    canvas->setMouseMode(CCanvas::eMouseAddPowerLine);
+}
+#endif
+
 
 void CActions::funcCloseMap3D()
 {
@@ -485,6 +522,19 @@ void CActions::funcEditWpt()
     canvas->setMouseMode(CCanvas::eMouseEditWpt);
 }
 
+#ifdef HAS_POWERDB
+void CActions::funcEditPower()
+{
+    canvas->setMouseMode(CCanvas::eMouseEditPower);
+}
+
+void CActions::funcPhaseBalance()
+{
+    CPowerToolWidget* w = CPowerDB::self().getToolWidget();
+    w->slotPhaseBalance();
+}
+
+#endif
 
 void CActions::funcMoveWpt()
 {

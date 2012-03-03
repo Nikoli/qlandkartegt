@@ -323,6 +323,8 @@ void CWptDB::delWpt(const QStringList& keys, bool saveSticky)
 
 void CWptDB::addWpt(CWpt * wpt, bool silent)
 {
+    qDebug() << "CWptDB::addWpt() for " << wpt->getName();
+
     if(wpts.contains(wpt->getKey()))
     {
         if(wpts[wpt->getKey()]->sticky)
@@ -721,6 +723,7 @@ void CWptDB::saveGPX(CGpx& gpx, const QStringList& keys)
 
 void CWptDB::loadQLB(CQlb& qlb, bool newKey)
 {
+qDebug() << "CWptDB::loadQLB()";
     QDataStream stream(&qlb.waypoints(),QIODevice::ReadOnly);
     stream.setVersion(QDataStream::Qt_4_5);
 
@@ -741,7 +744,7 @@ void CWptDB::loadQLB(CQlb& qlb, bool newKey)
     {
         emit sigChanged();
     }
-
+qDebug() << "CWptDB::loadQLB() finished";
 }
 
 

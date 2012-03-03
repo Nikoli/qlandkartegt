@@ -62,6 +62,9 @@ class CWptToolWidget : public QWidget, private Ui::IWptToolWidget
         void slotItemClicked(QListWidgetItem* item);
         void slotContextMenu(const QPoint& pos);
         void slotEdit();
+#ifdef HAS_POWERDB
+        void slotEditElectric();
+#endif
         void slotDelete();
         void slotDeleteNonSel();
         void slotDeleteBy();
@@ -80,6 +83,9 @@ class CWptToolWidget : public QWidget, private Ui::IWptToolWidget
         QMenu * contextMenu;
         QAction * actCopyPos;
         QAction * actEdit;
+#ifdef HAS_POWERDB
+        QAction * actEditElectric;
+#endif
         QAction * actProximity;
         QAction * actIcon;
         QAction * actMakeRte;

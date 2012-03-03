@@ -28,6 +28,12 @@
 #include "CMouseAddWpt.h"
 #include "CMouseMoveWpt.h"
 #include "CMouseEditWpt.h"
+#ifdef HAS_POWERDB
+#include "CMouseEditPowerNW.h"
+#include "CMouseEditPower.h"
+#include "CMouseAddPowerNW.h"
+#include "CMouseAddPowerLine.h"
+#endif
 #include "CMouseRefPoint.h"
 #include "CMouseCutTrack.h"
 #include "CMouseSelTrack.h"
@@ -56,6 +62,9 @@
 #include "CCanvasUndoCommandZoom.h"
 #include "CMapUndoCommandMove.h"
 #include "CPlot.h"
+#ifdef HAS_POWERDB
+#include "CPowerDB.h"
+#endif
 
 #include <QtGui>
 
@@ -82,6 +91,12 @@ CCanvas::CCanvas(QWidget * parent)
     mouseAddWpt     = new CMouseAddWpt(this);
     mouseMoveWpt    = new CMouseMoveWpt(this);
     mouseEditWpt    = new CMouseEditWpt(this);
+#ifdef HAS_POWERDB
+    mouseEditPowerNW     = new CMouseEditPowerNW(this);
+    mouseEditPower   = new CMouseEditPower(this);
+    mouseAddPowerNW   = new CMouseAddPowerNW(this);
+    mouseAddPowerLine = new CMouseAddPowerLine(this);
+#endif
     mouseRefPoint   = new CMouseRefPoint(this);
     mouseCutTrack   = new CMouseCutTrack(this);
     mouseSelTrack   = new CMouseSelTrack(this);
@@ -157,6 +172,24 @@ void CCanvas::setMouseMode(mouse_mode_e mode)
         case eMouseEditWpt:
             mouse = mouseEditWpt;
             break;
+
+#ifdef HAS_POWERDB
+        case eMouseAddPowerNW:
+            mouse = mouseAddPowerNW;
+            break;
+            
+        case eMouseAddPowerLine:
+            mouse = mouseAddPowerLine;
+            break;
+            
+        case eMouseEditPowerNW:
+            mouse = mouseEditPowerNW;
+            break;
+            
+        case eMouseEditPower:
+            mouse = mouseEditPower;
+            break;
+#endif
 
         case eMouseMoveWpt:
             mouse = mouseMoveWpt;
@@ -430,6 +463,9 @@ void CCanvas::draw(QPainter& p)
     CLiveLogDB::self().draw(p, rect(), needsRedraw);
     CWptDB::self().draw(p, rect(), needsRedraw);
     CSearchDB::self().draw(p, rect(), needsRedraw);
+#ifdef HAS_POWERDB
+    CPowerDB::self().draw(p, rect(), needsRedraw);
+#endif
 
     drawRefPoints(p);
     drawScale(p);

@@ -72,7 +72,7 @@ class CMegaMenu : public QLabel
         QString title;
 
         QRect rectTitle;
-        QRect rectF[11];
+        QRect rectF[SIZE_OF_MEGAMENU];
 
         int currentItemIndex;
         bool mouseDown;

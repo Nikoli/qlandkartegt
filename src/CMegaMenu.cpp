@@ -137,7 +137,13 @@ void CMegaMenu::switchByKeyWord(const QString& key)
         actions->funcSwitchToMain();
         actions->funcMoveArea();
     }
-
+#ifdef HAS_POWERDB
+    else if (key == "Electric")
+    {
+        actions->funcSwitchToElectric();
+        actions->funcMoveArea();
+    }
+#endif
 
 }
 
@@ -272,7 +278,7 @@ void CMegaMenu::paintEvent(QPaintEvent *e)
         style()->drawControl(QStyle::CE_MenuItem, &opt, &p, this);
 
         ++idx;
-        if (idx >= 11)
+        if (idx >= SIZE_OF_MEGAMENU)
             break;
     }
 }
@@ -289,7 +295,7 @@ void CMegaMenu::resizeEvent(QResizeEvent * e)
     yoff    = 0;
 
     rectTitle = QRect(0,yoff, w, h);
-    for(int i=0; i < 11; ++i)
+    for(int i=0; i < SIZE_OF_MEGAMENU; ++i)
     {
         yoff += h;
         rectF[i] = QRect(0,yoff, w, h);
@@ -321,7 +327,7 @@ void CMegaMenu::mouseReleaseEvent(QMouseEvent * e)
 
     QPoint pos = e->pos();
     currentItemIndex = -1;
-    for(int i = 0; i < 11; ++i)
+    for(int i = 0; i < SIZE_OF_MEGAMENU; ++i)
     {
         if(rectF[i].contains(pos))
         {
@@ -342,7 +348,7 @@ void CMegaMenu::mouseMoveEvent(QMouseEvent * e)
 {
     QPoint pos = e->pos();
     currentItemIndex = -1;
-    for(int i = 0; i < 11; ++i)
+    for(int i = 0; i < SIZE_OF_MEGAMENU; ++i)
     {
         if(rectF[i].contains(pos))
         {

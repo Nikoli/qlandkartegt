@@ -36,6 +36,11 @@
 #include "CSearchDB.h"
 #include "IMapSelection.h"
 #include <QtGui>
+#ifdef HAS_POWERDB
+#include "CPowerDB.h"
+#include "CMenus.h"
+#include "CActions.h"
+#endif
 
 QPointer<IOverlay> IMouse::selOverlay;
 
@@ -48,6 +53,9 @@ IMouse::IMouse(CCanvas * canvas)
 , canvas(canvas)
 , selTrkPt(0)
 , selRtePt(0)
+#ifdef HAS_POWERDB
+, selLine(NULL)
+#endif
 , doSpecialCursorWpt(false)
 , doSpecialCursorSearch(false)
 , doShowWptBuddies(false)
@@ -176,7 +184,18 @@ void IMouse::drawSelWpt(QPainter& p)
             return;
         }
 
+#ifdef HAS_POWERDB
+        QString str;
+
+        if (theMainWindow->getActionGroupProvider()->getActions()->getMenuTitle() == tr("&Electric"))
+        {
+            str = CPowerDB::self().getElectricInfo(selWpt->getKey());
+        } else {
+            str = selWpt->getInfo();
+        }
+#else
         QString         str = selWpt->getInfo();
+#endif
         QFont           f   = CResources::self().getMapFont();
         QFontMetrics    fm(f);
         QRect           r1  = fm.boundingRect(QRect(0,0,300,0), Qt::AlignLeft|Qt::AlignTop|Qt::TextWordWrap, str);
@@ -223,6 +242,33 @@ void IMouse::drawSelWpt(QPainter& p)
         }
 
     }
+
+#ifdef HAS_POWERDB
+    if (!(selLine == NULL))
+    {
+        CPowerDB::self().highlightPowerLine(selLine->getKey());
+
+        QString         str = selLine->getInfo();
+        QFont           f   = CResources::self().getMapFont();
+        QFontMetrics    fm(f);
+        QRect           r1  = fm.boundingRect(QRect(0,0,300,0), Qt::AlignLeft|Qt::AlignTop|Qt::TextWordWrap, str);
+        r1.moveTopLeft(QPoint(selLine_middle.x() + 55, selLine_middle.y()));
+
+        QRect           r2 = r1;
+        r2.setWidth(r1.width() + 20);
+        r2.moveLeft(r1.left() - 10);
+        r2.setHeight(r1.height() + 20);
+        r2.moveTop(r1.top() - 10);
+
+        p.setPen(CCanvas::penBorderBlue);
+        p.setBrush(CCanvas::brushBackWhite);
+        PAINT_ROUNDED_RECT(p,r2);
+
+        p.setFont(CResources::self().getMapFont());
+        p.setPen(Qt::darkBlue);
+        p.drawText(r1, Qt::AlignJustify|Qt::AlignTop|Qt::TextWordWrap,str);
+    }
+#endif
 }
 
 
@@ -422,6 +468,56 @@ void IMouse::mouseMoveEventWpt(QMouseEvent * e)
 
         ++wpt;
     }
+#ifdef HAS_POWERDB
+    CPowerLine * oldLine   = selLine;
+
+    // Are there any lines loaded at all?
+    selLine = NULL;
+
+    // If we found a wpt, then we won't find a line. Unhighlight old line
+    if (!selWpt.isNull())
+    {
+        if (oldLine != NULL)
+            CPowerDB::self().unHighlightPowerLine(oldLine->getKey());
+    }
+    else
+    {
+        // Find the power line near the cursor
+        QStringList lines = CPowerDB::self().getPowerLines();
+        QString line_key;
+
+        foreach (line_key, lines)
+        {
+            CPowerLine * l = CPowerDB::self().getPowerLineByKey(line_key);
+            if (l == NULL) continue;
+            CWpt * first  = CWptDB::self().getWptByKey(l->keyFirst);
+            CWpt * second = CWptDB::self().getWptByKey(l->keySecond);
+
+            // Distance from cursor to first line point
+            double u1 = first->lon * DEG_TO_RAD;
+            double v1 = first->lat * DEG_TO_RAD;
+            map.convertRad2Pt(u1,v1);
+            double dist_first = sqrt((pos.x() - u1) * (pos.x() - u1) + (pos.y() - v1) * (pos.y() - v1));
+
+            // Distance from cursor to second line point
+            double u2 = second->lon * DEG_TO_RAD;
+            double v2 = second->lat * DEG_TO_RAD;
+            map.convertRad2Pt(u2,v2);
+            double dist_second = sqrt((pos.x() - u2) * (pos.x() - u2) + (pos.y() - v2) * (pos.y() - v2));
+
+            // Length of line
+            double line_length = sqrt((u1 - u2) * (u1 - u2) + (v1 - v2) * (v1 - v2));
+
+            if ((dist_first > 35) && (dist_second > 35) &&
+                    (dist_first + dist_second < line_length + 20)) {
+                selLine = l;
+
+                // Find middle point of line (for displaying info)
+                selLine_middle = (QPoint(u1, v1) + QPoint(u2, v2))/2;
+            }
+        }
+    }
+#endif
 
     // check for cursor-over-function
     if(selWpt)
@@ -485,6 +581,14 @@ void IMouse::mouseMoveEventWpt(QMouseEvent * e)
     {
         canvas->update();
     }
+#ifdef HAS_POWERDB
+    if(oldLine != selLine)
+    {
+        if ((oldLine != NULL) && (selLine == NULL))
+            CPowerDB::self().unHighlightPowerLine(oldLine->getKey());
+        canvas->update();
+    }
+#endif
 }
 
 

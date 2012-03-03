@@ -49,6 +49,7 @@
 #endif
 #ifdef HAS_POWERDB
 #include "CPowerDB.h"
+//#include "CPower.h"
 #endif
 #ifdef HAS_DBUS
 #include "CDBus.h"
@@ -136,6 +137,7 @@ CMainWindow::CMainWindow()
     actionGroupProvider->addAction(CMenus::MainMenu, "aClearAll");
     actionGroupProvider->addAction(CMenus::MainMenu, "aUploadAll");
     actionGroupProvider->addAction(CMenus::MainMenu, "aDownloadAll");
+    actionGroupProvider->addAction(CMenus::MainMenu, "aSwitchToElectric");
 
     actionGroupProvider->addAction(CMenus::MapMenu, "aSwitchToMain");
     actionGroupProvider->addAction(CMenus::MapMenu, "aMoveArea");
@@ -169,8 +171,16 @@ CMainWindow::CMainWindow()
 #endif
     actionGroupProvider->addAction(CMenus::WptMenu, "aUploadWpt");
     actionGroupProvider->addAction(CMenus::WptMenu, "aDownloadWpt");
+
 #ifdef HAS_POWERDB
-    actionGroupProvider->addAction(CMenus::WptMenu, "aEditElectricWpt");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aSwitchToMain");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aMoveArea");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aZoomArea");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aCenterMap");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aNewPowerNW");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aNewPowerLine");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aEditPower");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aPhaseBalance");
 #endif
 
     actionGroupProvider->addAction(CMenus::TrackMenu, "aSwitchToMain");
@@ -274,14 +284,14 @@ CMainWindow::CMainWindow()
 
     diarydb     = new CDiaryDB(canvasTab, this);
     searchdb    = new CSearchDB(tabbar, this);
+#ifdef HAS_POWERDB
+    powerdb   = new CPowerDB(tabbar, this);
+#endif
 #ifdef HAS_GEODB
     if(resources->useGeoDB())
     {
         geodb       = new CGeoDB(tabbar, this);
     }
-#endif
-#ifdef HAS_POWERDB
-    powerdb     = new CPowerDB(this);
 #endif
 
     connect(searchdb, SIGNAL(sigChanged()), canvas, SLOT(update()));
@@ -292,6 +302,9 @@ CMainWindow::CMainWindow()
     connect(tabbar, SIGNAL(currentChanged(int)), this, SLOT(slotToolBoxChanged(int)));
     connect(routedb, SIGNAL(sigChanged()), this, SLOT(update()));
     connect(mapdb, SIGNAL(sigChanged()), this, SLOT(update()));
+#ifdef HAS_POWERDB
+    connect(powerdb, SIGNAL(sigChanged()), this, SLOT(update()));
+#endif
 
     connect(mapdb, SIGNAL(sigModified()), this, SLOT(slotModified()));
     connect(wptdb, SIGNAL(sigModified()), this, SLOT(slotModified()));
@@ -366,6 +379,9 @@ CMainWindow::CMainWindow()
     connect(&COverlayDB::self(), SIGNAL(sigChanged()), this, SLOT(slotDataChanged()));
     connect(&CDiaryDB::self(), SIGNAL(sigChanged()), this, SLOT(slotDataChanged()));
     connect(&CRouteDB::self(), SIGNAL(sigChanged()), this, SLOT(slotDataChanged()));
+#ifdef HAS_POWERDB
+    connect(&CPowerDB::self(), SIGNAL(sigChanged()), this, SLOT(slotDataChanged()));
+#endif
 
     slotDataChanged();
 
@@ -391,6 +407,10 @@ CMainWindow::CMainWindow()
         CDiaryDB::self().clear();
         COverlayDB::self().clear();
         CRouteDB::self().clear();
+#ifdef HAS_POWERDB
+        qDebug() << "CPowerDB::clear() called from CMainWindow constructor";
+        CPowerDB::self().clear();
+#endif
         clear();
 
         foreach(QString arg, qlOpts->arguments)
@@ -412,6 +432,7 @@ CMainWindow::CMainWindow()
 
     connect(&CTrackDB::self(), SIGNAL(sigHighlightTrack(CTrack *)), canvas, SLOT(slotHighlightTrack(CTrack*)));
     connect(&CTrackDB::self(), SIGNAL(sigChanged()), canvas, SLOT(slotTrackChanged()));
+    // TODO: What about CPowerDB??
 }
 
 
@@ -515,6 +536,10 @@ void CMainWindow::clearAll()
         CDiaryDB::self().clear();
         COverlayDB::self().clear();
         CRouteDB::self().clear();
+#ifdef HAS_POWERDB
+        qDebug() << "CPowerDB::clear() called from CMainWindow::clearAll()";
+        CPowerDB::self().clear();
+#endif
         clear();
     }
 }
@@ -598,6 +623,13 @@ void CMainWindow::setupMenuBar()
     menu->setTitle(tr("&Waypoint"));
     menuBar()->addMenu(menu);
 
+#ifdef HAS_POWERDB
+    menu = new QMenu(this);
+    actionGroupProvider->addActionsToMenu(menu,CMenus::MenuBarMenu,CMenus::ElectricMenu);
+    menu->setTitle(tr("Ele&ctric"));
+    menuBar()->addMenu(menu);
+#endif
+
     menu = new QMenu(this);
     actionGroupProvider->addActionsToMenu(menu,CMenus::MenuBarMenu,CMenus::TrackMenu);
     menu->setTitle(tr("&Track"));
@@ -645,13 +677,15 @@ void CMainWindow::setupMenuBar()
 
 void CMainWindow::closeEvent(QCloseEvent * e)
 {
-#ifdef HAS_POWERDB
-    delete(CPowerDB::self().db); // This is necessary to eliminate removeDatabase() warning
-#endif
-
     if(!modified)
     {
         e->accept();
+#ifdef HAS_POWERDB
+        //CPowerDB::self.db->close();
+        //QSql
+    //delete(CPowerDB::self().db); // This is necessary to eliminate removeDatabase() warning
+    //CPowerDB::self().db = NULL; // To avoid crashes!
+#endif
         return;
     }
 
@@ -758,6 +792,7 @@ void CMainWindow::slotLoadData()
     CDiaryDB::self().clear();
     COverlayDB::self().clear();
 #ifdef HAS_POWERDB
+    qDebug() << "CPowerDB::clear() called from CMainWindow::slotLoadData()";
     CPowerDB::self().clear();
 #endif
 
@@ -959,7 +994,7 @@ bool CMainWindow::convertData(const QString& inFormat, const QString& inFile, co
 
 bool CMainWindow::maybeSave()
 {
-    QMessageBox::StandardButton ret;
+    QMessageBox::StandardButton ret;    
     ret = QMessageBox::warning(this, tr("Save geo data?"),
         tr("The loaded data has been modified.\n"
         "Do you want to save your changes?"),
@@ -972,12 +1007,43 @@ bool CMainWindow::maybeSave()
             slotSaveData();
         }
         else
+#if HAS_POWERDB
+        {
+            QSettings cfg;
+            QString filter = cfg.value("geodata/filter","").toString();
+
+            if ((filter != "QLandkarte DB (*.qdb)") && (CPowerDB::self().hasPowerLines() ||
+                CPowerDB::self().hasPowerNWs() ||
+                CPowerDB::self().hasElectricData()))
+            {
+                ret = QMessageBox::warning(this, tr("Save in QDB format?"),
+                    tr("You have created power network related data.\n"
+                       "It must be saved in QDB format.\n"
+                       "Do you want to convert your data to QDB format?"),
+                    QMessageBox::Ok | QMessageBox::Cancel);
+                if (ret == QMessageBox::Ok)
+                {
+                    slotSaveData();
+                }
+                else
+                {
+                    saveData(wksFile, filter);
+                }
+            }
+            else
+            {
+                saveData(wksFile, filter);
+            }
+            return true;
+        }
+#else
         {
             QSettings cfg;
             QString filter = cfg.value("geodata/filter","").toString();
             saveData(wksFile, filter);
         }
         return true;
+#endif
     }
     else if (ret == QMessageBox::Cancel)
     {
@@ -1050,8 +1116,6 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
     QFileInfo fileInfo(filename);
     QString ext = fileInfo.suffix().toUpper();
 
-    qDebug() << "Filename1: " << filename;
-
     if(!exportFlag)
     {
         if ((filter == "GPS Exchange (*.gpx)") || (ext == "GPX"))
@@ -1063,9 +1127,13 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
             }
         }
 #ifdef HAS_POWERDB
-        else if (ext=="QDB")
+        else if ((filter=="QLandkarte DB (*.qdb)") || (ext == "QDB"))
         {
-                //filename += ".qdb"; // That is already the case
+            if (ext!="QDB")
+            {
+                filename += ".qdb";
+                ext = "QDB";
+            }
         }
 #endif
         else
@@ -1096,9 +1164,13 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
             ext = "OZI";
         }
 #ifdef HAS_POWERDB
-        else if (ext == "QDB")
+        else if ((ext == "QDB") || (filter == "QLandkarte DB (*.qdb)"))
         {
-                // filename += ".qdb"; That is already the case
+                 if (ext!="QDB")
+                 {
+                     filename += ".qdb";
+                     ext = "QDB";
+                 }
         }
 #endif
         else
@@ -1112,7 +1184,6 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
 
     }
 
-qDebug() << "Filename3: " << filename;
     fileInfo.setFile(filename);
     pathData = fileInfo.absolutePath();
 
@@ -1477,6 +1548,10 @@ void CMainWindow::slotLoadRecent()
         CRouteDB::self().clear();
         CDiaryDB::self().clear();
         COverlayDB::self().clear();
+#ifdef HAS_POWERDB
+        qDebug() << "CPowerDB::clear() called from CMainWindow::loadRecent()";
+        CPowerDB::self().clear();
+#endif
 
         loadData(filename,"");
 

@@ -23,6 +23,12 @@
 #include <QSet>
 #include <QFlags>
 
+#ifdef HAS_POWERDB
+#define SIZE_OF_MEGAMENU 12
+#else
+#define SIZE_OF_MEGAMENU 11
+#endif
+
 class CActions;
 class QWidget;
 class QLabel;
@@ -39,6 +45,9 @@ class CMenus: public QObject
             NoMenu,
             Map3DMenu,
             WptMenu,
+#ifdef HAS_POWERDB
+            ElectricMenu,
+#endif
             LiveLogMenu,
             OverlayMenu,
             OverlayDistanceMenu,

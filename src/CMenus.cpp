@@ -20,9 +20,10 @@
 #include "CCanvas.h"
 
 #include <QtGui>
-#define SIZE_OF_MEGAMENU 11
 
-// #define lqdebug(x) qDebug() << x
+//#define SIZE_OF_MEGAMENU 11
+
+//#define lqdebug(x) qDebug() << x
 #define lqdebug(x)
 
 CMenus::CMenus(QObject *parent) : QObject(parent)

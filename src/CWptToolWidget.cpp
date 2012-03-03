@@ -26,6 +26,9 @@
 #include "CMainWindow.h"
 #include "CCanvas.h"
 #include "CDlgEditWpt.h"
+#ifdef HAS_POWERDB
+#include "CDlgEditElectricWpt.h"
+#endif
 #include "CDlgDelWpt.h"
 #include "GeoMath.h"
 #include "IUnit.h"
@@ -54,6 +57,9 @@ CWptToolWidget::CWptToolWidget(QTabWidget * parent)
 
     contextMenu     = new QMenu(this);
     actEdit         = contextMenu->addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit..."),this,SLOT(slotEdit()));
+#ifdef HAS_POWERDB
+    actEditElectric = contextMenu->addAction(QPixmap(""),tr("Edit Electric Data"),this,SLOT(slotEditElectric()));
+#endif
     actCopyPos      = contextMenu->addAction(QPixmap(":/icons/iconClipboard16x16.png"),tr("Copy Position"),this,SLOT(slotCopyPosition()),Qt::CTRL + Qt::Key_C);
     contextMenu->addSeparator();
     actProximity    = contextMenu->addAction(QPixmap(":/icons/iconProximity16x16.png"),tr("Proximity ..."),this,SLOT(slotProximity()));
@@ -281,6 +287,18 @@ void CWptToolWidget::slotEdit()
         dlg.exec();
     }
 }
+
+#ifdef HAS_POWERDB
+void CWptToolWidget::slotEditElectric()
+{
+    CWpt * wpt = CWptDB::self().getWptByKey(listWpts->currentItem()->data(Qt::UserRole).toString());
+    if(wpt)
+    {
+        CDlgEditElectricWpt dlg(*wpt,this);
+        dlg.exec();
+    }
+}
+#endif
 
 
 void CWptToolWidget::slotDelete()

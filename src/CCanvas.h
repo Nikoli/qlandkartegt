@@ -33,6 +33,10 @@ class CMouseSelMap;
 class CMouseAddWpt;
 class CMouseMoveWpt;
 class CMouseEditWpt;
+class CMouseAddPowerNW;
+class CMouseAddPowerLine;
+class CMouseEditPowerNW;
+class CMouseEditPower;
 class CMouseRefPoint;
 class CMouseAddText;
 class CMouseAddTextBox;
@@ -76,6 +80,12 @@ class CCanvas : public QWidget
             , eMouseSelectArea   ///< use mouse to select map tiles
             , eMouseAddWpt       ///< use mouse to add waypoints
             , eMouseEditWpt      ///< use mouse to select waypoints
+#ifdef HAS_POWERDB
+            , eMouseAddPowerNW      ///< use mouse to add power networks
+            , eMouseAddPowerLine    ///< use mouse to add power lines
+            , eMouseEditPowerNW     ///< use mouse to edit power networks
+            , eMouseEditPower   ///< use mouse to select power lines and waypoints
+#endif
             , eMouseMoveWpt      ///< use mouse to drag-n-drop waypoints
             , eMouseMoveRefPoint ///< use mouse to drag-n-drop reference points
             //, eMouseSearchOC    ///< use mouse to define a search radius for open caching
@@ -172,6 +182,12 @@ class CCanvas : public QWidget
         CMouseAddWpt * mouseAddWpt;
         CMouseMoveWpt * mouseMoveWpt;
         CMouseEditWpt * mouseEditWpt;
+#ifdef HAS_POWERDB
+        CMouseAddPowerNW      * mouseAddPowerNW;
+        CMouseAddPowerLine    * mouseAddPowerLine;
+        CMouseEditPowerNW     * mouseEditPowerNW;
+        CMouseEditPower   * mouseEditPower;
+#endif
         CMouseRefPoint * mouseRefPoint;
         CMouseCutTrack * mouseCutTrack;
         CMouseSelTrack * mouseSelTrack;

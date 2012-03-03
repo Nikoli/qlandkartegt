@@ -23,6 +23,7 @@
 #include "IMouse.h"
 
 #include <QPoint>
+#include <QAction>
 
 /// move the map area by point-click-n-move
 class CMouseMoveMap : public IMouse
@@ -46,6 +47,12 @@ class CMouseMoveMap : public IMouse
 
     private slots:
         void slotEditWpt();
+#ifdef HAS_POWERDB
+        void slotEditElectricWpt();
+        void slotEditPowerLine();
+        void slotDeletePowerLine();
+        void slotAssignToPowerNW(QAction* action);
+#endif
         void slotCopyPositionWpt();
         void slotDeleteWpt();
         void slotMoveWpt();
