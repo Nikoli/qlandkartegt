@@ -29,9 +29,10 @@
 #include "CDlgEditPowerLine.h"
 #include "CDlgEditPowerNW.h"
 //#include "CTextEditWidget.h"
-//#include "CResources.h"
+#include "CResources.h"
 #include "CMainWindow.h"
 #include "CPowerToolWidget.h"
+#include "CMapDB.h"
 //#include "CCanvas.h"
 //#include "IMap.h"
 //#include "CDlgEditFolder.h"
@@ -86,6 +87,7 @@ CPowerDB::CPowerDB(QTabWidget * tb, QObject * parent)
     , db(NULL)
     , cnt(0)
     , showBullets(true)
+    , printView(false)
 {
     m_self = this;
 
@@ -1271,6 +1273,38 @@ void CPowerDB::highlightPowerLine(const QString& key)
 
 }
 
+void CPowerDB::drawElectricText(QPainter& p, const CPowerLine* l, const QPoint& middle, const double angle)
+{
+    QString str;
+    str += trUtf8("%1m, %2mm²").arg(l->getLength(),0,'f',0).arg(l->getCrossSection(),0,'f',0);
+    str += QString(", ") + (l->getPhases() & 1 ? "1" : "-") + (l->getPhases() & 2 ? "2" : "-") + (l->getPhases() & 4 ? "3" : "-") + tr("ph");
+
+    p.save();
+    p.translate(middle);
+    double textAngle = angle + 90.0; // display at 90° angle to line
+    if (textAngle > 90.0) textAngle -= 180.0;
+    p.rotate(textAngle);
+
+    QFont        f   = QFont("Arial",6);
+    QFontMetrics fm(f);
+    QRect        r1  = fm.boundingRect(QRect(0,0,300,0), Qt::AlignLeft|Qt::AlignTop|Qt::TextWordWrap, str);
+    r1.moveTopLeft(QPoint(-r1.width()/2, -r1.height()/2));
+
+    QRect r2 = r1;
+    r2.setWidth(r1.width() + 4);
+    r2.moveLeft(r1.left() - 2);
+    r2.setHeight(r1.height() + 4);
+    r2.moveTop(r1.top() - 2);
+
+    p.setPen(QPen(Qt::black, 1));
+    p.setBrush(CCanvas::brushBackWhite);
+    p.drawRoundedRect(r2,2,2);
+
+    p.setFont(f);
+    p.drawText(r1, Qt::AlignJustify|Qt::AlignTop|Qt::TextWordWrap,str);
+    p.restore();
+}
+
 void CPowerDB::drawLine(const QLine& qline, const QRect& extViewport, QPainter& p)
 {
     QPoint ptt;
@@ -1309,7 +1343,9 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             continue;
         }
 
-        QLine qline = l->getLine();
+        QPoint middle;
+        double angle;
+        QLine qline = l->getLine(middle, angle);
 
         if(!rect.intersects(QRect(qline.p1(), qline.p2())))
         {
@@ -1343,6 +1379,12 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 
             //p.setBrush(l->getColor());
             //drawArrows(line, rect, p);
+
+            // Draw electric info on lines
+            if (printView)
+            {
+                drawElectricText(p, l, middle, angle);
+            }
         }
 
         ++lit;
@@ -1354,7 +1396,9 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
     
     while (hlit != highlighted.end())
     {        
-        QLine qline = (*hlit)->getLine();
+        QPoint middle;
+        double angle;
+        QLine qline = (*hlit)->getLine(middle, angle);
         //qDebug() << "Highlighting line " << (*hlit)->getName();
 
         // draw skunk line
@@ -1375,6 +1419,12 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 
         //p.setBrush((*Power)->getColor());
         //drawArrows(line, rect, p);
+
+        // Draw electric info on lines
+        if (printView)
+        {
+            drawElectricText(p, (*hlit), middle, angle);
+        }
         
         ++hlit;
     }

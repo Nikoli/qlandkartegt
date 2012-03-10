@@ -46,7 +46,7 @@ class CPowerLine : public IItem
         
         void setIcon(const QString&) {}; // Must be defined because it is virtual
         
-        const QLine getLine() const;
+        const QLine getLine(QPoint& middle, double& angle) const;
 
         const double getDistance() const;
         
@@ -78,7 +78,7 @@ class CPowerLine : public IItem
         void setDrop(const double delta_U) { drop = delta_U; }
 
         const double getCrossSection() const { return crossSection; }
-        const double getPhases() const { return phases; }
+        const unsigned getPhases() const { return phases; }
         const double getLength() const { return length; }
         const double getConductivity() const { return conductivity; }
         const double getCurrent() const { return current; }
@@ -96,13 +96,13 @@ class CPowerLine : public IItem
         bool m_hide;
         
     private:
-        float    crossSection;
+        double    crossSection;
         unsigned phases;
-        float    length;
-        float    conductivity;
-        float    resistance;
-        float    current;
-        float    drop;
+        double    length;
+        double    conductivity;
+        double    resistance;
+        double    current;
+        double    drop;
 
         /// the power line color
         QColor  color;

@@ -33,6 +33,9 @@
 #include "WptIcons.h"
 #include "GeoMath.h"
 #include "config.h"
+#ifdef HAS_POWERDB
+#include "CPowerDB.h"
+#endif
 
 #include <QtGui>
 
@@ -323,8 +326,6 @@ void CWptDB::delWpt(const QStringList& keys, bool saveSticky)
 
 void CWptDB::addWpt(CWpt * wpt, bool silent)
 {
-    qDebug() << "CWptDB::addWpt() for " << wpt->getName();
-
     if(wpts.contains(wpt->getKey()))
     {
         if(wpts[wpt->getKey()]->sticky)
@@ -723,7 +724,7 @@ void CWptDB::saveGPX(CGpx& gpx, const QStringList& keys)
 
 void CWptDB::loadQLB(CQlb& qlb, bool newKey)
 {
-qDebug() << "CWptDB::loadQLB()";
+
     QDataStream stream(&qlb.waypoints(),QIODevice::ReadOnly);
     stream.setVersion(QDataStream::Qt_4_5);
 
@@ -744,7 +745,6 @@ qDebug() << "CWptDB::loadQLB()";
     {
         emit sigChanged();
     }
-qDebug() << "CWptDB::loadQLB() finished";
 }
 
 
@@ -937,7 +937,13 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
                 {
                     name = (*wpt)->getName();
                 }
-
+#ifdef HAS_POWERDB
+                if (CPowerDB::self().getPrintView())
+                {
+                    CPowerDB::wpt_eElectric wpt_data = CPowerDB::self().getElectricData((*wpt)->getKey());
+                    name += tr(": %1F").arg(wpt_data.consumers);
+                }
+#endif
                 QRect textArea = fm.boundingRect(name);
                 bool intersects;
 

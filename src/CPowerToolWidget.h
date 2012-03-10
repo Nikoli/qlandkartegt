@@ -45,6 +45,7 @@ class CPowerToolWidget : public QWidget, private Ui::IPowerToolWidget
 
     public slots:
         void slotPhaseBalance();
+        void slotMaterialUsage();
 
     private slots:
         void slotDBChanged(const bool highlightOnly);
@@ -93,6 +94,8 @@ class CPowerToolWidget : public QWidget, private Ui::IPowerToolWidget
         void getNodeLoads(const QString& wpt_key, const QString& nw_key, const double wpc,
                           const QString& fromLine, QStringList& loads,
                           double& ph1, double& ph2, double& ph3);
+        void getMaterials(const QString& wpt_key, const QString& nw_key, const QString& fromLine,
+                          QMap<QString, unsigned>& mats);
 
 };
 #endif                           //CPOWERTOOLWIDGET_H

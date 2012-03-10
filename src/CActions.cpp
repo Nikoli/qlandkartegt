@@ -109,6 +109,8 @@ QObject(parent), parent(parent)
     createAction(tr("F5"), ":/icons/iconAdd16x16.png", tr("&New Power Line"), "aNewPowerLine", tr("Create a new power line. The default position will be the current cursor position."));
     createAction(tr("F6"), ":/icons/iconEdit16x16.png", tr("&Edit Power Data"), "aEditPower", tr("Switch cursor to 'Edit Power' mode. Point-n-click to edit the electric data"));
     createAction(tr("F7"), ":/icons/iconBalance16x16.png", tr("Check Phase &Balance"), "aPhaseBalance", tr("Check the load balance on the phases"));
+    createAction(tr("F8"), ":/icons/iconMaterials16x16.png", tr("Calculate &Material Usage"), "aMaterialUsage", tr("Calculate amount of materials required"));
+    createAction(tr("F9"), ":/icons/iconPrint16x16.png", tr("&Toggle Print View"), "aPrintView", tr("Toggle display of network for printing/screen viewing"));
 #endif
     //
     createAction(tr("F5"), ":/icons/iconAdd16x16.png", tr("Join &Tracks"), "aCombineTrack", tr("Join multiple selected tracks to one."));
@@ -534,6 +536,17 @@ void CActions::funcPhaseBalance()
     w->slotPhaseBalance();
 }
 
+void CActions::funcMaterialUsage()
+{
+    CPowerToolWidget* w = CPowerDB::self().getToolWidget();
+    w->slotMaterialUsage();
+}
+
+void CActions::funcPrintView()
+{
+    CPowerDB::self().togglePrintView();
+    canvas->update();
+}
 #endif
 
 void CActions::funcMoveWpt()

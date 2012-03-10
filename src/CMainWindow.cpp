@@ -181,6 +181,8 @@ CMainWindow::CMainWindow()
     actionGroupProvider->addAction(CMenus::ElectricMenu, "aNewPowerLine");
     actionGroupProvider->addAction(CMenus::ElectricMenu, "aEditPower");
     actionGroupProvider->addAction(CMenus::ElectricMenu, "aPhaseBalance");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aMaterialUsage");
+    actionGroupProvider->addAction(CMenus::ElectricMenu, "aPrintView");
 #endif
 
     actionGroupProvider->addAction(CMenus::TrackMenu, "aSwitchToMain");

@@ -412,7 +412,7 @@ QString CPowerLine::getInfo()
     CWpt* first = CWptDB::self().getWptByKey(keyFirst);
     CWpt* second = CWptDB::self().getWptByKey(keySecond);
     str += (((first != NULL) && (second != NULL)) ? tr("From ") + first->getName() + tr(" to ") + second->getName() + "\n": "");
-    str += tr("%1 m, %2 sqmm").arg(length,0,'f',0).arg(crossSection,0,'f',1);
+    str += trUtf8("%1 m, %2 mm²").arg(length,0,'f',0).arg(crossSection,0,'f',1);
     str += tr(", phases: ") + (phases & 1 ? "1" : "") + (phases & 2 ? "2" : "") + (phases & 4 ? "3" : "");
     str += tr("\ncurrent %1 A, drop %2 V").arg(current,0,'f',1).arg(drop,0,'f',1);
 
@@ -431,12 +431,12 @@ QString CPowerLine::getInfo()
     }
 
     // Debugging
-    str += tr("\nkappa=%1, R=%2").arg(conductivity,0,'f',0).arg(resistance,0,'f',1);
+    //str += tr("\nkappa=%1, R=%2").arg(conductivity,0,'f',0).arg(resistance,0,'f',1);
 
     return str;
 }
 
-const QLine CPowerLine::getLine() const {
+const QLine CPowerLine::getLine(QPoint& middle, double& angle) const {
     IMap& map = CMapDB::self().getMap();
     
     CWpt* wpt1 = CWptDB::self().getWptByKey(keyFirst);
@@ -450,6 +450,12 @@ const QLine CPowerLine::getLine() const {
     double u2 = wpt2->lon * DEG_TO_RAD;
     double v2 = wpt2->lat * DEG_TO_RAD;
     map.convertRad2Pt(u2,v2);
+
+    // Find middle point of line (e.g. for displaying info)
+    middle = (QPoint(u1, v1) + QPoint(u2, v2))/2;
+
+    // Find angle of line
+    angle = atan2(v2 - v1, u2 - u1) * 180.0 / PI;
     
     return QLine(u1, v1, u2, v2);
 } // getLine()

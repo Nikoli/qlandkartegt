@@ -129,6 +129,8 @@ class CPowerDB : public QObject
 
         void gainFocus();
         void draw(QPainter& p, const QRect& rect, bool& needsRedraw);
+        void togglePrintView () { printView = !printView; };
+        const bool getPrintView() const { return printView; };
 
     signals:
         void sigModified();
@@ -156,6 +158,7 @@ class CPowerDB : public QObject
         void addPowerNW(CPowerNW * nw, bool silent);
         
         void drawLine(const QLine& qline, const QRect& extViewport, QPainter& p);
+        void drawElectricText(QPainter& p, const CPowerLine* l, const QPoint& middle, const double angle);
 
         /// left hand tool widget tabbar
         QTabWidget * tabbar;
@@ -168,10 +171,12 @@ class CPowerDB : public QObject
         quint32 isInternalEdit;
         /// the database object
         QSqlDatabase *db; // If this is not a pointer then at program end we get warning: "removeDatabase: connection 'qlpowerdb' is still in use"
-        
+
         quint32 cnt;
         
         bool showBullets;
+
+        bool printView;
 };
 
 #endif //CPOWERDB_H

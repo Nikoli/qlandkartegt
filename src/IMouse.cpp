@@ -582,11 +582,32 @@ void IMouse::mouseMoveEventWpt(QMouseEvent * e)
         canvas->update();
     }
 #ifdef HAS_POWERDB
-    if(oldLine != selLine)
+    if (oldLine == NULL)
     {
-        if ((oldLine != NULL) && (selLine == NULL))
+        if (selLine == NULL)
+        {
+            // Do nothing
+        }
+        else
+        {
+            canvas->update();
+        }
+    } else {
+        if (selLine == NULL) {
             CPowerDB::self().unHighlightPowerLine(oldLine->getKey());
-        canvas->update();
+            canvas->update();
+        }
+        else
+        {
+            if (selLine->getKey() != oldLine->getKey())
+            {
+                canvas->update();
+            }
+            else
+            {
+                // Do nothing
+            }
+        }
     }
 #endif
 }

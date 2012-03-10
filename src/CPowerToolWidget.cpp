@@ -23,6 +23,7 @@
 #include "CMapDB.h"
 #include "CDlgEditPowerNW.h"
 #include "CMegaMenu.h"
+#include "CResources.h"
 
 #include <QtGui>
 #include <QSqlQuery>
@@ -309,6 +310,7 @@ void CPowerToolWidget::slotNWContextMenu(const QPoint& pos)
         contextMenu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit"),this,SLOT(slotEditNW()));
         contextMenu.addAction(QPixmap(":/icons/iconWizzard16x16.png"),tr("Calc. network"),this,SLOT(slotCalcPowerNW()));
         contextMenu.addAction(QPixmap(":/icons/iconWizzard16x16.png"),tr("Check phase balance"),this,SLOT(slotPhaseBalance()));
+        contextMenu.addAction(QPixmap(":/icons/iconWizzard16x16.png"),tr("Calculate materials"),this,SLOT(slotMaterialUsage()));
         contextMenu.addSeparator();
         contextMenu.addAction(QPixmap(":/icons/iconZoomArea16x16.png"),tr("Zoom to fit"),this,SLOT(slotZoomToFitNW()));
         contextMenu.addAction(QPixmap(":/icons/iconClear16x16.png"),tr("Delete"),this,SLOT(slotDeleteNW()),Qt::CTRL + Qt::Key_Delete);
@@ -324,7 +326,6 @@ void CPowerToolWidget::slotLineContextMenu(const QPoint& pos)
     if(item)
     {
         QPoint p = listLines->mapToGlobal(pos);
-        qDebug() << "entered";
 
         QMenu contextMenu;
         contextMenu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit"),this,SLOT(slotEditLine()));
@@ -389,7 +390,7 @@ void CPowerToolWidget::slotAssignToPowerNW(QAction* action)
 
     CPowerLine* l = CPowerDB::self().getPowerLineByKey(item->data(Qt::UserRole).toString());
 
-    qDebug() << "slotAssignToPowerNW " << l->getName() << " to " << action->text().remove(0,2);
+    //qDebug() << "slotAssignToPowerNW " << l->getName() << " to " << action->text().remove(0,2);
 
     CPowerNW* nw = CPowerDB::self().getPowerNWByName(action->text().remove(0,2));
     if (nw != NULL)
@@ -442,7 +443,7 @@ const QStringList getOriginatingPowerLines(const QString& wpt_key, const QString
     query.bindValue(":wpt_key_again", wpt_key); // specifying :wpt_key twice does NOT work
     QUERY_EXEC(return result);
 
-    qDebug() << "Lines originating from " << wpt_key << " for " << nw_key << ": ";
+    //qDebug() << "Lines originating from " << wpt_key << " for " << nw_key << ": ";
 
     while (query.next()) {
         QString key = query.value(0).toString();
@@ -450,7 +451,7 @@ const QStringList getOriginatingPowerLines(const QString& wpt_key, const QString
         if (key != fromLine)
         {
             result << key;
-            qDebug() << query.value(0).toString() << ", ";
+            //qDebug() << query.value(0).toString() << ", ";
         }
     }
 
@@ -609,7 +610,7 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
                                     const QString& fromLine, QStringList& loads,
                                     double& ph1, double& ph2, double& ph3)
 {
-    qDebug() << "getNodeLoads() for " << wpt_key << ", network " << nw_key;
+    //qDebug() << "getNodeLoads() for " << wpt_key << ", network " << nw_key;
     ph1 = ph2 = ph3 = 0.0;
 
     QStringList lines = getOriginatingPowerLines(wpt_key, nw_key, fromLine);
@@ -653,10 +654,71 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
              tr(" %1W\t").arg(ph2,0,'f',0) +
              tr(" %1W\t").arg(ph3,0,'f',0) +
              tr(" %1W").arg(ph1+ph2+ph3,0,'f',0);
-
 }
 
+void CPowerToolWidget::getMaterials(const QString& wpt_key, const QString& nw_key, const QString& fromLine,
+                                    QMap<QString, unsigned>& mats)
+{
+    //qDebug() << "getMaterials() for " << wpt_key << ", network " << nw_key;
 
+    CPowerDB::wpt_eElectric wpt_data = CPowerDB::self().getElectricData(wpt_key);
+    mats["Distribution box"] += ceil(wpt_data.consumers/4.0);
+    // Estimate one small pole for two families
+    // Insulators are neglected on these poles because often engineers space poles further than 30m on the main line
+    mats["Pole small"] += floor(wpt_data.consumers/2.0);
+
+    QStringList lines = getOriginatingPowerLines(wpt_key, nw_key, fromLine);
+    QString line_key;
+
+    foreach (line_key, lines)
+    {
+        CPowerLine * l = CPowerDB::self().getPowerLineByKey(line_key);
+
+        QString cable = trUtf8("\t%1 mm²").arg(l->getCrossSection(), 3, 'f', 0);
+        double neutralCrossSection = l->getCrossSection()/2;
+        if (neutralCrossSection < 4.0) neutralCrossSection = 4.0;
+        QString neutral = trUtf8("\t%1 mm²").arg(neutralCrossSection, 3, 'f', 0);
+
+        mats["Pole large"] += floor(l->getLength() / 30.0);
+
+        unsigned insulators = floor(l->getLength() / 30.0);
+
+        switch (l->getNumPhases()) {
+            case 1: {
+                mats[cable] += 2 * l->getLength();
+                mats[trUtf8("Total mm²*m")] += 2 * l->getLength() * l->getCrossSection();
+                insulators *= 2;
+                break;
+            }
+            case 2: {
+                mats[cable] += 2 * l->getLength();
+                mats[trUtf8("Total mm²*m")] += 2 * l->getLength() * l->getCrossSection();
+                mats[neutral] += l->getLength();
+                mats[trUtf8("Total mm²*m")] += l->getLength() * neutralCrossSection;
+                insulators *= 3;
+            }
+            case 3: {
+                mats[cable] += 3 * l->getLength();
+                mats[trUtf8("Total mm²*m")] += 3 * l->getLength() * l->getCrossSection();
+                mats[neutral] += l->getLength();
+                mats[trUtf8("Total mm²*m")] += l->getLength() * neutralCrossSection;
+                insulators *= 4;
+            }
+        }
+
+        if (l->getCrossSection() < 20.0)
+            mats["Insulator small"] += insulators;
+        else
+            mats["Insulator large"] += insulators;
+
+        if (l->keyFirst == wpt_key)
+        {
+            getMaterials(l->keySecond, nw_key, line_key, mats);
+        } else {
+            getMaterials(l->keyFirst, nw_key, line_key, mats);
+        }
+    }
+}
 
 #if CALCMETHOD == 1
 // wpt_key: The waypoint to calculate the load for
@@ -701,18 +763,16 @@ const double calcResistance(const QString& wpt_key, const QString &nw_key, const
                       const double wpc, const double rv)
 {
     CPowerDB::wpt_eElectric wpt_data = CPowerDB::self().getElectricData(wpt_key);
-    //if (wpt_data.voltage < 0.01) wpt_data.voltage = 240; // Hack, find bug instead!
-    //if (wpt_data.powerfactor < 0.01) wpt_data.powerfactor = 0.75; // Hack, find bug instead!
-    qDebug() << "Rated voltage: " << rv << ", power factor: " << wpt_data.powerfactor;
+    //qDebug() << "Rated voltage: " << rv << ", power factor: " << wpt_data.powerfactor;
 
     double load = wpt_data.consumers * wpc + wpt_data.load;
-    qDebug() << "Load: " << load;
+    //qDebug() << "Load: " << load;
 
     if (load > 0.01)
         wpt_data.resistance = rv*rv / load * wpt_data.powerfactor;
     else
         wpt_data.resistance = 1E10; // Should be enough ...
-    qDebug() << "Resistance: " << wpt_data.resistance;
+    //qDebug() << "Resistance: " << wpt_data.resistance;
 
     // Parallel resistance -> 1/R = 1/R1 + 1/R2 <==> R = R1 * R2 / (R1 + R2)
     // All loads on the originating lines are parallel to the load of this node
@@ -736,7 +796,7 @@ const double calcResistance(const QString& wpt_key, const QString &nw_key, const
         // together first (giving 1/3 of each individual resistance) and then parallel them to
         // this node, or whether we parallel each single-phase resistance separately to this node
         double R2 = l->getResistance();
-        qDebug() << "Line resistance: " << R2;
+        //qDebug() << "Line resistance: " << R2;
 
         if (l->keyFirst == wpt_key)
         {
@@ -745,13 +805,12 @@ const double calcResistance(const QString& wpt_key, const QString &nw_key, const
             R2 += calcResistance(l->keyFirst, nw_key, line_key, wpc, rv);
         }
         wpt_data.totalresistance = (R1 * R2)/(R1 + R2);
-        qDebug() << "New total resistance: " << wpt_data.totalresistance;
+        //qDebug() << "New total resistance: " << wpt_data.totalresistance;
     }
 
     CPowerDB::self().setElectricData(wpt_key, wpt_data);
-    CWpt * wpt = CWptDB::self().getWptByKey(wpt_key);
-    if (wpt != NULL)
-      qDebug() << "Total resistance on " << wpt->getName() << "(" << wpt_key << "): " << wpt_data.totalresistance;
+    //CWpt * wpt = CWptDB::self().getWptByKey(wpt_key);
+    //if (wpt != NULL) qDebug() << "Total resistance on " << wpt->getName() << "(" << wpt_key << "): " << wpt_data.totalresistance;
     return wpt_data.totalresistance;
 }
 #endif
@@ -762,7 +821,7 @@ void calcVoltage(const QString& wpt_key, const QString &nw_key, const QString& f
     CPowerDB::wpt_eElectric wpt_data = CPowerDB::self().getElectricData(wpt_key);
     QStringList lines = getOriginatingPowerLines(wpt_key, nw_key, fromLine);
     QString line_key;
-    qDebug() << "This node voltage: " << wpt_data.voltage;
+    //qDebug() << "This node voltage: " << wpt_data.voltage;
 
     foreach (line_key, lines)
     {
@@ -777,7 +836,7 @@ void calcVoltage(const QString& wpt_key, const QString &nw_key, const QString& f
         l->setCurrent(next_wpt_data.totalload / (wpt_data.voltage * next_wpt_data.powerfactor));
 #elif CALCMETHOD == 2
         l->setCurrent(wpt_data.voltage / (l->getResistance() + next_wpt_data.totalresistance));
-        qDebug() << "Set current to " << l->getCurrent();
+        //qDebug() << "Set current to " << l->getCurrent();
 #endif
         if (fabs(oldCurrent - l->getCurrent()) > 0.01)
           CPowerDB::self().setPowerLineData(*l);
@@ -836,7 +895,7 @@ void CPowerToolWidget::calcPowerNW(const QString& key) {
 
 void CPowerToolWidget::slotCalcPowerNW()
 {
-    qDebug() << "slotCalcPowerNW()";
+    //qDebug() << "slotCalcPowerNW()";
     QListWidgetItem * item;
     QList<QListWidgetItem *> items = listNetworks->selectedItems();
     if (items.isEmpty())
@@ -854,7 +913,7 @@ void CPowerToolWidget::slotCalcPowerNW()
 
 void CPowerToolWidget::slotCalcPowerNWs()
 {
-    qDebug() << "slotCalcPowerNWs()";
+    //qDebug() << "slotCalcPowerNWs()";
     QString key;
     QStringList keys = CPowerDB::self().getPowerNWs();
 
@@ -872,14 +931,15 @@ void CPowerToolWidget::slotPhaseBalance()
     // TODO: There is a slight difference in the wattage calculation to what is shown in the UI
     // calculation error or propagation of rounding errors?
     // In any case the output fulfills the purpose of showing the phase balance
-    qDebug() << "slotPhaseBalance()";
+    //qDebug() << "slotPhaseBalance()";
     QListWidgetItem * item;
     QList<QListWidgetItem *> items = listNetworks->selectedItems();
     if (items.isEmpty())
         return;
 
     QMessageBox msgBox;
-    msgBox.setText("Phase balance");
+    msgBox.setTextFormat(Qt::AutoText);
+    msgBox.setWindowTitle("Phase balance");
 
     originator = true;
     foreach(item, items)
@@ -891,11 +951,71 @@ void CPowerToolWidget::slotPhaseBalance()
 
         getNodeLoads(nw->ph, nw_key, nw->watts, "", loads, ph1, ph2, ph3);
         QString iText = "\t\t Phase 1\t Phase 2\t Phase 3\t Total\n";
+        /*QString iText =
+            "{\\rtf1\\ansi\\deff3\\adeflang1025\n"
+            "{\\fonttbl{\\f0\\froman\\fprq2\\fcharset0 Times New Roman;}{\\f1\\froman\\fprq2\\fcharset2 Symbol;}{\\f2\\fswiss\\fprq2\\fcharset0 Arial;}{\\f3\\froman\\fprq2\\fcharset128 Times New Roman;}{\\f4\\fswiss\\fprq2\\fcharset128 Arial;}{\\f5\\fnil\\fprq2\\fcharset128 Droid Sans Fallback;}{\\f6\\fswiss\\fprq2\\fcharset128 DejaVu Sans Light;}{\\f7\\fnil\\fprq2\\fcharset128 DejaVu Sans Light;}{\\f8\\fswiss\\fprq0\\fcharset128 DejaVu Sans Light;}{\\f9\\fswiss\\fprq2\\fcharset128 Droid Sans Fallback;}}\n"
+            "{\\stylesheet{\\s0\\snext0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\nowidctlpar\\cf1\\kerning1\\hich\\af6\\langfe2052\\dbch\\af9\\afs24\\lang1065\\loch\\f3\\fs24\\lang1031 Standard;}\n"
+            "{\\s20\\sbasedon0\\snext20{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\loch\\f3\\fs24\\lang1031 Tabellen Inhalt;}\n"
+            "{\\s21\\sbasedon20\\snext21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031 Tabellen \\u220\\'3fberschrift;}\n"
+            "}\\deftab709\n"
+            "\n"
+            "{\\*\\pgdsctbl\n"
+            "{\\pgdsc0\\pgdscuse195\\pgwsxn11906\\pghsxn16838\\marglsxn1134\\margrsxn1134\\margtsxn1134\\margbsxn1134\\pgdscnxt0 Standard;}}\n"
+            "\\formshade{\\*\\pgdscno0}\\paperh16838\\paperw11906\\margl1134\\margr1134\\margt1134\\margb1134\\sectd\\sbknone\\sectunlocked1\\pgndec\\pgwsxn11906\\pghsxn16838\\marglsxn1134\\margrsxn1134\\margtsxn1134\\margbsxn1134\\ftnbj\\ftnstart1\\ftnrstcont\\ftnnar\\aenddoc\\aftnrstcont\\aftnstart1\\aftnnrlc\n"
+            "\\trowd\\trql\\ltrrow\\trpaddft3\\trpaddt0\\trpaddfl3\\trpaddl0\\trpaddfb3\\trpaddb0\\trpaddfr3\\trpaddr0\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx1927\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx3855\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx5782\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx7710\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\clbrdrr\\brdrhair\\brdrw1\\brdrcf1\\cellx9638\\pgndec\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\n"
+            "}\\cell\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\\loch\\f4\n"
+            "Phase 1}\\cell\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\\loch\\f4\n"
+            "Phase 2}\\cell\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\\loch\\f4\n"
+            "Phase 3}\\cell\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\\loch\\f4\n"
+            "Total}\\cell\\row\\pard\\trowd\\trql\\ltrrow\\trpaddft3\\trpaddt0\\trpaddfl3\\trpaddl0\\trpaddfb3\\trpaddb0\\trpaddfr3\\trpaddr0\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx1927\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx3855\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx5782\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx7710\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\clbrdrr\\brdrhair\\brdrw1\\brdrcf1\\cellx9638\\pard\\plain \\s20{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\loch\\f3\\fs24\\lang1031\n"
+            "}}";*/
+
         iText += loads.join("\n");
 
-        msgBox.setInformativeText(iText);
-        //msgBox.setDetailedText("a b c d");
-        msgBox.setStandardButtons( QMessageBox::Ok);
+        msgBox.setText(iText);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
+
+    }
+
+    originator = false;
+}
+
+void CPowerToolWidget::slotMaterialUsage()
+{
+    //qDebug() << "slotMaterialUsage()";
+    QListWidgetItem * item;
+    QList<QListWidgetItem *> items = listNetworks->selectedItems();
+    if (items.isEmpty())
+        return;
+
+    QMessageBox msgBox;
+    msgBox.setTextFormat(Qt::AutoText);
+    msgBox.setWindowTitle("Material Usage");
+
+    originator = true;
+    foreach(item, items)
+    {
+        QString nw_key   = item->data(Qt::UserRole).toString();
+        CPowerNW* nw = CPowerDB::self().getPowerNWByKey(nw_key);
+        QMap<QString, unsigned> materials;
+
+        getMaterials(nw->ph, nw_key, "", materials);
+
+        QString iText;
+
+        for (QMap<QString, unsigned>::const_iterator i = materials.constBegin();
+                i != materials.constEnd(); i++) {
+            if (i.key().endsWith(trUtf8("mm²")))
+                iText += i.key() + "\t" + tr("= %1 m").arg(i.value(), 5) + "\n";
+            else if (i.key().endsWith("*m"))
+                iText += i.key() + "\t" + trUtf8("= %1 mm²*m").arg(i.value(), 7) + "\n";
+            else
+                iText += i.key() + "\t" + tr("= %1 pc").arg(i.value(), 5) + "\n";
+        }
+
+        msgBox.setText(iText);
+        msgBox.setStandardButtons(QMessageBox::Ok);
         msgBox.exec();
 
     }

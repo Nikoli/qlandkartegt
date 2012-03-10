@@ -196,7 +196,6 @@ void CMouseMoveMap::draw(QPainter& p)
 
 void CMouseMoveMap::contextMenu(QMenu& menu)
 {
-    qDebug() << "selLine == NULL ? " << (selLine == NULL ? "true" : "false");
     if(!selWpt.isNull())
     {
         menu.addSeparator();

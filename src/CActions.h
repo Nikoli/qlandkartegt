@@ -83,6 +83,8 @@ class CActions : public QObject
         void funcNewPowerLine();
         void funcEditPower();
         void funcPhaseBalance();
+        void funcMaterialUsage();
+        void funcPrintView();
 #endif
         void funcMoveWpt();
         void funcImageWpt();
