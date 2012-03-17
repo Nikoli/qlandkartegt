@@ -938,10 +938,11 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
                     name = (*wpt)->getName();
                 }
 #ifdef HAS_POWERDB
-                if (CPowerDB::self().getPrintView())
+                if ((CPowerDB::self().getPrintView() == 1) || (CPowerDB::self().getPrintView() == 3))
                 {
                     CPowerDB::wpt_eElectric wpt_data = CPowerDB::self().getElectricData((*wpt)->getKey());
-                    name += tr(": %1F").arg(wpt_data.consumers);
+                    if (wpt_data.consumers > 0.0)
+                        name = tr("%1F-").arg(wpt_data.consumers) + name;
                 }
 #endif
                 QRect textArea = fm.boundingRect(name);

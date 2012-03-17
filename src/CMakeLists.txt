@@ -499,12 +499,12 @@ IF (POWER_DB)
     add_definitions(-DHAS_POWERDB -DPOWERDB_VERSION=1)
     SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CPowerDB.h CMouseEditPower.h CDlgEditElectricWpt.h 
         CPowerToolWidget.h CPowerNW.h CMouseAddPowerLine.h CPowerLine.h CDlgEditPowerLine.h
-        CMouseAddPowerNW.h CDlgEditPowerNW.h CMouseEditPowerNW.h)
+        CMouseAddPowerNW.h CDlgEditPowerNW.h CMouseEditPowerNW.h CTextBox.h)
     SET(qlandkarte_SRCS ${qlandkarte_SRCS}  CPowerDB.cpp CMouseEditPower.cpp CDlgEditElectricWpt.cpp
         CPowerToolWidget.cpp CPowerNW.cpp CMouseAddPowerLine.cpp CPowerLine.cpp CDlgEditPowerLine.cpp
-        CMouseAddPowerNW.cpp CDlgEditPowerNW.cpp CMouseEditPowerNW.cpp)
+        CMouseAddPowerNW.cpp CDlgEditPowerNW.cpp CMouseEditPowerNW.cpp CTextBox.cpp)
     SET(qlandkarte_UIS ${qlandkarte_UIS} IDlgEditElectricWpt.ui IPowerToolWidget.ui IDlgEditPowerLine.ui
-        IDlgEditPowerNW.ui)
+        IDlgEditPowerNW.ui ITextBox.ui)
 ENDIF (POWER_DB)
 
 IF(DBUS)

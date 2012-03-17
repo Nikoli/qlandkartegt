@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+# one ring to rule them all ...
+%:
+	dh $@
+
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DGPX_EXTENSIONS:BOOL=TRUE
+
+
+override_dh_auto_install:
+	# first do the regular job
+	dh_auto_install
+	# come up with icon in XPM format
+	convert debian/qlandkartegt-pn/usr/share/pixmaps/qlandkartegt.png \
+		-resize 32x32 debian/qlandkartegt-pn/usr/share/pixmaps/qlandkartegt.xpm
+	rm debian/qlandkartegt-pn/usr/share/pixmaps/qlandkartegt.png
+	# rename upstream changelog
+	cp changelog.txt changelog
+
+
+override_dh_clean::
+	# remove copied changelog
+	-rm changelog
+	dh_clean

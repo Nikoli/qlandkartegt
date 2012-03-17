@@ -129,8 +129,8 @@ class CPowerDB : public QObject
 
         void gainFocus();
         void draw(QPainter& p, const QRect& rect, bool& needsRedraw);
-        void togglePrintView () { printView = !printView; };
-        const bool getPrintView() const { return printView; };
+        void togglePrintView ();
+        const unsigned getPrintView() const { return printView; };
 
     signals:
         void sigModified();
@@ -176,7 +176,8 @@ class CPowerDB : public QObject
         
         bool showBullets;
 
-        bool printView;
+        // 0: nothing, 1: nodes, 2: lines, 3: all
+        unsigned printView;
 };
 
 #endif //CPOWERDB_H

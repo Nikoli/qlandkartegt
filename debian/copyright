@@ -1,0 +1,60 @@
+This package was debianized by:
+
+    Michael Hanke <michael.hanke@gmail.com> on Wed, 10 Jun 2009 08:39:06 +0100
+
+It was downloaded from:
+
+    http://www.qlandkarte.org
+
+Upstream Author:
+
+    Oliver Eichler <oliver.eichler@gmx.de>
+
+Copyright:
+
+    Copyright (C) 2008-2010 Oliver Eichler
+
+  with contributions:
+
+    Copyright (c) 2009 Marc Feld
+    Copyright (C) 2008 Albrecht Dre <albrecht.dress@arcor.de>
+    Copyright (C) 2008 Andrew Vagin <avagin@gmail.com>
+    Copyright (C) 2004-2007 Trolltech ASA
+
+License:
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+On Debian systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL-2'.
+
+
+3rd-party code
+--------------
+
+  - calculate_completion.sh has been placed into the public domain by
+    Klaas van Gend, 2008
+
+  - QMKToolBox is copyright (C) 2008 by Manuel Schrape <manuel.schrape@gmx.de>
+
+  - SerialPort is was written by Stefan Sander and has been placed into
+    the public domain (http://sourceforge.net/projects/qextserialport)
+
+
+Debian packaging
+----------------
+
+    Copyright (C) 2009-2010, Michael Hanke <michael.hanke@gmail.com>
+
+and is licensed under the GPL, see above.

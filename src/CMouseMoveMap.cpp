@@ -186,6 +186,7 @@ void CMouseMoveMap::keyReleaseEvent(QKeyEvent * e)
 
 void CMouseMoveMap::draw(QPainter& p)
 {
+    qDebug() << "CMouseMoveMap::draw()";
     drawPos1(p);
     drawSelWpt(p);
     drawSelTrkPt(p);

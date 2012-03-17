@@ -40,7 +40,7 @@ copy %QLGTI_VCREDIST_PATH%\vcredist_x86.exe
 rem section 2.3) Copy libexif Files
 copy %QLGTI_LIBEXIF_PATH%\libexif-12.dll
 rem section 2.4) Copy QLandkarte GT Files
-copy ..\..\build\bin\Release\qlandkartegt.exe
+copy ..\..\build\bin\Release\qlandkartegt-pn.exe
 copy ..\..\build\bin\Release\map2gcm.exe
 copy ..\..\build\src\*.qm
 copy ..\..\src\icons\Globe128x128.ico

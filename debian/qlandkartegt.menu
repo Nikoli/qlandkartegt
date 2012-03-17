@@ -1,0 +1,6 @@
+?package(qlandkartegt-pn):\
+    needs="X11"\
+    section="Applications/Science/Geoscience"\
+    title="QLandkarteGT-PN"\
+    icon="/usr/share/pixmaps/qlandkartegt.xpm"\
+    command="/usr/bin/qlandkartegt-pn"

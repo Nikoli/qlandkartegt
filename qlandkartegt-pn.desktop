@@ -1,10 +1,10 @@
 [Desktop Entry]
 Version=1.0
-Name=QLandkarteGT
-Exec=qlandkartegt
+Name=QLandkarteGT-PN
+Exec=qlandkartegt-pn
 Icon=qlandkartegt
 Terminal=false
 Type=Application
 X-MultipleArgs=false
 Categories=Qt;Utility;Geography;
-GenericName=GPS device mapping utility
+GenericName=GPS device mapping utility with power network extension

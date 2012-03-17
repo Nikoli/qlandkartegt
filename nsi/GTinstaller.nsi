@@ -1,4 +1,4 @@
-;NSIS Installer Script for QLandkarte GT
+;NSIS Installer Script for QLandkarte GT PN
 
 ;NSIS References/Documentation 
 ;http://nsis.sourceforge.net/Docs/Modern%20UI%202/Readme.html
@@ -17,20 +17,20 @@
 ; Modern UI2 definition							                                    -
 ;------------------------------------------------------------------------
 ; Description
-Name "QLandkarte GT"
+Name "QLandkarte GT Power Network Extension"
 
 ;Default installation folder
-InstallDir "$PROGRAMFILES\QLandkarteGT"
+InstallDir "$PROGRAMFILES\QLandkarteGT-PN"
 
 ;Get installation folder from registry if available
-InstallDirRegKey HKCU "Software\QLandkarteGT" ""
+InstallDirRegKey HKCU "Software\QLandkarteGT-PN" ""
 
 ;Request application privileges for Windows Vista
 RequestExecutionLevel admin
 
 
 ; The file to write
-OutFile "QLandkarteGT.exe"
+OutFile "QLandkarteGT-PN.exe"
 
 ;------------------------------------------------------------------------
 ; Modern UI definition   	   					                                  -
@@ -43,7 +43,7 @@ OutFile "QLandkarteGT.exe"
 !define MUI_WELCOMEFINISHPAGE_BITMAP "logo_big.bmp"
 
 ; Page welcome description
-!define MUI_WELCOMEPAGE_TITLE "QLandkarte GT"
+!define MUI_WELCOMEPAGE_TITLE "QLandkarte GT Power Network Extension"
 !define MUI_WELCOMEPAGE_TITLE_3LINES
 !define MUI_WELCOMEPAGE_TEXT "This is a GeoTiff viewer for the PC. Next to displaying maps it is able to visualize data acquired by a GPSr on the map. With QLandkarte GT you are able to produce smaller map subsets to be used by mobile devices."
 
@@ -108,19 +108,19 @@ SectionEnd
 LangString DESC_MSVC ${LANG_ENGLISH} "Microsoft Visual C++ 2008 SP1 Runtime Libraries. Typically already installed on your PC. You only need to install them if it doesn't work without ;-)."
 LangString DESC_MSVC ${LANG_GERMAN} "Microsoft Visual C++ 2008 SP1 Laufzeitbibliotheken. Diese sind meist bereits auf dem Rechner installiert. Versuchen Sie die Installation zunächst einmal ohne dies."
 
-Section "QLandkarte GT" QLandkarteGT
+Section "QLandkarte GT PN" QLandkarteGT-PN
 
   ;Install for all users
   SetShellVarContext all
 
-  ;BEGIN QLandkarte GT Files    
+  ;BEGIN QLandkarte GT PN Files    
   SetOutPath $INSTDIR
-    File Files\qlandkartegt.exe
+    File Files\qlandkartegt-pn.exe
     File Files\map2gcm.exe
     File Files\Globe128x128.ico
     File Files\qlandkartegt_*.qm
     File Files\qt_??.qm
-  ;END QLandkarte GT Files    
+  ;END QLandkarte GT PN Files    
    
   ;BEGIN Qt Files
 	SetOutPath $INSTDIR
@@ -156,33 +156,33 @@ Section "QLandkarte GT" QLandkarteGT
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-  ;create batch file to run qlandkartegt.exe
+  ;create batch file to run qlandkartegt-pn.exe
   ReadRegStr $0 HKLM "Software\FWtools" Install_Dir
   StrCpy $1 "call $\"$0\setfw.bat$\"$\r$\n"
-  fileOpen $0 "$INSTDIR\QLandkarteGT.bat" w
+  fileOpen $0 "$INSTDIR\QLandkarteGT-PN.bat" w
   fileWrite $0 $1
   fileWrite $0 "cd /D $\"$INSTDIR$\"$\r$\n" 
-  fileWrite $0 "start qlandkartegt.exe %*"
+  fileWrite $0 "start qlandkartegt-pn.exe %*"
   fileClose $0
 
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
    	;Create shortcuts
   	CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
-    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\QLandkarteGT.lnk" "$INSTDIR\QLandkarteGT.bat" "" "$INSTDIR\Globe128x128.ico"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\QLandkarteGT-PN.lnk" "$INSTDIR\QLandkarteGT-PN.bat" "" "$INSTDIR\Globe128x128.ico"
  	!insertmacro MUI_STARTMENU_WRITE_END
 
   ;Create registry entries
-	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT" "DisplayName" "QLandkarte GT (remove only)"
-	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT" "UninstallString" "$INSTDIR\Uninstall.exe"
+	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT PN" "DisplayName" "QLandkarte GT (remove only)"
+	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT PN" "UninstallString" "$INSTDIR\Uninstall.exe"
 
 SectionEnd
-LangString DESC_QLandkarteGT ${LANG_ENGLISH} "View GeoTiff and Garmin Maps. Visualize and analyze GPX files and much more!"
-LangString DESC_QLandkarteGT ${LANG_GERMAN}  "Landkarten im GeoTiff und Garmin Format betrachten. GPX Dateien visualisieren und analysieren und vieles mehr!"
+LangString DESC_QLandkarteGT-PN ${LANG_ENGLISH} "View GeoTiff and Garmin Maps. Visualize and analyze GPX files and much more!"
+LangString DESC_QLandkarteGT-PN ${LANG_GERMAN}  "Landkarten im GeoTiff und Garmin Format betrachten. GPX Dateien visualisieren und analysieren und vieles mehr!"
 
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-   !insertmacro MUI_DESCRIPTION_TEXT ${QLandkarteGT} $(DESC_QLandkarteGT)
+   !insertmacro MUI_DESCRIPTION_TEXT ${QLandkarteGT-PN} $(DESC_QLandkarteGT-PN)
    !insertmacro MUI_DESCRIPTION_TEXT ${FWTools} $(DESC_FWTools)
    !insertmacro MUI_DESCRIPTION_TEXT ${MSVC} $(DESC_MSVC)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
@@ -204,11 +204,11 @@ Section "Uninstall"
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
 
   Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
-  Delete "$SMPROGRAMS\$StartMenuFolder\QLandkarteGT.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\QLandkarteGT-PN.lnk"
   RMDir "$SMPROGRAMS\$StartMenuFolder"
 
-  DeleteRegKey /ifempty HKCU "Software\QLandkarteGT"
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT"
+  DeleteRegKey /ifempty HKCU "Software\QLandkarteGT-PN"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT PN"
 
 SectionEnd
 

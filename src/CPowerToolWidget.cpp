@@ -24,6 +24,7 @@
 #include "CDlgEditPowerNW.h"
 #include "CMegaMenu.h"
 #include "CResources.h"
+#include "CTextBox.h"
 
 #include <QtGui>
 #include <QSqlQuery>
@@ -103,7 +104,7 @@ const QString CPowerToolWidget::getFirstSelectedNetwork()
 
 void CPowerToolWidget::fillListLines(const QString& selected_nw)
 {
-    //qDebug() << "CPowerToolWidget::fillListLines() for " << selected_nw;
+    qDebug() << "CPowerToolWidget::fillListLines() for " << selected_nw;
     QFontMetrics fm(listNetworks->font());
     QPixmap icon(16,N_LINES*fm.height());
     icon.fill(Qt::white);
@@ -141,7 +142,7 @@ void CPowerToolWidget::fillListLines(const QString& selected_nw)
             item->setData(Qt::UserRole, l->getKey());
             item->setIcon(icon);
 
-            if(CPowerDB::self().isHighlightedPowerLine(key))
+            if(CPowerDB::self().isHighlightedPowerLine(key) & 2)
             {
                 highlighted = item;
             }
@@ -184,7 +185,9 @@ void CPowerToolWidget::slotDBChanged(const bool highlightOnly)
     if (highlightOnly)
     {
         CPowerNW* highlighted_nw = CPowerDB::self().highlightedPowerNW();
+        originator = true;
         fillListLines(highlighted_nw == NULL ? "" : highlighted_nw->getKey());
+        originator = false;
         return;
     }
 
@@ -241,7 +244,7 @@ void CPowerToolWidget::slotDBChanged(const bool highlightOnly)
 
 void CPowerToolWidget::slotNWItemClicked(QListWidgetItem * item)
 {
-    //qDebug() << "slotNWItemClicked";
+    qDebug() << "slotNWItemClicked";
     originator = true;
     QString key = item->data(Qt::UserRole).toString();
     CPowerDB::self().highlightPowerNW(key);
@@ -252,6 +255,7 @@ void CPowerToolWidget::slotNWItemClicked(QListWidgetItem * item)
 
 void CPowerToolWidget::slotLineItemClicked(QListWidgetItem * item)
 {
+    qDebug() << "slotLineItemClicked";
     originator = true;
     CPowerDB::self().highlightPowerLine(item->data(Qt::UserRole).toString());
     originator = false;
@@ -644,16 +648,18 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
     QString wptname = wpt->getName();
     wptname.truncate(16);
 
-    if (wptname.length() <= tabLength)
+    /*if (wptname.length() <= tabLength)
         wptname += "\t\t";
     else if (wptname.length() <= 2 * tabLength)
-        wptname += "\t";
+        wptname += "\t";*/
 
-    loads += wptname +
-             tr(" %1W\t").arg(ph1,0,'f',0) +
-             tr(" %1W\t").arg(ph2,0,'f',0) +
-             tr(" %1W\t").arg(ph3,0,'f',0) +
-             tr(" %1W").arg(ph1+ph2+ph3,0,'f',0);
+    loads += "<TR VALIGN=TOP>"
+             "<TD WIDTH=20%><P><B>" + wptname + "</B></P></TD>"
+             "<TD WIDTH=20%><P>" + tr(" %1W").arg(ph1,0,'f',0) + "</P></TD>"
+             "<TD WIDTH=20%><P>" + tr(" %1W").arg(ph2,0,'f',0) + "</P></TD>"
+             "<TD WIDTH=20%><P>" + tr(" %1W").arg(ph3,0,'f',0) + "</P></TD>"
+             "<TD WIDTH=20%><P>" + tr(" %1W").arg(ph1+ph2+ph3,0,'f',0) + "</P></TD>"
+             "</TR>";
 }
 
 void CPowerToolWidget::getMaterials(const QString& wpt_key, const QString& nw_key, const QString& fromLine,
@@ -662,10 +668,11 @@ void CPowerToolWidget::getMaterials(const QString& wpt_key, const QString& nw_ke
     //qDebug() << "getMaterials() for " << wpt_key << ", network " << nw_key;
 
     CPowerDB::wpt_eElectric wpt_data = CPowerDB::self().getElectricData(wpt_key);
-    mats["Distribution box"] += ceil(wpt_data.consumers/4.0);
+    mats[tr("Total consumers")] += wpt_data.consumers;
+    mats[tr("Distribution box")] += ceil(wpt_data.consumers/4.0);
     // Estimate one small pole for two families
     // Insulators are neglected on these poles because often engineers space poles further than 30m on the main line
-    mats["Pole small"] += floor(wpt_data.consumers/2.0);
+    mats[tr("Pole small")] += floor(wpt_data.consumers/2.0);
 
     QStringList lines = getOriginatingPowerLines(wpt_key, nw_key, fromLine);
     QString line_key;
@@ -679,7 +686,7 @@ void CPowerToolWidget::getMaterials(const QString& wpt_key, const QString& nw_ke
         if (neutralCrossSection < 4.0) neutralCrossSection = 4.0;
         QString neutral = trUtf8("\t%1 mm²").arg(neutralCrossSection, 3, 'f', 0);
 
-        mats["Pole large"] += floor(l->getLength() / 30.0);
+        mats[tr("Pole large")] += floor(l->getLength() / 30.0);
 
         unsigned insulators = floor(l->getLength() / 30.0);
 
@@ -707,9 +714,9 @@ void CPowerToolWidget::getMaterials(const QString& wpt_key, const QString& nw_ke
         }
 
         if (l->getCrossSection() < 20.0)
-            mats["Insulator small"] += insulators;
+            mats[tr("Insulator small")] += insulators;
         else
-            mats["Insulator large"] += insulators;
+            mats[tr("Insulator large")] += insulators;
 
         if (l->keyFirst == wpt_key)
         {
@@ -937,9 +944,9 @@ void CPowerToolWidget::slotPhaseBalance()
     if (items.isEmpty())
         return;
 
-    QMessageBox msgBox;
-    msgBox.setTextFormat(Qt::AutoText);
-    msgBox.setWindowTitle("Phase balance");
+    CTextBox msgBox;
+    msgBox.setWindowTitle(tr("Phase balance"));
+    msgBox.setWindowModality(Qt::WindowModal);
 
     originator = true;
     foreach(item, items)
@@ -950,32 +957,24 @@ void CPowerToolWidget::slotPhaseBalance()
         double ph1, ph2, ph3;
 
         getNodeLoads(nw->ph, nw_key, nw->watts, "", loads, ph1, ph2, ph3);
-        QString iText = "\t\t Phase 1\t Phase 2\t Phase 3\t Total\n";
-        /*QString iText =
-            "{\\rtf1\\ansi\\deff3\\adeflang1025\n"
-            "{\\fonttbl{\\f0\\froman\\fprq2\\fcharset0 Times New Roman;}{\\f1\\froman\\fprq2\\fcharset2 Symbol;}{\\f2\\fswiss\\fprq2\\fcharset0 Arial;}{\\f3\\froman\\fprq2\\fcharset128 Times New Roman;}{\\f4\\fswiss\\fprq2\\fcharset128 Arial;}{\\f5\\fnil\\fprq2\\fcharset128 Droid Sans Fallback;}{\\f6\\fswiss\\fprq2\\fcharset128 DejaVu Sans Light;}{\\f7\\fnil\\fprq2\\fcharset128 DejaVu Sans Light;}{\\f8\\fswiss\\fprq0\\fcharset128 DejaVu Sans Light;}{\\f9\\fswiss\\fprq2\\fcharset128 Droid Sans Fallback;}}\n"
-            "{\\stylesheet{\\s0\\snext0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\nowidctlpar\\cf1\\kerning1\\hich\\af6\\langfe2052\\dbch\\af9\\afs24\\lang1065\\loch\\f3\\fs24\\lang1031 Standard;}\n"
-            "{\\s20\\sbasedon0\\snext20{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\loch\\f3\\fs24\\lang1031 Tabellen Inhalt;}\n"
-            "{\\s21\\sbasedon20\\snext21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031 Tabellen \\u220\\'3fberschrift;}\n"
-            "}\\deftab709\n"
-            "\n"
-            "{\\*\\pgdsctbl\n"
-            "{\\pgdsc0\\pgdscuse195\\pgwsxn11906\\pghsxn16838\\marglsxn1134\\margrsxn1134\\margtsxn1134\\margbsxn1134\\pgdscnxt0 Standard;}}\n"
-            "\\formshade{\\*\\pgdscno0}\\paperh16838\\paperw11906\\margl1134\\margr1134\\margt1134\\margb1134\\sectd\\sbknone\\sectunlocked1\\pgndec\\pgwsxn11906\\pghsxn16838\\marglsxn1134\\margrsxn1134\\margtsxn1134\\margbsxn1134\\ftnbj\\ftnstart1\\ftnrstcont\\ftnnar\\aenddoc\\aftnrstcont\\aftnstart1\\aftnnrlc\n"
-            "\\trowd\\trql\\ltrrow\\trpaddft3\\trpaddt0\\trpaddfl3\\trpaddl0\\trpaddfb3\\trpaddb0\\trpaddfr3\\trpaddr0\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx1927\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx3855\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx5782\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx7710\\clbrdrt\\brdrhair\\brdrw1\\brdrcf1\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\clbrdrr\\brdrhair\\brdrw1\\brdrcf1\\cellx9638\\pgndec\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\n"
-            "}\\cell\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\\loch\\f4\n"
-            "Phase 1}\\cell\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\\loch\\f4\n"
-            "Phase 2}\\cell\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\\loch\\f4\n"
-            "Phase 3}\\cell\\pard\\plain \\s21\\qc{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\b\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\ab\\loch\\f3\\fs24\\lang1031\\intbl{\\rtlch \\ltrch\\loch\\loch\\f4\n"
-            "Total}\\cell\\row\\pard\\trowd\\trql\\ltrrow\\trpaddft3\\trpaddt0\\trpaddfl3\\trpaddl0\\trpaddfb3\\trpaddb0\\trpaddfr3\\trpaddr0\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx1927\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx3855\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx5782\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\cellx7710\\clbrdrl\\brdrhair\\brdrw1\\brdrcf1\\clbrdrb\\brdrhair\\brdrw1\\brdrcf1\\clbrdrr\\brdrhair\\brdrw1\\brdrcf1\\cellx9638\\pard\\plain \\s20{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\cf0\\kerning1\\hich\\af3\\langfe2052\\dbch\\af3\\loch\\f3\\fs24\\lang1031\n"
-            "}}";*/
+        QString iText =
+                "<HTML>"
+                "<BODY>"
+                "<TABLE WIDTH=100% CELLPADDING=5 CELLSPACING=0>"
+                "<COL WIDTH=51*><COL WIDTH=51*><COL WIDTH=51*><COL WIDTH=51*><COL WIDTH=51*>"
+                "<TR VALIGN=TOP>"
+                "   <TD WIDTH=20%><P><BR></P></TD>"
+                "   <TD WIDTH=20%><P><B>" + tr("Phase 1") + "</B></P></TD>"
+                "   <TD WIDTH=20%><P><B>" + tr("Phase 2") + "</B></P></TD>"
+                "   <TD WIDTH=20%><P><B>" + tr("Phase 3") + "</B></P></TD>"
+                "   <TD WIDTH=20%><P><B>" + tr("Total")   + "</B></P></TD>"
+                "</TR>";
 
-        iText += loads.join("\n");
+        iText += loads.join("");
+        iText += "</TABLE>";
 
-        msgBox.setText(iText);
-        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.setHtml(iText);
         msgBox.exec();
-
     }
 
     originator = false;
@@ -989,9 +988,9 @@ void CPowerToolWidget::slotMaterialUsage()
     if (items.isEmpty())
         return;
 
-    QMessageBox msgBox;
-    msgBox.setTextFormat(Qt::AutoText);
-    msgBox.setWindowTitle("Material Usage");
+    CTextBox msgBox;
+    msgBox.setWindowTitle(tr("Material Usage"));
+    msgBox.setWindowModality(Qt::WindowModal); // Keep it open as long as the user wants
 
     originator = true;
     foreach(item, items)
@@ -1002,20 +1001,36 @@ void CPowerToolWidget::slotMaterialUsage()
 
         getMaterials(nw->ph, nw_key, "", materials);
 
-        QString iText;
+        QString iText =
+                "<HTML>"
+                "<BODY>"
+                "<TABLE WIDTH=100% CELLPADDING=5 CELLSPACING=0>"
+                "<COL WIDTH=51*><COL WIDTH=51*><COL WIDTH=51*><COL WIDTH=51*><COL WIDTH=51*>"
+                "<TR VALIGN=TOP>"
+                "   <TD WIDTH=50%><P><B>" + tr("Material") + "</B></P></TD>"
+                "   <TD WIDTH=50%><P><B>" + tr("Amount")   + "</B></P></TD>"
+                "</TR>";
 
         for (QMap<QString, unsigned>::const_iterator i = materials.constBegin();
                 i != materials.constEnd(); i++) {
+            iText += "<TR VALIGN=TOP>"
+                     "<TD WIDTH=20%><P>" + i.key() + "</P></TD>";
+
             if (i.key().endsWith(trUtf8("mm²")))
-                iText += i.key() + "\t" + tr("= %1 m").arg(i.value(), 5) + "\n";
+                iText += "<TD WIDTH=20%><P>" + tr("%1 m").arg(i.value(), 5) + "</P></TD>";
             else if (i.key().endsWith("*m"))
-                iText += i.key() + "\t" + trUtf8("= %1 mm²*m").arg(i.value(), 7) + "\n";
+                iText += "<TD WIDTH=20%><P>" + trUtf8("%1 mm²*m").arg(i.value(), 7) + "</P></TD>";
+            else if (i.key().endsWith("onsumers"))
+                iText += "<TD WIDTH=20%><P>" + tr("%1 families") .arg(i.value(), 5) + "</P></TD>";
             else
-                iText += i.key() + "\t" + tr("= %1 pc").arg(i.value(), 5) + "\n";
+                iText += "<TD WIDTH=20%><P>" + tr("%1 pc").arg(i.value(), 5) + "</P></TD>";
+
+            iText += "</TR>";
         }
 
-        msgBox.setText(iText);
-        msgBox.setStandardButtons(QMessageBox::Ok);
+        iText += "</TABLE>";
+
+        msgBox.setHtml(iText);
         msgBox.exec();
 
     }
@@ -1025,7 +1040,7 @@ void CPowerToolWidget::slotMaterialUsage()
 
 void CPowerToolWidget::slotNWSelectionChanged()
 {
-    qDebug() << "slotNWSelectionChanged";
+    //qDebug() << "slotNWSelectionChanged";
     if(originator)
     {
         return;
@@ -1033,7 +1048,6 @@ void CPowerToolWidget::slotNWSelectionChanged()
 
     if (listNetworks->hasFocus() && listNetworks->selectedItems().isEmpty())
     {
-        qDebug() << "Removing selection";
         CPowerDB::self().highlightPowerNW("");
         fillListLines("");
         fillDefaults("");
@@ -1042,13 +1056,17 @@ void CPowerToolWidget::slotNWSelectionChanged()
 
 void CPowerToolWidget::slotLineSelectionChanged()
 {
+    qDebug() << "slotLineSelectionChanged()";
     if(originator)
     {
         return;
     }
 
+    qDebug() << "slotLineSelectionChanged() 2";
+
     if (listLines->hasFocus() && listLines->selectedItems().isEmpty())
     {
+        qDebug() << "slotLineSelectionChanged() 3";
         CPowerDB::self().highlightPowerLine("");
         fillListLines("");
     }

@@ -1,0 +1,1 @@
+qlandkartegt_de.ts

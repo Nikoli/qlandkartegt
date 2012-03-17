@@ -87,7 +87,7 @@ CPowerDB::CPowerDB(QTabWidget * tb, QObject * parent)
     , db(NULL)
     , cnt(0)
     , showBullets(true)
-    , printView(false)
+    , printView(0)
 {
     m_self = this;
 
@@ -1244,12 +1244,14 @@ void CPowerDB::highlightPowerNW(const QString& key)
 
 void CPowerDB::highlightPowerLine(const QString& key)
 {
-    //qDebug() << "CPowerDB::highlightPowerLine() for " << key;
+    qDebug() << "CPowerDB::highlightPowerLine() for " << key;
 
-    if(CPowerDB::self().isHighlightedPowerLine(key) == 2)
+    if(CPowerDB::self().isHighlightedPowerLine(key) & 2)
     {
         return;
     }
+
+    qDebug() << "CPowerDB::highlightPowerLine() 2";
 
     QSqlQuery query(*db);
 
@@ -1381,7 +1383,7 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             //drawArrows(line, rect, p);
 
             // Draw electric info on lines
-            if (printView)
+            if (printView & 2)
             {
                 drawElectricText(p, l, middle, angle);
             }
@@ -1421,7 +1423,7 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         //drawArrows(line, rect, p);
 
         // Draw electric info on lines
-        if (printView)
+        if (printView & 2)
         {
             drawElectricText(p, (*hlit), middle, angle);
         }
@@ -1429,4 +1431,10 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         ++hlit;
     }
 } // draw()
+
+void CPowerDB::togglePrintView()
+{
+    printView++;
+    if (printView > 3) printView = 0;
+}
 

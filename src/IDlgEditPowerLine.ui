@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Edit Electric Data of Waypoint ...</string>
+   <string>Edit Power Line ...</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>

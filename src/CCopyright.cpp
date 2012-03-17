@@ -51,6 +51,7 @@ CCopyright::CCopyright()
         "Albrecht Dre&szlig;<br>"
         "Christian Ehrlicher<br/>"
         "Christian Treffs<br/>"
+        "Jan Rheinl&auml;nder (power network extension)<br/>"
         "</p>"
         "<p>Translation:<br>"
         "Sarah Neumann (German)<br>"

@@ -19,15 +19,15 @@ a win32 binary, too.
 For the bleeding edge of development you have to use the SVN repository. For
 initial checkout:
 
-    svn co https://qlandkartegt.svn.sourceforge.net/svnroot/qlandkartegt/QLandkarteGT/trunk QLandkarteGT
+    svn co https://qlandkartegt.svn.sourceforge.net/svnroot/qlandkartegt/QLandkarteGT/branches/distribunet QLandkarteGT-PN
 
 To build (out of source build, start one level above source root directory)1:
 
-    mkdir build_QLandkarteGT 
+    mkdir build_QLandkarteGT-PN
 
-    cd  build_QLandkarteGT 
+    cd  build_QLandkarteGT-PN
 
-    ccmake ../QLandkarteGT 
+    ccmake ../QLandkarteGT-PN
 
 CCmake can be controlled by keys. Watch out for key hints at the bottom.
 Especially the"c" and"g" key. Next you do:

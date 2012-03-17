@@ -1,0 +1,35 @@
+Source: qlandkartegt-pn
+Section: x11
+Priority: optional
+Maintainer: Jan Rheinländer <jrheinlaender@users.sourceforge.net>
+Build-Depends: debhelper (>= 7.0.50~), cmake (>= 2.4), libqt4-dev (>= 4.2), libqt4-opengl-dev, libgdal1-dev (>= 1.5.2-3) | libgdal-dev, libproj-dev | proj, imagemagick, libexif-dev, libdmtx-dev, libgps-dev, gpsbabel, libqtwebkit-dev
+Standards-Version: 3.9.1
+Homepage: http://www.qlandkarte.org
+
+
+Package: qlandkartegt-pn
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Replaces: qlandkarte
+Provides: qlandkarte
+Recommends: gdal-bin, qlandkartegt-garmin (>= 0.3.4~), gpsbabel
+Suggests: gpsd
+Description: Power network extension to QLandkarteGT
+ This package provides a versatile tool for GPS maps in GeoTiff format as
+ well as Garmin's img vector map format. QLandkarteGT is the successor of
+ QLandkarte. Among various improvements (e.g. 2D/3D map rendering and
+ reduced resource demands) the major difference is its
+ device-independent architecture, which is not limited to Garmin devices
+ anymore. Therefore, the package also does not include device drivers.
+ Drivers for a number of Garmin devices are available from the
+ qlandkartegt-garmin package.
+ .
+ Additionally, QLandkarteGT serves as a frontend to the GDAL tools, to
+ make georeferencing of scanned maps feasible for users. In contrast to
+ similar tools (e.g. QGis) its straightforward interface is especially
+ suited for non-scientific users.
+ .
+ The power network extension enables calculation of simple electric power 
+ distribution networks. Please note that only stand-alone networks and small
+ outputs (< 100kW> are suppported. 
+

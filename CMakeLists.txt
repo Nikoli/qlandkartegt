@@ -1,4 +1,4 @@
-project(QLandkarteGT)
+project(QLandkarteGT-PN)
 
 # Required cmake version
 cmake_minimum_required(VERSION 2.6.0)
@@ -6,14 +6,14 @@ cmake_minimum_required(VERSION 2.6.0)
 set(APPLICATION_NAME ${PROJECT_NAME})
 
 set(APPLICATION_VERSION_MAJOR "1")
-set(APPLICATION_VERSION_MINOR "2")
-set(APPLICATION_VERSION_PATCH "2.post")
+set(APPLICATION_VERSION_MINOR "0")
+set(APPLICATION_VERSION_PATCH "0")
 
 add_definitions(-DVER_MAJOR=${APPLICATION_VERSION_MAJOR} -DVER_MINOR=${APPLICATION_VERSION_MINOR} -DVER_STEP=${APPLICATION_VERSION_PATCH})
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 if (APPLE)
-  set(PROGNAME "QLandkarte GT")
+  set(PROGNAME "QLandkarte GT Power Networks")
   set(CONFIGDIR "Library/Application Support/${PROGNAME}/")
   set(MAC_BUNDLE_PATH ${EXECUTABLE_OUTPUT_PATH}/${PROGNAME}.app)
   set(MAC_ICON_FILE qlandkartegt.icns)
@@ -21,9 +21,9 @@ if (APPLE)
   set(MACOSX_BUNDLE_ICON_FILE ${MAC_ICON_FILE})
   set(MACOSX_BUNDLE_BUNDLE_NAME ${PROGNAME})
   set(MACOSX_BUNDLE_BUNDLE_VERSION ${APPLICATION_VERSION_MAJOR}.${APPLICATION_VERSION_MINOR})
-  set(MACOSX_BUNDLE_GUI_IDENTIFIER org.qlandkarte.QLandkarteGT)
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER org.qlandkarte.QLandkarteGT-PN)
 else(APPLE)
-  set(PROGNAME qlandkartegt)
+  set(PROGNAME qlandkartegt-pn)
   set(CONFIGDIR ".config/QLandkarteGT/")
 endif(APPLE)
 if(MSVC)
@@ -73,7 +73,7 @@ add_subdirectory(src)
 if (UNIX AND NOT WIN32 AND NOT APPLE)
   install(
     FILES
-      qlandkartegt.desktop
+      qlandkartegt-pn.desktop
     DESTINATION
       ${XDG_APPS_DIR}
   )
@@ -87,7 +87,7 @@ if (UNIX AND NOT WIN32 AND NOT APPLE)
 
   install(
     FILES
-      qlandkartegt.1
+      qlandkartegt-pn.1
     DESTINATION
       ${MAN_INSTALL_DIR}/man1
   )

@@ -33,6 +33,9 @@
             <height>0</height>
            </size>
           </property>
+          <property name="locale">
+           <locale language="English" country="UnitedStates"/>
+          </property>
           <property name="currentIndex">
            <number>0</number>
           </property>
@@ -40,12 +43,12 @@
            <attribute name="title">
             <string>Data</string>
            </attribute>
-           <widget class="QWidget" name="">
+           <widget class="QWidget" name="layoutWidget">
             <property name="geometry">
              <rect>
               <x>0</x>
               <y>11</y>
-              <width>401</width>
+              <width>405</width>
               <height>198</height>
              </rect>
             </property>
@@ -61,6 +64,9 @@
                </item>
                <item>
                 <widget class="QDoubleSpinBox" name="spinConsumers">
+                 <property name="locale">
+                  <locale language="English" country="UnitedStates"/>
+                 </property>
                  <property name="decimals">
                   <number>1</number>
                  </property>
@@ -239,22 +245,6 @@
              </item>
             </layout>
            </widget>
-           <zorder>label_3</zorder>
-           <zorder>spinLoad1</zorder>
-           <zorder>spinLoad2</zorder>
-           <zorder>spinLoad3</zorder>
-           <zorder>label_4</zorder>
-           <zorder>label_5</zorder>
-           <zorder>label_6</zorder>
-           <zorder>powerFactorLabel</zorder>
-           <zorder>spinPowerfactor</zorder>
-           <zorder>label_3</zorder>
-           <zorder></zorder>
-           <zorder>label_7</zorder>
-           <zorder>label_8</zorder>
-           <zorder>spinConsumers1</zorder>
-           <zorder>spinConsumers3</zorder>
-           <zorder>spinConsumers2</zorder>
           </widget>
           <widget class="QWidget" name="tab_4">
            <attribute name="title">
