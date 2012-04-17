@@ -17,6 +17,7 @@
 
 **********************************************************************************************/
 #include "CWptDB.h"
+#include "CMainWindow.h"
 #include "CPowerToolWidget.h"
 #include "CPowerDB.h"
 #include "CPowerNW.h"
@@ -25,6 +26,7 @@
 #include "CMegaMenu.h"
 #include "CResources.h"
 #include "CTextBox.h"
+#include "CCanvas.h"
 
 #include <QtGui>
 #include <QSqlQuery>
@@ -312,6 +314,7 @@ void CPowerToolWidget::slotNWContextMenu(const QPoint& pos)
 
         QMenu contextMenu;
         contextMenu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit"),this,SLOT(slotEditNW()));
+        contextMenu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Change powerhouse"),this,SLOT(slotChangePH()));
         contextMenu.addAction(QPixmap(":/icons/iconWizzard16x16.png"),tr("Calc. network"),this,SLOT(slotCalcPowerNW()));
         contextMenu.addAction(QPixmap(":/icons/iconWizzard16x16.png"),tr("Check phase balance"),this,SLOT(slotPhaseBalance()));
         contextMenu.addAction(QPixmap(":/icons/iconWizzard16x16.png"),tr("Calculate materials"),this,SLOT(slotMaterialUsage()));
@@ -372,6 +375,21 @@ void CPowerToolWidget::slotEditNW()
 
     CDlgEditPowerNW dlg(*nw, this);
     dlg.exec();
+}
+
+void CPowerToolWidget::slotChangePH()
+{
+    QListWidgetItem * item = listNetworks->currentItem();
+    if(item == NULL) return;
+
+    QString key     = item->data(Qt::UserRole).toString();
+    CPowerNW* nw   = CPowerDB::self().getPowerNWByKey(key);
+    if(nw == NULL) return;
+
+    if (theMainWindow == NULL) qDebug() << "theMainWindow NULL";
+    if (theMainWindow->getCanvas() == NULL) qDebug() << "getCanvas() NULL";
+
+    theMainWindow->getCanvas()->setMouseMode(CCanvas::eMouseChangePH);
 }
 
 void CPowerToolWidget::slotEditLine()
@@ -447,7 +465,7 @@ const QStringList getOriginatingPowerLines(const QString& wpt_key, const QString
     query.bindValue(":wpt_key_again", wpt_key); // specifying :wpt_key twice does NOT work
     QUERY_EXEC(return result);
 
-    //qDebug() << "Lines originating from " << wpt_key << " for " << nw_key << ": ";
+    qDebug() << "Lines originating from " << wpt_key << " for " << nw_key << ": ";
 
     while (query.next()) {
         QString key = query.value(0).toString();
@@ -693,22 +711,22 @@ void CPowerToolWidget::getMaterials(const QString& wpt_key, const QString& nw_ke
         switch (l->getNumPhases()) {
             case 1: {
                 mats[cable] += 2 * l->getLength();
-                mats[trUtf8("Total mm²*m")] += 2 * l->getLength() * l->getCrossSection();
+                mats[trUtf8("Total mm² x m")] += 2 * l->getLength() * l->getCrossSection();
                 insulators *= 2;
                 break;
             }
             case 2: {
                 mats[cable] += 2 * l->getLength();
-                mats[trUtf8("Total mm²*m")] += 2 * l->getLength() * l->getCrossSection();
+                mats[trUtf8("Total mm² x m")] += 2 * l->getLength() * l->getCrossSection();
                 mats[neutral] += l->getLength();
-                mats[trUtf8("Total mm²*m")] += l->getLength() * neutralCrossSection;
+                mats[trUtf8("Total mm² x m")] += l->getLength() * neutralCrossSection;
                 insulators *= 3;
             }
             case 3: {
                 mats[cable] += 3 * l->getLength();
-                mats[trUtf8("Total mm²*m")] += 3 * l->getLength() * l->getCrossSection();
+                mats[trUtf8("Total mm² x m")] += 3 * l->getLength() * l->getCrossSection();
                 mats[neutral] += l->getLength();
-                mats[trUtf8("Total mm²*m")] += l->getLength() * neutralCrossSection;
+                mats[trUtf8("Total mm² x m")] += l->getLength() * neutralCrossSection;
                 insulators *= 4;
             }
         }
@@ -1019,7 +1037,7 @@ void CPowerToolWidget::slotMaterialUsage()
             if (i.key().endsWith(trUtf8("mm²")))
                 iText += "<TD WIDTH=20%><P>" + tr("%1 m").arg(i.value(), 5) + "</P></TD>";
             else if (i.key().endsWith("*m"))
-                iText += "<TD WIDTH=20%><P>" + trUtf8("%1 mm²*m").arg(i.value(), 7) + "</P></TD>";
+                iText += "<TD WIDTH=20%><P>" + trUtf8("%1 mm² x m").arg(i.value(), 7) + "</P></TD>";
             else if (i.key().endsWith("onsumers"))
                 iText += "<TD WIDTH=20%><P>" + tr("%1 families") .arg(i.value(), 5) + "</P></TD>";
             else

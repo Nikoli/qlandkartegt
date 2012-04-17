@@ -43,7 +43,11 @@
 //#include <sys/time.h>
 
 #ifdef WIN32
+#if _MSC_VER >= 1600
+#define CMAPTDB_MIN(x,y) (std::min)(x,y)
+#else
 #define CMAPTDB_MIN(x,y) _cpp_min(x,y)
+#endif
 #else //WIN32
 #define CMAPTDB_MIN(x,y) std::min(x,y)
 #include <pwd.h>

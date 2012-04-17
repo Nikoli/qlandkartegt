@@ -1025,6 +1025,7 @@ bool CMainWindow::maybeSave()
                     QMessageBox::Ok | QMessageBox::Cancel);
                 if (ret == QMessageBox::Ok)
                 {
+                    cfg.setValue("geodata/filter","QLandkarte DB (*.qdb)");
                     slotSaveData();
                 }
                 else
@@ -1063,7 +1064,10 @@ void CMainWindow::slotSaveData()
 
     QString filename = QFileDialog::getSaveFileName( 0, tr("Select output file")
         ,pathData
-        ,"QLandkarte (*.qlb);;GPS Exchange (*.gpx);;QLandkarte DB (*.qdb)"
+        ,"QLandkarte (*.qlb);;GPS Exchange (*.gpx)"
+#ifdef HAS_POWERDB
+         ";;QLandkarte DB (*.qdb)"
+#endif
         ,&filter
         , FILE_DIALOG_FLAGS
         );

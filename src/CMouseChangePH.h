@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2007 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Jan Rheinländer <jrheinlaender@users.sourceforge.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,38 +16,22 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-#include <QProcess>
-#include <QPrinter>
-#include <QPrintDialog>
-#include "CTextBox.h"
+#ifndef CMOUSECHANGEPH_H
+#define CMOUSECHANGEPH_H
 
-CTextBox::CTextBox()
+#include "IMouse.h"
+
+class CMouseChangePH  : public IMouse
 {
-#if defined(Q_WS_MAC)
-    this->setParent(qApp->focusWidget());
-    this->setWindowModality(Qt::WindowModal);
-    this->setWindowFlags(Qt::Sheet);
-#endif
-    setupUi(this);
+    Q_OBJECT;
+    public:
+        CMouseChangePH(CCanvas * canvas);
+        virtual ~CMouseChangePH();
 
-    connect(buttonPrint, SIGNAL(pressed()), this, SLOT(print()));
-}
+        void draw(QPainter& p);
+        void mouseMoveEvent(QMouseEvent * e);
+        void mousePressEvent(QMouseEvent * e);
+        void mouseReleaseEvent(QMouseEvent * e);
 
-void CTextBox::print()
-{
-    QPrinter* printer = new QPrinter();
-    QPrintDialog dialog(printer, this);
-    dialog.setWindowTitle(tr("Print Material Usage"));
-    if (dialog.exec() != QDialog::Accepted)
-    {
-        return;
-    }
-
-    textEdit->print(printer);
-}
-
-
-CTextBox::~CTextBox()
-{
-
-}
+};
+#endif                           //CMOUSECHANGEPH_H

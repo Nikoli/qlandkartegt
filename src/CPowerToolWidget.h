@@ -57,6 +57,7 @@ class CPowerToolWidget : public QWidget, private Ui::IPowerToolWidget
         void slotLineItemDoubleClicked(QListWidgetItem * item);
         void slotLineContextMenu(const QPoint& pos);
         void slotAssignToPowerNW(QAction* action);
+        void slotChangePH();
         void slotEditNW();
         void slotEditLine();
         void slotDeleteNW();

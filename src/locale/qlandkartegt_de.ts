@@ -5550,7 +5550,7 @@ Do you want to convert your data to QDB format?</source>
     <message>
         <location filename="../CPowerLine.cpp" line="414"/>
         <source>From </source>
-        <translation>Von</translation>
+        <translation type="unfinished">Von </translation>
     </message>
     <message>
         <location filename="../CPowerLine.cpp" line="414"/>

@@ -33,6 +33,9 @@
 
 #include <QtGui>
 #include <math.h>
+#if _MSC_VER >= 1600
+#include <gl/GLU.h>
+#endif
 
 #ifndef GL_CLAMP_TO_EDGE
 #define GL_CLAMP_TO_EDGE 0x812F

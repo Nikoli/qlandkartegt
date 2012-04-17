@@ -33,10 +33,13 @@ class CMouseSelMap;
 class CMouseAddWpt;
 class CMouseMoveWpt;
 class CMouseEditWpt;
+#ifdef HAS_POWERDB
 class CMouseAddPowerNW;
 class CMouseAddPowerLine;
 class CMouseEditPowerNW;
 class CMouseEditPower;
+class CMouseChangePH;
+#endif
 class CMouseRefPoint;
 class CMouseAddText;
 class CMouseAddTextBox;
@@ -85,6 +88,7 @@ class CCanvas : public QWidget
             , eMouseAddPowerLine    ///< use mouse to add power lines
             , eMouseEditPowerNW     ///< use mouse to edit power networks
             , eMouseEditPower   ///< use mouse to select power lines and waypoints
+            , eMouseChangePH    ///< use mouse to select a new powerhouse waypoint
 #endif
             , eMouseMoveWpt      ///< use mouse to drag-n-drop waypoints
             , eMouseMoveRefPoint ///< use mouse to drag-n-drop reference points
@@ -186,7 +190,8 @@ class CCanvas : public QWidget
         CMouseAddPowerNW      * mouseAddPowerNW;
         CMouseAddPowerLine    * mouseAddPowerLine;
         CMouseEditPowerNW     * mouseEditPowerNW;
-        CMouseEditPower   * mouseEditPower;
+        CMouseEditPower       * mouseEditPower;
+        CMouseChangePH        * mouseChangePH;
 #endif
         CMouseRefPoint * mouseRefPoint;
         CMouseCutTrack * mouseCutTrack;

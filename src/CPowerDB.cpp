@@ -626,9 +626,9 @@ const QString CPowerDB::getElectricInfo(const QString& key) const {
     QString result;
     result = (data.consumers == 1 ? tr("%1 consumer") : tr("%1 consumers")).arg(data.consumers) +
             (data.load > 0.01 ? tr(" plus %1W load").arg(data.load,0,'f',0) : "") +
-            tr("\n%1V voltage").arg(data.voltage,0,'f',0) +
+            "\n" + tr("%1V voltage").arg(data.voltage,0,'f',0) +
             tr(", %1Ohm resistance").arg(data.resistance,0,'f',0) +
-            tr("\n%1W total load").arg(data.totalload,0,'f',0) +
+            "\n" + tr("%1W total load").arg(data.totalload,0,'f',0) +
             tr(", %1Ohm total resistance").arg(data.totalresistance,0,'f',0);
     // Debugging
     //result += tr("\nPower factor %1").arg(data.powerfactor);

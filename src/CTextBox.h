@@ -33,5 +33,8 @@ class CTextBox : public QDialog, private Ui::ITextBox
         virtual ~CTextBox();
         void setPlainText(const QString& text) { textEdit->setPlainText(text); };
         void setHtml(const QString& text) { textEdit->setHtml(text); };
+
+    private slots:
+        void print();
 };
 #endif

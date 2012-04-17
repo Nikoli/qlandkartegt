@@ -514,13 +514,27 @@ Garmin::IDevice * CDeviceGarmin::getDevice()
     Garmin::IDevice * (*func)(const char*) = 0;
     Garmin::IDevice * dev = 0;
 
+#ifdef HAS_POWERDB
+    // Hack to find the drivers in /usr/lib/qlandkartegt instead of /usr/local/lib/qlandkartegt-pn
+    QDir inst_dir(XSTR(PLUGINDIR));
+    QString path = inst_dir.path();
+    path.chop(3);
+    path.replace("/local/", "/");
+    inst_dir.setPath(path);
+    qDebug() << "Path: " << path;
+#endif
+
 #if defined(Q_WS_MAC)
     // MacOS X: plug-ins are stored in the bundle folder
     QString libname     = QString("%1/lib%2" XSTR(SHARED_LIB_EXT))
         .arg(QCoreApplication::applicationDirPath().replace(QRegExp("MacOS$"), "Resources/Drivers"))
         .arg(devkey);
 #else
+#ifdef HAS_POWERDB
+    QString libname     = QString("%1/lib%2" XSTR(SHARED_LIB_EXT)).arg(path).arg(devkey);
+#else
     QString libname     = QString("%1/lib%2" XSTR(SHARED_LIB_EXT)).arg(XSTR(PLUGINDIR)).arg(devkey);
+#endif
 #endif
     QString funcname    = QString("init%1").arg(devkey);
 

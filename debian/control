@@ -9,9 +9,10 @@ Homepage: http://www.qlandkarte.org
 
 Package: qlandkartegt-pn
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, libqt4-sql-sqlite
 Replaces: qlandkarte
 Provides: qlandkarte
+Conflicts: qlandkartegt
 Recommends: gdal-bin, qlandkartegt-garmin (>= 0.3.4~), gpsbabel
 Suggests: gpsd
 Description: Power network extension to QLandkarteGT

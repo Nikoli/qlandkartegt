@@ -294,6 +294,14 @@ void CDlgConfig::fillTypeCombo()
         .replace(QRegExp("MacOS$"), "Resources/Drivers"));
 #else
     QDir inst_dir(XSTR(PLUGINDIR));
+#ifdef HAS_POWERDB
+    // Hack to find the drivers in /usr/lib/qlandkartegt instead of /usr/local/lib/qlandkartegt-pn
+    QString path = inst_dir.path();
+    path.chop(3);
+    path.replace("/local/", "/");
+    inst_dir.setPath(path);
+    qDebug() << "Path: " << path;
+#endif
 #endif
     files = inst_dir.entryList(QString("*" XSTR(SHARED_LIB_EXT)).split(','));
 

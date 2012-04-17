@@ -5,9 +5,7 @@
 ;http://nsis.sourceforge.net/Docs/Modern%20UI/Readme.html
 
 ;Revision Log
-; 01-Jun-2010 Rework Installer - create batch file to set FWTools environment correctly
-; 24-Jun-2010 Copy all transölation files
-; 23-Oct-2010 Rework installation of Microsoft Runtime Libraries, pass through parameters in start script, add german translation
+; 2012-03-26 Adapted for power network extension and MSVC 2010
 
 ;=================== BEGIN SCRIPT ====================
 ; Include for nice Setup UI
@@ -45,7 +43,7 @@ OutFile "QLandkarteGT-PN.exe"
 ; Page welcome description
 !define MUI_WELCOMEPAGE_TITLE "QLandkarte GT Power Network Extension"
 !define MUI_WELCOMEPAGE_TITLE_3LINES
-!define MUI_WELCOMEPAGE_TEXT "This is a GeoTiff viewer for the PC. Next to displaying maps it is able to visualize data acquired by a GPSr on the map. With QLandkarte GT you are able to produce smaller map subsets to be used by mobile devices."
+!define MUI_WELCOMEPAGE_TEXT "This is a GeoTiff viewer for the PC. Next to displaying maps it is able to visualize data acquired by a GPSr on the map. With QLandkarte GT you are able to produce smaller map subsets to be used by mobile devices. The power network extension allows you to create electric distribution network for stand-alone power generation sites, e.g. a micro-hydro installation."
 
 !define MUI_LICENSEPAGE_CHECKBOX
 
@@ -97,7 +95,7 @@ SectionEnd
 LangString DESC_FWTools ${LANG_ENGLISH} "Required Libraries for MAP and coordinate system transformation. This package will be downloaded from the internet. It needs to be installed only once - for the first QLandkarteGT installation."
 LangString DESC_FWTools ${LANG_GERMAN}  "Benötigte Bibliotheken für Karten- und Koordinatentransformationen. Wird aus dem Internet heruntergeladen. Muss nur einmal installiert werden - bei der ersten QLandkarteGT Installation."
 
-Section "MSVC++ 2008 SP1 Runtime" MSVC
+Section "MSVC++ 2010 SP1 Runtime" MSVC
 
   SetOutPath $INSTDIR
   File Files\vcredist_x86.exe
@@ -105,8 +103,8 @@ Section "MSVC++ 2008 SP1 Runtime" MSVC
   Delete "$INSTDIR\vcredist_x86.exe"
   
 SectionEnd
-LangString DESC_MSVC ${LANG_ENGLISH} "Microsoft Visual C++ 2008 SP1 Runtime Libraries. Typically already installed on your PC. You only need to install them if it doesn't work without ;-)."
-LangString DESC_MSVC ${LANG_GERMAN} "Microsoft Visual C++ 2008 SP1 Laufzeitbibliotheken. Diese sind meist bereits auf dem Rechner installiert. Versuchen Sie die Installation zunächst einmal ohne dies."
+LangString DESC_MSVC ${LANG_ENGLISH} "Microsoft Visual C++ 2010 SP1 Runtime Libraries. Typically already installed on your PC. You only need to install them if it doesn't work without ;-)."
+LangString DESC_MSVC ${LANG_GERMAN} "Microsoft Visual C++ 2010 SP1 Laufzeitbibliotheken. Diese sind meist bereits auf dem Rechner installiert. Versuchen Sie die Installation zunächst einmal ohne dies."
 
 Section "QLandkarte GT PN" QLandkarteGT-PN
 
@@ -146,7 +144,7 @@ Section "QLandkarte GT PN" QLandkarteGT-PN
   ;BEGIN additional Files    
   SetOutPath $INSTDIR
     File Files\3rdparty.txt
-    File Files\libexif-12.dll
+    File /nonfatal Files\libexif-12.dll
   ;END additional Files    
     
   ;the last "SetOutPath" will be the default directory

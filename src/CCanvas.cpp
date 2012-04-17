@@ -33,6 +33,7 @@
 #include "CMouseEditPower.h"
 #include "CMouseAddPowerNW.h"
 #include "CMouseAddPowerLine.h"
+#include "CMouseChangePH.h"
 #endif
 #include "CMouseRefPoint.h"
 #include "CMouseCutTrack.h"
@@ -96,6 +97,7 @@ CCanvas::CCanvas(QWidget * parent)
     mouseEditPower   = new CMouseEditPower(this);
     mouseAddPowerNW   = new CMouseAddPowerNW(this);
     mouseAddPowerLine = new CMouseAddPowerLine(this);
+    mouseChangePH     = new CMouseChangePH(this);
 #endif
     mouseRefPoint   = new CMouseRefPoint(this);
     mouseCutTrack   = new CMouseCutTrack(this);
@@ -188,6 +190,10 @@ void CCanvas::setMouseMode(mouse_mode_e mode)
             
         case eMouseEditPower:
             mouse = mouseEditPower;
+            break;
+
+        case eMouseChangePH:
+            mouse = mouseChangePH;
             break;
 #endif
 

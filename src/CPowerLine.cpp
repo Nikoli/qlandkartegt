@@ -414,7 +414,7 @@ QString CPowerLine::getInfo()
     str += (((first != NULL) && (second != NULL)) ? tr("From ") + first->getName() + tr(" to ") + second->getName() + "\n": "");
     str += trUtf8("%1 m, %2 mm²").arg(length,0,'f',0).arg(crossSection,0,'f',1);
     str += tr(", phases: ") + (phases & 1 ? "1" : "") + (phases & 2 ? "2" : "") + (phases & 4 ? "3" : "");
-    str += tr("\ncurrent %1 A, drop %2 V").arg(current,0,'f',1).arg(drop,0,'f',1);
+    str += "\n" + tr("current %1 A, drop %2 V").arg(current,0,'f',1).arg(drop,0,'f',1);
 
     if(description.count())
     {
@@ -474,7 +474,7 @@ const double CPowerLine::getDistance() const {
   pt2.v = wpt2->lat * DEG_TO_RAD;
   dist = distance(pt1,pt2,a1,a2);
   //qDebug() << "Elevations: " << wpt1->ele << ", " << wpt2->ele;
-  return sqrt(pow(dist, 2.0) + pow(wpt1->ele - wpt2->ele,2.0));
+  return sqrt(pow(dist, 2.0) + pow(double(wpt1->ele - wpt2->ele),2.0));
   // TODO: Is this geomathematically correct?
 }
 
