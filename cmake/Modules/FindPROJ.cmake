@@ -21,14 +21,13 @@ else (PROJ_LIBRARIES AND PROJ_INCLUDE_DIRS)
 
   find_path(PROJ_INCLUDE_DIR
     NAMES
-      projects.h
+      proj_api.h
     PATHS
         /usr/include
         /usr/local/include
         /opt/local/include
         /sw/include
-        C:/Programme/FWTools2.4.7/include
-		C:/Progra~1/FWTools2.4.7/include
+        ${CMAKE_SOURCE_DIR}/Win32/GDAL/include
     PATH_SUFFIXES
         proj4
 
@@ -38,15 +37,13 @@ else (PROJ_LIBRARIES AND PROJ_INCLUDE_DIRS)
   find_library(LIBPROJ_LIBRARY
     NAMES
         proj
-        proj
         proj_i
     PATHS
         /usr/lib
         /usr/local/lib
         /opt/local/lib
         /sw/lib
-        C:/Programme/FWTools2.4.7/lib  
-		C:/Progra~1/FWTools2.4.7/lib		
+        ${CMAKE_SOURCE_DIR}/Win32/GDAL/lib
   )
   mark_as_advanced(LIBPROJ_LIBRARY)
 
