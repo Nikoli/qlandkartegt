@@ -27,6 +27,7 @@
 #include "CDlgSetupGarminIcons.h"
 
 #include <QtGui>
+#include <QNetworkProxy>
 
 #define XSTR(x) STR(x)
 #define STR(x) #x
@@ -46,10 +47,14 @@ CDlgConfig::CDlgConfig(QWidget * parent)
 
 #ifndef HAS_GEODB
     groupBoxGeoDB->hide();
+#else
+    connect(toolPathGeoDB, SIGNAL(clicked()),this,SLOT(slotSelectPathGeoDB()));
+    connect(checkUseGeoDB, SIGNAL(clicked(bool)), groupSaveWks, SLOT(setEnabled(bool)));
+    connect(checkGeoDBSaveOnExit, SIGNAL(clicked(bool)), spinGeoDBMinutes, SLOT(setEnabled(bool)));
 #endif
 
-    connect(toolPathGeoDB, SIGNAL(clicked()),this,SLOT(slotSelectPathGeoDB()));
-    connect(checkUseGeoDB, SIGNAL(clicked(bool)), checkGeoDBSaveOnExit, SLOT(setEnabled(bool)));
+    connect(toolPathMapCache, SIGNAL(clicked()), this, SLOT(slotSelectPathMapCache()));
+
 }
 
 
@@ -87,20 +92,23 @@ void CDlgConfig::exec()
     checkShowNorth->setChecked(resources.m_showNorth);
     checkShowScale->setChecked(resources.m_showScale);
     checkTooltip->setChecked(resources.m_showToolTip);
-    checkShowTrackMax->setChecked(resources.m_showTrackMax);
     checkShowZoomLevel->setChecked(resources.m_showZoomLevel);
     checkAntiAliasing->setChecked(resources.m_useAntiAliasing);
     checkReducePoiIcons->setChecked(resources.m_reducePoiIcons);
 #ifdef HAS_GEODB
     checkUseGeoDB->setChecked(resources.m_useGeoDB);
-    checkGeoDBSaveOnExit->setEnabled(resources.m_useGeoDB);
+    groupSaveWks->setEnabled(resources.m_useGeoDB);
     checkGeoDBSaveOnExit->setChecked(resources.m_saveGeoDBOnExit);
+    spinGeoDBMinutes->setValue(resources.m_saveGeoDBMinutes);
     labelPathGeoDB->setText(resources.m_pathGeoDB.absolutePath());
 #endif
+
 
     comboDevice->addItem(tr(""),"");
     comboDevice->addItem(tr("QLandkarte M"), "QLandkarteM");
     comboDevice->addItem(tr("Garmin"), "Garmin");
+    comboDevice->addItem(tr("Garmin Mass Storage"), "Garmin Mass Storage");
+    comboDevice->addItem(tr("TwoNav"), "TwoNav");
     comboDevice->addItem(tr("NMEA"), "NMEA");
 
     comboDevBaudRate->addItem("4800");
@@ -126,7 +134,7 @@ void CDlgConfig::exec()
     lineDevIPPort->setText(QString::number(resources.m_devIPPort));
     lineDevSerialPort->setText(resources.m_devSerialPort);
 #ifdef Q_OS_WIN32
-    lineDevSerialPort->setToolTip(tr("Pass something like \"COM1:\" or \"\\\\.\\COM13\" for serial Garmin devices or NMEA devices. For Garmin USB devices leave blank."));
+    lineDevSerialPort->setToolTip(tr("Pass something like \"COM1:\" or \"\\\\.\\COM13\" or \"\\\\.\\com13\" for serial Garmin devices or NMEA devices. For Garmin USB devices leave blank."));
 #endif
 
     checkDownloadTrk->setChecked(IDevice::m_DownloadAllTrk);
@@ -140,6 +148,9 @@ void CDlgConfig::exec()
     palette.setColor(labelWptTextColor->foregroundRole(), resources.m_WptTextColor);
     labelWptTextColor->setPalette(palette);
 
+    labelPathMapCache->setText(resources.m_pathMapCache.absolutePath());
+    spinSizeMapCache->setValue(resources.m_sizeMapCache);
+    spinExpireMapCache->setValue(resources.m_expireMapCache);
 
     QDialog::exec();
 }
@@ -153,7 +164,10 @@ void CDlgConfig::accept()
     resources.m_httpProxy       = lineProxyURL->text();
     resources.m_httpProxyPort   = lineProxyPort->text().toUInt();
 
-    emit resources.sigProxyChanged();
+    if(resources.m_useHttpProxy)
+      QNetworkProxy::setApplicationProxy(QNetworkProxy(QNetworkProxy::HttpProxy,resources.m_httpProxy,resources.m_httpProxyPort));
+    else
+      QNetworkProxy::setApplicationProxy(QNetworkProxy(QNetworkProxy::NoProxy));
 
     resources.m_mapfont         = labelFont->font();
 
@@ -175,7 +189,6 @@ void CDlgConfig::accept()
     resources.m_showNorth       = checkShowNorth->isChecked();
     resources.m_showScale       = checkShowScale->isChecked();
     resources.m_showToolTip     = checkTooltip->isChecked();
-    resources.m_showTrackMax    = checkShowTrackMax->isChecked();
     resources.m_showZoomLevel   = checkShowZoomLevel->isChecked();
     resources.m_playSound       = checkPlaySound->isChecked();
     resources.m_useAntiAliasing = checkAntiAliasing->isChecked();
@@ -184,6 +197,7 @@ void CDlgConfig::accept()
 #ifdef HAS_GEODB
     resources.m_useGeoDB        = checkUseGeoDB->isChecked();
     resources.m_saveGeoDBOnExit = checkGeoDBSaveOnExit->isChecked();
+    resources.m_saveGeoDBMinutes = spinGeoDBMinutes->value();
     resources.m_pathGeoDB       = QDir(labelPathGeoDB->text());
 #endif
 
@@ -211,8 +225,12 @@ void CDlgConfig::accept()
     IDevice::m_UploadAllTrk     = checkUploadTrk->isChecked();
     IDevice::m_UploadAllRte     = checkUploadRte->isChecked();
 
-    QPalette palette = labelWptTextColor->palette();
-    resources.m_WptTextColor = palette.color(labelWptTextColor->foregroundRole());
+    QPalette palette            = labelWptTextColor->palette();
+    resources.m_WptTextColor    = palette.color(labelWptTextColor->foregroundRole());
+
+    resources.m_pathMapCache    = QDir(labelPathMapCache->text());
+    resources.m_sizeMapCache    = spinSizeMapCache->value();
+    resources.m_expireMapCache  = spinExpireMapCache->value();
 
     QDialog::accept();
 }
@@ -379,3 +397,13 @@ void CDlgConfig::slotSelectWptTextColor()
     }
 
 }
+
+void CDlgConfig::slotSelectPathMapCache()
+{
+    QString path = QFileDialog::getExistingDirectory(this, tr("Open Directory"), labelPathMapCache->text(), QFileDialog::ShowDirsOnly);
+    if(!path.isEmpty())
+    {
+        labelPathMapCache->setText(path);
+    }
+}
+

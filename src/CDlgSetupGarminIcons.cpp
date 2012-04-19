@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "WptIcons.h"
 #include "CResources.h"
 #include "CDeviceGarmin.h"
+#include "CSettings.h"
 
 #include <QtGui>
 
@@ -34,7 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <limits>
 #include <math.h>
 
-#include <projects.h>
+#include <proj_api.h>
 #ifdef __MINGW32__
 #undef LP
 #endif
@@ -101,7 +102,7 @@ void CDlgSetupGarminIcons::exec()
 
 void CDlgSetupGarminIcons::accept()
 {
-    QSettings cfg;
+    SETTINGS;
     QString name;
     for(int i=0; i < N_CUSTOM_ICONS; ++i)
     {
@@ -120,7 +121,7 @@ void CDlgSetupGarminIcons::accept()
 
 void CDlgSetupGarminIcons::slotChangeIconSource()
 {
-    QSettings cfg;
+    SETTINGS;
     QDir dir(cfg.value("path/icons",QDir::homePath()).toString());
 
     QTreeWidgetItem * entry = listCustomIcons->topLevelItem(sender()->objectName().toInt());
@@ -196,27 +197,27 @@ void CDlgSetupGarminIcons::slotSendToDevice()
         file.close();
         const garmin_bmp_t * pBmp = (garmin_bmp_t*)buffer.data();
 
-        qDebug() << "-----------" << entry->text(4);
-        qDebug() << "bfType              " << hex << pBmp->bfType;
-        qDebug() << "bfSize              " << hex << pBmp->bfSize;
-        qDebug() << "bfReserved          " << hex << pBmp->bfReserved;
-        qDebug() << "bfOffBits           " << hex << pBmp->bfOffBits;
+//        qDebug() << "-----------" << entry->text(4);
+//        qDebug() << "bfType              " << hex << pBmp->bfType;
+//        qDebug() << "bfSize              " << hex << pBmp->bfSize;
+//        qDebug() << "bfReserved          " << hex << pBmp->bfReserved;
+//        qDebug() << "bfOffBits           " << hex << pBmp->bfOffBits;
 
-        qDebug() << "biSize              " << hex << pBmp->biSize;
-        qDebug() << "biWidth             " << hex << pBmp->biWidth;
-        qDebug() << "biHeight            " << hex << pBmp->biHeight;
-        qDebug() << "biPlanes            " << hex << pBmp->biPlanes;
-        qDebug() << "biBitCount          " << hex << pBmp->biBitCount;
-        qDebug() << "biCompression       " << hex << pBmp->biCompression;
-        qDebug() << "biSizeImage         " << hex << pBmp->biSizeImage;
-        qDebug() << "biXPelsPerMeter     " << hex << pBmp->biXPelsPerMeter;
-        qDebug() << "biYPelsPerMeter     " << hex << pBmp->biYPelsPerMeter;
-        qDebug() << "biClrUsed           " << hex << pBmp->biClrUsed;
-        qDebug() << "biClrImportant      " << hex << pBmp->biClrImportant;
-        qDebug() << "clrtbl[0]           " << hex << pBmp->clrtbl[0];
-        qDebug() << "clrtbl[1]           " << hex << pBmp->clrtbl[1];
-        qDebug() << "clrtbl[0xfe]        " << hex << pBmp->clrtbl[0xfe];
-        qDebug() << "clrtbl[0xff]        " << hex << pBmp->clrtbl[0xff];
+//        qDebug() << "biSize              " << hex << pBmp->biSize;
+//        qDebug() << "biWidth             " << hex << pBmp->biWidth;
+//        qDebug() << "biHeight            " << hex << pBmp->biHeight;
+//        qDebug() << "biPlanes            " << hex << pBmp->biPlanes;
+//        qDebug() << "biBitCount          " << hex << pBmp->biBitCount;
+//        qDebug() << "biCompression       " << hex << pBmp->biCompression;
+//        qDebug() << "biSizeImage         " << hex << pBmp->biSizeImage;
+//        qDebug() << "biXPelsPerMeter     " << hex << pBmp->biXPelsPerMeter;
+//        qDebug() << "biYPelsPerMeter     " << hex << pBmp->biYPelsPerMeter;
+//        qDebug() << "biClrUsed           " << hex << pBmp->biClrUsed;
+//        qDebug() << "biClrImportant      " << hex << pBmp->biClrImportant;
+//        qDebug() << "clrtbl[0]           " << hex << pBmp->clrtbl[0];
+//        qDebug() << "clrtbl[1]           " << hex << pBmp->clrtbl[1];
+//        qDebug() << "clrtbl[0xfe]        " << hex << pBmp->clrtbl[0xfe];
+//        qDebug() << "clrtbl[0xff]        " << hex << pBmp->clrtbl[0xff];
 
         if(    pBmp->biBitCount != 8
             || pBmp->biCompression != 0

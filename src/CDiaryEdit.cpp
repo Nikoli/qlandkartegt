@@ -1,25 +1,22 @@
 /**********************************************************************************************
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
-  DSP Solutions GmbH & Co. KG
-  http://www.dspsolutions.de/
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-  Author:      Oliver Eichler
-  Email:       oliver.eichler@dspsolutions.de
-  Phone:       +49-941-83055-1
-  Fax:         +49-941-83055-79
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-  File:        CDiaryEdit.cpp
-
-  Module:
-
-  Description:
-
-  Created:     06/10/2011
-
-  (C) 2011 DSP Solutions. All rights reserved.
-
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
+
 
 #include "CDiaryEdit.h"
 #include "CGeoDB.h"
@@ -36,6 +33,7 @@
 #include "CCanvas.h"
 #include "CPlot.h"
 #include "IUnit.h"
+#include "CSettings.h"
 
 #include <QtGui>
 
@@ -163,12 +161,14 @@ CDiaryEdit::CDiaryEdit(CDiary& diary, QWidget * parent)
     textEdit->setFocus();
     colorChanged(textEdit->textColor());
 
-    QSettings cfg;
+    SETTINGS;
     checkGeoCache->setChecked(cfg.value("diary/showGeoCaches", false).toBool());
     connect(checkGeoCache, SIGNAL(clicked()), this, SLOT(slotIntReload()));
 
     checkProfile->setChecked(cfg.value("diary/showProfiles", true).toBool());
     connect(checkProfile, SIGNAL(clicked()), this, SLOT(slotIntReload()));
+
+    checkAddMap->setChecked(cfg.value("diary/addMapView", true).toBool());
 
 }
 
@@ -176,9 +176,10 @@ CDiaryEdit::~CDiaryEdit()
 {
     collectData();
 
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("diary/showGeoCaches", checkGeoCache->isChecked());
     cfg.setValue("diary/showProfiles", checkProfile->isChecked());
+    cfg.setValue("diary/addMapView", checkAddMap->isChecked());
 }
 
 
@@ -211,6 +212,22 @@ void CDiaryEdit::resizeEvent(QResizeEvent * e)
     textEdit->clear();
     textEdit->document()->setTextWidth(textEdit->size().width() - 20);
     draw(*textEdit->document());
+}
+
+void CDiaryEdit::closeEvent(QCloseEvent * e)
+{
+    if(diary.isModified())
+    {
+        QMessageBox::Button res = QMessageBox::warning(this, tr("Diary modified..."), tr("The diary is modified. Do you want to save it?"), QMessageBox::Yes|QMessageBox::No,QMessageBox::Yes);
+
+        if(res == QMessageBox::Yes)
+        {
+            slotSave();
+        }
+    }
+
+
+    QWidget::closeEvent(e);
 }
 
 void CDiaryEdit::setWindowModified()
@@ -256,6 +273,9 @@ void CDiaryEdit::slotReload()
 void CDiaryEdit::slotReload(bool fromDB)
 {
     CDiaryEditLock lock(this);
+
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
     if(fromDB)
     {
         if(CGeoDB::self().getProjectDiaryData(diary.keyProjectGeoDB, diary))
@@ -269,6 +289,8 @@ void CDiaryEdit::slotReload(bool fromDB)
     textEdit->clear();
     textEdit->document()->setTextWidth(textEdit->size().width() - 20);
     draw(*textEdit->document());
+
+    QApplication::restoreOverrideCursor();
 }
 
 void CDiaryEdit::slotPrintPreview()
@@ -287,10 +309,12 @@ void CDiaryEdit::slotPrintPreview()
     doc.setPageSize(pageSize);
     draw(doc);
 
-    QImage img;
-    theMainWindow->getCanvas()->print(img, pageSize.toSize() - QSize(10,10));
-
-    doc.rootFrame()->lastCursorPosition().insertImage(img);
+    if(checkAddMap->isChecked())
+    {
+        QImage img;
+        theMainWindow->getCanvas()->print(img, pageSize.toSize() - QSize(10,10));
+        doc.rootFrame()->lastCursorPosition().insertImage(img);
+    }
     doc.print(&printer);
 
     textEdit->clear();
@@ -424,6 +448,7 @@ void CDiaryEdit::colorChanged(const QColor &c)
 
 void CDiaryEdit::slotCursorPositionChanged()
 {
+    int i;
     if(isInternalEdit) return;
 
     QTextCursor cursor = textEdit->textCursor();
@@ -436,7 +461,7 @@ void CDiaryEdit::slotCursorPositionChanged()
         }
     }
 
-    for(int i = 1; i <= diary.wpts.count(); i++)
+    for(i = 1; i <= diary.wpts.count(); i++)
     {
         QTextTable * tbl = diary.tblWpt;
         if(tbl->cellAt(i, eComment).firstCursorPosition() <= cursor && cursor <= tbl->cellAt(i, eComment).lastCursorPosition())
@@ -451,22 +476,29 @@ void CDiaryEdit::slotCursorPositionChanged()
         }
     }
 
-    for(int i = 1; i <= diary.trks.count(); i++)
+    QTextTable * tbl = diary.tblTrk;
+    if(tbl)
     {
-
-        QTextTable * tbl = diary.tblTrk;
-        if(tbl->cellAt(i, eComment).firstCursorPosition() <= cursor && cursor <= tbl->cellAt(i, eComment).lastCursorPosition())
+        for(i = 1; i <= diary.trks.count(); i++)
         {
-            return;
+            if(tbl->cellAt(i, eComment).firstCursorPosition() <= cursor && cursor <= tbl->cellAt(i, eComment).lastCursorPosition())
+            {
+                return;
+            }
+
+            if(tbl->cellAt(i, eSym).firstCursorPosition() <= cursor && cursor <= tbl->cellAt(i, eInfo).lastCursorPosition())
+            {
+                textEdit->setTextCursor(tbl->cellAt(i, eComment).lastCursorPosition());
+                return;
+            }
         }
 
-        if(tbl->cellAt(i, eSym).firstCursorPosition() <= cursor && cursor <= tbl->cellAt(i, eInfo).lastCursorPosition())
+        if(cursor > tbl->cellAt(i-1, eComment).lastCursorPosition())
         {
-            textEdit->setTextCursor(tbl->cellAt(i, eComment).lastCursorPosition());
+            textEdit->setTextCursor(tbl->cellAt(i-1, eComment).lastCursorPosition());
             return;
         }
     }
-
 
     if(!diary.diaryFrame.isNull())
     {
@@ -555,8 +587,9 @@ void CDiaryEdit::draw(QTextDocument& doc)
 
     QTextCharFormat fmtCharHeader;
     fmtCharHeader.setFont(f);
-    fmtCharHeader.setBackground(QColor("#c6e3c0"));
+    fmtCharHeader.setBackground(Qt::darkBlue);
     fmtCharHeader.setFontWeight(QFont::Bold);
+    fmtCharHeader.setForeground(Qt::white);
 
     QTextBlockFormat fmtBlockStandard;
     fmtBlockStandard.setTopMargin(10);
@@ -679,7 +712,9 @@ void CDiaryEdit::draw(QTextDocument& doc)
             table->cellAt(cnt,eInfo).firstCursorPosition().insertText(trk->getInfo(), fmtCharStandard);
             if(checkProfile->isChecked())
             {
-                QImage profile(fm.width("X") * 30,fm.height()*7,QImage::Format_ARGB32);
+                quint32 w =  doc.textWidth();
+                //QImage profile(fm.width("X") * 30,fm.height()*7,QImage::Format_ARGB32);
+                QImage profile(w/2.5,(w * 6)/(16 * 2.5),QImage::Format_ARGB32);
                 getTrackProfile(trk, profile);
                 table->cellAt(cnt,eInfo).lastCursorPosition().insertBlock(fmtBlockStandard);
                 table->cellAt(cnt,eInfo).lastCursorPosition().insertImage(profile);
@@ -729,7 +764,6 @@ void CDiaryEdit::getTrackProfile(CTrack * track, QImage& image)
 {
     CPlot plot(CPlotData::eLinear, CPlot::eNormal, 0);
     plot.hide();
-    plot.resize(image.size());
     plot.clear();
 
 
@@ -760,8 +794,7 @@ void CDiaryEdit::getTrackProfile(CTrack * track, QImage& image)
     plot.resetZoom();
 
     QPainter p(&image);
-    USE_ANTI_ALIASING(p,true);
-    plot.draw(p);
+    plot.draw(p,image.size());
 
 }
 
@@ -812,7 +845,10 @@ void CDiaryEdit::collectData()
 
         foreach(CWpt* wpt, wpts)
         {
-            wpt->setComment(QLGT::QTextHtmlExporter(textEdit->document()).toHtml(diary.tblWpt->cellAt(cnt, 2)));
+            if(cnt < diary.tblWpt->rows())
+            {
+                wpt->setComment(QLGT::QTextHtmlExporter(textEdit->document()).toHtml(diary.tblWpt->cellAt(cnt, eComment)));
+            }
             cnt++;
         }
     }
@@ -825,7 +861,10 @@ void CDiaryEdit::collectData()
 
         foreach(CTrack* trk, trks)
         {
-            trk->setComment(QLGT::QTextHtmlExporter(textEdit->document()).toHtml(diary.tblTrk->cellAt(cnt, 2)));
+            if(cnt < diary.tblTrk->rows())
+            {
+                trk->setComment(QLGT::QTextHtmlExporter(textEdit->document()).toHtml(diary.tblTrk->cellAt(cnt, eComment)));
+            }
             cnt++;
         }
     }

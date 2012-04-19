@@ -21,6 +21,7 @@
 
 #include "CDeviceGarmin.h"
 #include "CMainWindow.h"
+#include "CCanvas.h"
 #include "CWptDB.h"
 #include "CWpt.h"
 #include "CTrackDB.h"
@@ -40,7 +41,7 @@
 #include <limits>
 #include <math.h>
 
-#include <projects.h>
+#include <proj_api.h>
 #ifdef __MINGW32__
 #undef LP
 #endif
@@ -514,27 +515,13 @@ Garmin::IDevice * CDeviceGarmin::getDevice()
     Garmin::IDevice * (*func)(const char*) = 0;
     Garmin::IDevice * dev = 0;
 
-#ifdef HAS_POWERDB
-    // Hack to find the drivers in /usr/lib/qlandkartegt instead of /usr/local/lib/qlandkartegt-pn
-    QDir inst_dir(XSTR(PLUGINDIR));
-    QString path = inst_dir.path();
-    path.chop(3);
-    path.replace("/local/", "/");
-    inst_dir.setPath(path);
-    qDebug() << "Path: " << path;
-#endif
-
 #if defined(Q_WS_MAC)
     // MacOS X: plug-ins are stored in the bundle folder
     QString libname     = QString("%1/lib%2" XSTR(SHARED_LIB_EXT))
         .arg(QCoreApplication::applicationDirPath().replace(QRegExp("MacOS$"), "Resources/Drivers"))
         .arg(devkey);
 #else
-#ifdef HAS_POWERDB
-    QString libname     = QString("%1/lib%2" XSTR(SHARED_LIB_EXT)).arg(path).arg(devkey);
-#else
     QString libname     = QString("%1/lib%2" XSTR(SHARED_LIB_EXT)).arg(XSTR(PLUGINDIR)).arg(devkey);
-#endif
 #endif
     QString funcname    = QString("init%1").arg(devkey);
 
@@ -623,7 +610,7 @@ void CDeviceGarmin::slotTimeout()
 
         // multiply by 100 to avoid leaving the float range.
         float heading = fabsf((100.0 * pvt.east) / (100.0 * pvt.north));
-        heading = atanf(heading) / (TWOPI) * 360.0;
+        heading = atanf(heading) / (2*M_PI) * 360.0;
         if( (pvt.north > 0.0) & (pvt.east > 0.0) )
         {
             // 1st quadrant
@@ -691,9 +678,11 @@ void CDeviceGarmin::uploadWpts(const QList<CWpt*>& wpts)
         garwpt.ident    = codec->fromUnicode((*wpt)->getName()).data();
 
         QString comment = (*wpt)->getComment();
-        comment.remove(QRegExp("<head.*[^>]*><\\/head>"));
-        comment.remove(QRegExp("<[^>]*>"));
-        comment = comment.simplified();
+        if((*wpt)->getComment() == "" )
+        {
+            comment = (*wpt)->getDescription();
+        }
+        IItem::removeHtml(comment);
 
         garwpt.comment  = codec->fromUnicode(comment).data();
 
@@ -719,6 +708,8 @@ void CDeviceGarmin::uploadWpts(const QList<CWpt*>& wpts)
         QApplication::restoreOverrideCursor();
         return;
     }
+
+    theMainWindow->getCanvas()->setFadingMessage(tr("Upload waypoints finished!"));
 
 }
 
@@ -777,6 +768,7 @@ void CDeviceGarmin::downloadWpts(QList<CWpt*>& wpts)
         ++garwpt;
     }
 
+    theMainWindow->getCanvas()->setFadingMessage(tr("Download waypoints finished!"));
 }
 
 
@@ -838,6 +830,7 @@ void CDeviceGarmin::uploadTracks(const QList<CTrack*>& trks)
         return;
     }
 
+    theMainWindow->getCanvas()->setFadingMessage(tr("Upload tracks finished!"));
 }
 
 
@@ -903,6 +896,8 @@ void CDeviceGarmin::downloadTracks(QList<CTrack*>& trks)
         }
         ++gartrk;
     }
+
+    theMainWindow->getCanvas()->setFadingMessage(tr("Download tracks finished!"));
 
 }
 
@@ -1037,6 +1032,7 @@ void CDeviceGarmin::uploadRoutes(const QList<CRoute*>& rtes)
         return;
     }
 
+    theMainWindow->getCanvas()->setFadingMessage(tr("Upload routes finished!"));
 }
 
 
@@ -1093,6 +1089,7 @@ void CDeviceGarmin::downloadRoutes(QList<CRoute*>& rtes)
         ++garrte;
     }
 
+    theMainWindow->getCanvas()->setFadingMessage(tr("Download routes finished!"));
 }
 
 
@@ -1105,7 +1102,7 @@ void CDeviceGarmin::uploadMap(const QList<IMapSelection*>& mss)
 
     while(ms != mss.end())
     {
-        if((*ms)->type == IMapSelection::eGarmin)
+        if((*ms)->type == IMapSelection::eVector)
         {
             break;
         }
@@ -1156,6 +1153,7 @@ void CDeviceGarmin::uploadMap(const QList<IMapSelection*>& mss)
         return;
     }
 
+    theMainWindow->getCanvas()->setFadingMessage(tr("Upload maps finished!"));
 }
 
 

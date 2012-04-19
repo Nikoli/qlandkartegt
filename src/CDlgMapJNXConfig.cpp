@@ -23,6 +23,7 @@
 #include <QtGui>
 
 #ifndef WIN32
+#include <unistd.h>
 #include <pwd.h>
 #endif
 
@@ -88,7 +89,7 @@ CDlgMapJNXConfig::CDlgMapJNXConfig(CMapJnx * map)
 
 CDlgMapJNXConfig::~CDlgMapJNXConfig()
 {
-    qDebug() << "CDlgMapJNXConfig::~CDlgMapJNXConfig()";
+
 }
 
 

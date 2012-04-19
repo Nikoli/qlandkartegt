@@ -68,6 +68,20 @@ CDlgEditWpt::CDlgEditWpt(CWpt &wpt, QWidget * parent)
     enc = dmtxEncodeCreate();
 #endif
 
+    name = wpt.getName();
+    imageSelect->setWpt(&wpt);
+    connect(imageSelect, SIGNAL(sigSelectImage(const CImageSelect::img_t&)), this, SLOT(slotSelectImage(const CImageSelect::img_t&)));
+
+    if(wpt.isGeoCache())
+    {
+        labelSpolerHint->show();
+        imageSelect->hide();
+    }
+    else
+    {
+        labelSpolerHint->hide();
+        imageSelect->show();
+    }
 }
 
 
@@ -171,8 +185,6 @@ int CDlgEditWpt::exec()
                 listBuddies->addItem(item);
 
 
-                qDebug() << buddy.pos << buddy.name;
-
                 foreach(const QString& pos, buddy.pos)
                 {
                     html.replace(pos, QString("%1 (<b><i style='color: black;'>%2</i></b>)").arg(pos).arg(buddy.name));
@@ -182,18 +194,25 @@ int CDlgEditWpt::exec()
             listBuddies->show();
             checkExportBuddies->show();
         }
+
+        webView->setHtml(html);
+        webView->page()->setLinkDelegationPolicy( QWebPage::DelegateAllLinks );
+        checkHint->setEnabled(wpt.hasHiddenInformation());
+
     }
     else
     {
         listBuddies->hide();
         checkExportBuddies->hide();
+        checkHint->hide();
+
+        if(!link.isEmpty())
+        {
+            webView->setUrl(link);
+        }
     }
 
 
-    webView->setHtml(html);
-    webView->page()->setLinkDelegationPolicy( QWebPage::DelegateAllLinks );
-
-    checkHint->setEnabled(wpt.hasHiddenInformation());
 
 
     QStringList caches;
@@ -219,6 +238,8 @@ int CDlgEditWpt::exec()
         }
 
     }
+
+    lineName->setFocus();
 
     return QDialog::exec();
 }
@@ -264,7 +285,7 @@ void CDlgEditWpt::accept()
         double bearing  = lineBearing->text().toDouble() * DEG_TO_RAD;
         double distance = lineDistance->text().toDouble();
 
-        XY pt1, pt2;
+        projXY pt1, pt2;
         pt1.u       = wpt.lon * DEG_TO_RAD;
         pt1.v       = wpt.lat * DEG_TO_RAD;
         pt2         = GPS_Math_Wpt_Projection(pt1, distance, bearing);
@@ -289,6 +310,11 @@ void CDlgEditWpt::accept()
     emit CWptDB::self().sigChanged();
     emit CWptDB::self().sigModified();
     emit CWptDB::self().sigModified(wpt.getKey());
+
+    if(wpt.getName() != name)
+    {
+        CWptDB::self().setNewWptName(wpt.getName());
+    }
 
     QDialog::accept();
 }
@@ -355,7 +381,18 @@ void CDlgEditWpt::showImage(int idx)
         idxImg = idx;
 
         CWpt::image_t& img = wpt.images[idx];
-        labelImage->setPixmap(img.pixmap.scaledToWidth(100,Qt::SmoothTransformation));
+        if(wpt.isGeoCache())
+        {
+            QPixmap tmp = img.pixmap.scaledToWidth(300,Qt::SmoothTransformation);
+            labelImage->setMinimumSize(tmp.size());
+            labelImage->setPixmap(tmp);
+        }
+        else
+        {
+            QPixmap tmp = img.pixmap.scaledToWidth(150,Qt::SmoothTransformation);
+            labelImage->setMinimumSize(tmp.size());
+            labelImage->setPixmap(tmp);
+        }
         labelInfo->setText(img.info);
 
         pushNext->setEnabled(idx < (wpt.images.count() - 1) && wpt.images.count() != 1);
@@ -485,4 +522,22 @@ void CDlgEditWpt::slotToggleHint(bool show)
         }
     }
     webView->setHtml(html);
+}
+
+void CDlgEditWpt::slotSelectImage(const CImageSelect::img_t& src)
+{
+    wpt.images.clear();
+
+    CWpt::image_t tar;
+    tar.filename    = src.filename;
+    tar.info        = src.title;
+    tar.pixmap      = src.img;
+
+    wpt.images << tar;
+
+    showImage(0);
+
+    textComment->setText(src.title);
+
+    pushDel->setEnabled(wpt.images.count() != 0);
 }

@@ -23,6 +23,7 @@
 #include <QtGui>
 
 #ifndef WIN32
+#include <unistd.h>
 #include <pwd.h>
 #endif
 
@@ -87,7 +88,7 @@ CDlgMapQMAPConfig::CDlgMapQMAPConfig(CMapQMAP * map)
 
 CDlgMapQMAPConfig::~CDlgMapQMAPConfig()
 {
-    qDebug() << "CDlgMapQMAPConfig::~CDlgMapQMAPConfig()";
+
 }
 
 

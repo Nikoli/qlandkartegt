@@ -22,6 +22,7 @@
 #include "CTrackDB.h"
 #include "GeoMath.h"
 #include "IUnit.h"
+#include "CSettings.h"
 
 #include <QtGui>
 
@@ -38,7 +39,7 @@ CDlgTrackFilter::CDlgTrackFilter(CTrack &track, QWidget * parent)
 {
     setupUi(this);
 
-    QSettings cfg;
+    SETTINGS;
 
     checkReduceDataset->setChecked(false);
     checkModifyTimestamps->setChecked(false);
@@ -66,7 +67,7 @@ CDlgTrackFilter::CDlgTrackFilter(CTrack &track, QWidget * parent)
         tabTimestamp->setEnabled(false);
         radioTimedelta->setEnabled(false);
         spinTimedelta->setEnabled(false);
-        qDebug() << "Track has no timestamps that could be modified.";
+//        qDebug() << "Track has no timestamps that could be modified.";
     }
     else
     {
@@ -82,6 +83,9 @@ CDlgTrackFilter::CDlgTrackFilter(CTrack &track, QWidget * parent)
 
     spinTimedelta->setValue(cfg.value("trackfilter/timedelta",5).toInt());
 
+    quint32 cnt = track.getMedianFilterCount();
+    checkMedian->setText(tr("Smooth profile (Median filter, %1 tabs)").arg(5 + (cnt<<1)));
+
     // user-tunable elements on "Modify Timestamps" tab
     connect(buttonReset1stOfMonth, SIGNAL(clicked()), this, SLOT(slotReset1stOfMonth()));
     connect(buttonResetEpoch, SIGNAL(clicked()), this, SLOT(slotResetEpoch()));
@@ -95,6 +99,7 @@ CDlgTrackFilter::CDlgTrackFilter(CTrack &track, QWidget * parent)
     connect(spinAzimuthDelta, SIGNAL(valueChanged(int)), this, SLOT(slotSpinAzimuthDelta(int)));
     connect(spinTimedelta, SIGNAL(valueChanged(int)), this, SLOT(slotSpinTimedelta(int)));
     connect(comboMeterFeet, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
+    connect(checkMedian, SIGNAL(clicked()), this, SLOT(slotCheckMedian()));
 
     connect(radioSplitChunks, SIGNAL(clicked()), this, SLOT(slotRadioSplitChunks()));
     connect(radioSplitPoints, SIGNAL(clicked()), this, SLOT(slotRadioSplitPoints()));
@@ -122,7 +127,7 @@ void CDlgTrackFilter::accept()
         reduceDataset(&track);
     }
 
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("trackfilter/distance",spinDistance->value());
     cfg.setValue("trackfilter/azimuthdelta",spinAzimuthDelta->value());
     cfg.setValue("trackfilter/timedelta",spinTimedelta->value());
@@ -162,12 +167,13 @@ void CDlgTrackFilter::splitTrack(CTrack * trk)
 
     CTrack * track1 = new CTrack(&CTrackDB::self());
     track1->setName(trk->getName() + QString("_%1").arg(trkCnt++));
+    track1->setColor(trk->getColorIdx());
 
     while(trkpt != trkpts.end())
     {
 
         progress.setValue(totalCnt++);
-        qApp->processEvents(QEventLoop::AllEvents, 100);
+        qApp->processEvents();
 
         *track1 << *trkpt;
         if(++trkptCnt >= chunk)
@@ -180,6 +186,7 @@ void CDlgTrackFilter::splitTrack(CTrack * trk)
             trkptCnt = 0;
             track1 = new CTrack(&CTrackDB::self());
             track1->setName(trk->getName() + QString("_%1").arg(trkCnt++));
+            track1->setColor(trk->getColorIdx());
         }
 
         trkpt++;
@@ -242,7 +249,7 @@ void CDlgTrackFilter::modifyTimestamp(CTrack * trk)
                 }
                 ++trkpt;
                 progress.setValue(i);
-                qApp->processEvents(QEventLoop::AllEvents, 100);
+                qApp->processEvents();
                 ++i;
                 if (progress.wasCanceled())
                 {
@@ -261,8 +268,6 @@ void CDlgTrackFilter::modifyTimestamp(CTrack * trk)
 
 void CDlgTrackFilter::reduceDataset(CTrack * trk)
 {
-
-
     if(checkReduceDataset->isChecked())
     {
         QList<CTrack::pt_t>& trkpts = trk->getTrackPoints();
@@ -297,7 +302,7 @@ void CDlgTrackFilter::reduceDataset(CTrack * trk)
                 ++trkpt;
                 ++i;
                 progress.setValue(i);
-                qApp->processEvents(QEventLoop::AllEvents, 100);
+                qApp->processEvents();
                 if (progress.wasCanceled())
                     break;
             }
@@ -315,7 +320,7 @@ void CDlgTrackFilter::reduceDataset(CTrack * trk)
             {
                 min_distance *= 0.3048f;
             }
-            XY p1, p2;
+            projXY p1, p2;
             p1.u = DEG_TO_RAD * trkpt->lon;
             p1.v = DEG_TO_RAD * trkpt->lat;
             ++trkpt;
@@ -323,6 +328,10 @@ void CDlgTrackFilter::reduceDataset(CTrack * trk)
             QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
             int i = 1;
+
+            double lastEle = trkpt->ele;
+
+            bool checkAzimuth = checkAzimuthDelta->isEnabled() && checkAzimuthDelta->isChecked();
 
             while(trkpt != trkpts.end())
             {
@@ -335,7 +344,8 @@ void CDlgTrackFilter::reduceDataset(CTrack * trk)
                 double a1, a2;
 
                 double delta = distance(p1,p2,a1,a2);
-                if(checkAzimuthDelta->isEnabled() && checkAzimuthDelta->isChecked())
+
+                if(checkAzimuth)
                 {
                     if (abs(trkpt->azimuth) <= 180)
                     {
@@ -354,26 +364,44 @@ void CDlgTrackFilter::reduceDataset(CTrack * trk)
                     }
                 }
 
-                if(delta < min_distance || (AzimuthDelta < minAzimuthDelta && checkAzimuthDelta->isEnabled() && checkAzimuthDelta->isChecked()))
+                double deltaEle = abs(lastEle - trkpt->ele);
+
+                if (delta < min_distance || (checkAzimuth && AzimuthDelta < minAzimuthDelta))
                 {
-                    trkpt->flags |= CTrack::pt_t::eDeleted;
+                    if(deltaEle < 3)
+                    {
+                        trkpt->flags |= CTrack::pt_t::eDeleted;
+                    }
+
                 }
                 else
                 {
                     p1 = p2;
                     progress.setValue(i);
-                    qApp->processEvents(QEventLoop::AllEvents, 100);
+                    qApp->processEvents();
                     if(AzimuthDelta >= minAzimuthDelta)
                     {
                         lastAzimuth = trkpt->azimuth;
                     }
+
+                    lastEle = trkpt->ele;
                 }
                 ++trkpt;
                 ++i;
                 if (progress.wasCanceled())
+                {
                     break;
+                }
             }
 
+            QApplication::restoreOverrideCursor();
+        }
+
+        // can be done in parallel to other reductions
+        if(checkMedian->isChecked())
+        {
+            QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+            trk->medianFilter(progress);
             QApplication::restoreOverrideCursor();
         }
         progress.setValue(npts);
@@ -392,8 +420,8 @@ void CDlgTrackFilter::slotReset1stOfMonth()
     int offset = (day - 1) * 86400 + hour * 3600;
     QDateTime tn = t.addSecs(-offset);
 
-    qDebug() << "Resetting starttime:" << t.toString("yyyy-MM-dd'T'hh:mm:ss'Z'")
-        << "to:" << tn.toString("yyyy-MM-dd'T'hh:mm:ss'Z'");
+//    qDebug() << "Resetting starttime:" << t.toString("yyyy-MM-dd'T'hh:mm:ss'Z'")
+//        << "to:" << tn.toString("yyyy-MM-dd'T'hh:mm:ss'Z'");
 
     datetimeStartTime->setDateTime(tn);
 
@@ -405,8 +433,8 @@ void CDlgTrackFilter::slotResetEpoch()
 {
     QDateTime t = datetimeStartTime->dateTime();
 
-    qDebug() << "Resetting starttime:" << t.toString("yyyy-MM-dd'T'hh:mm:ss'Z'")
-        << "to epoch";
+//    qDebug() << "Resetting starttime:" << t.toString("yyyy-MM-dd'T'hh:mm:ss'Z'")
+//        << "to epoch";
 
     QDateTime tn;
     radioUTC->setChecked(true);
@@ -425,7 +453,7 @@ void CDlgTrackFilter::slotDateTimeChanged(const QDateTime &tn)
 {
     checkModifyTimestamps->setChecked(true);
 
-    qDebug() << "Resetting starttime to:" << tn.toString("yyyy-MM-dd'T'hh:mm:ss'Z'");
+//    qDebug() << "Resetting starttime to:" << tn.toString("yyyy-MM-dd'T'hh:mm:ss'Z'");
 }
 
 
@@ -437,6 +465,11 @@ void CDlgTrackFilter::slotRadioDistance()
     {
         spinAzimuthDelta->setEnabled(true);
     }
+}
+
+void CDlgTrackFilter::slotCheckMedian()
+{
+    checkReduceDataset->setChecked(true);
 }
 
 void CDlgTrackFilter::slotSpinDistance(int i)
