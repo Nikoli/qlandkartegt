@@ -3,6 +3,8 @@
 ;NSIS References/Documentation 
 ;http://nsis.sourceforge.net/Docs/Modern%20UI%202/Readme.html
 ;http://nsis.sourceforge.net/Docs/Modern%20UI/Readme.html
+;http://nsis.sourceforge.net/Docs/Chapter4.html
+;http://nsis.sourceforge.net/Many_Icons_Many_shortcuts
 
 ;Revision Log
 ; 2012-03-26 Adapted for power network extension and MSVC 2010
@@ -12,7 +14,7 @@
 !include MUI2.nsh
 
 ;------------------------------------------------------------------------
-; Modern UI2 definition							                                    -
+; Modern UI2 definition                                                  -
 ;------------------------------------------------------------------------
 ; Description
 Name "QLandkarte GT Power Network Extension"
@@ -31,7 +33,7 @@ RequestExecutionLevel admin
 OutFile "QLandkarteGT-PN.exe"
 
 ;------------------------------------------------------------------------
-; Modern UI definition   	   					                                  -
+; Modern UI definition                                                    -
 ;------------------------------------------------------------------------
 ;!define MUI_COMPONENTSPAGE_SMALLDESC ;No value
 !define MUI_INSTFILESPAGE_COLORS "FFFFFF 000000" ;Two colors
@@ -48,7 +50,7 @@ OutFile "QLandkarteGT-PN.exe"
 !define MUI_LICENSEPAGE_CHECKBOX
 
 ;------------------------------------------------------------------------
-; Pages definition order						                                    -
+; Pages definition order                                                -
 ;------------------------------------------------------------------------
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "License.rtf"
@@ -72,28 +74,9 @@ Var StartMenuFolder
 
 
 ;------------------------------------------------------------------------
-; Component add		   	   					                                      -
+; Component add                                                            -
 ;------------------------------------------------------------------------
 ;Components description
-
-Section "FWTools 2.4.7" FWTools
-
-	ReadRegStr $0 HKLM "Software\FWtools" Install_Dir
-	!define TMP_PATH $0
-
-	ExecWait '"${TMP_PATH}\uninstall.exe"'
-
-	; Don't do it if we can package install
- 	NSISdl::download http://home.gdal.org/fwtools/FWTools247.exe $TEMP\FWTools247.exe
- 	Pop $R0 ;Get the return value
- 	StrCmp $R0 "success" +3
- 	  MessageBox MB_OK "Download failed: $R0"
- 	  Quit
- 	ExecWait '"$TEMP\FWTools247.exe"'
-
-SectionEnd
-LangString DESC_FWTools ${LANG_ENGLISH} "Required Libraries for MAP and coordinate system transformation. This package will be downloaded from the internet. It needs to be installed only once - for the first QLandkarteGT installation."
-LangString DESC_FWTools ${LANG_GERMAN}  "Benötigte Bibliotheken für Karten- und Koordinatentransformationen. Wird aus dem Internet heruntergeladen. Muss nur einmal installiert werden - bei der ersten QLandkarteGT Installation."
 
 Section "MSVC++ 2010 SP1 Runtime" MSVC
 
@@ -104,7 +87,7 @@ Section "MSVC++ 2010 SP1 Runtime" MSVC
   
 SectionEnd
 LangString DESC_MSVC ${LANG_ENGLISH} "Microsoft Visual C++ 2010 SP1 Runtime Libraries. Typically already installed on your PC. You only need to install them if it doesn't work without ;-)."
-LangString DESC_MSVC ${LANG_GERMAN} "Microsoft Visual C++ 2010 SP1 Laufzeitbibliotheken. Diese sind meist bereits auf dem Rechner installiert. Versuchen Sie die Installation zunächst einmal ohne dies."
+LangString DESC_MSVC ${LANG_GERMAN} "Microsoft Visual C++ 2010 SP1 Laufzeitbibliotheken. Diese sind meist bereits auf dem Rechner installiert. Versuchen Sie die Installation zunï¿½chst einmal ohne dies."
 
 Section "QLandkarte GT PN" QLandkarteGT-PN
 
@@ -115,63 +98,77 @@ Section "QLandkarte GT PN" QLandkarteGT-PN
   SetOutPath $INSTDIR
     File Files\qlandkartegt-pn.exe
     File Files\map2gcm.exe
-    File Files\Globe128x128.ico
+    File Files\map2rmap.exe
+    File Files\cache2gtiff.exe
+    File Files\*.ico
     File Files\qlandkartegt_*.qm
     File Files\qt_??.qm
   ;END QLandkarte GT PN Files    
    
   ;BEGIN Qt Files
-	SetOutPath $INSTDIR
-  	File Files\QtCore4.dll
-  	File Files\QtGui4.dll
-  	File Files\QtNetwork4.dll
-  	File Files\QtSvg4.dll
-  	File Files\QtXml4.dll
+  SetOutPath $INSTDIR
+    File Files\QtCore4.dll
+    File Files\QtGui4.dll
+    File Files\QtNetwork4.dll
+    File Files\QtSvg4.dll
+    File Files\QtXml4.dll
     File Files\QtOpenGL4.dll
     File Files\QtSql4.dll
     File Files\QtWebKit4.dll
     File Files\phonon4.dll
+    File Files\QtScript4.dll
 
-	SetOutPath "$INSTDIR\imageformats\"
-  	File Files\imageformats\qgif4.dll
-  	File Files\imageformats\qjpeg4.dll
-  	File Files\imageformats\qmng4.dll
-  	File Files\imageformats\qsvg4.dll
+  SetOutPath "$INSTDIR\imageformats\"
+    File Files\imageformats\qgif4.dll
+    File Files\imageformats\qjpeg4.dll
+    File Files\imageformats\qmng4.dll
+    File Files\imageformats\qsvg4.dll
 
-	SetOutPath "$INSTDIR\sqldrivers\"
+  SetOutPath "$INSTDIR\sqldrivers\"
     File Files\sqldrivers\qsqlite4.dll
-
+  ;END Qt Files
+    
+  ;BEGIN GDAL Files    
+  SetOutPath $INSTDIR
+    File /r Files\gdal_bin\*.*
+  ;END GDAL Files        
+    
   ;BEGIN additional Files    
   SetOutPath $INSTDIR
     File Files\3rdparty.txt
+    File Files\libexif-12.dll
     File /nonfatal Files\libexif-12.dll
   ;END additional Files    
     
   ;the last "SetOutPath" will be the default directory
   SetOutPath $INSTDIR    
-    
-  ;END Qt Files
+  
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-  ;create batch file to run qlandkartegt-pn.exe
-  ReadRegStr $0 HKLM "Software\FWtools" Install_Dir
-  StrCpy $1 "call $\"$0\setfw.bat$\"$\r$\n"
-  fileOpen $0 "$INSTDIR\QLandkarteGT-PN.bat" w
-  fileWrite $0 $1
-  fileWrite $0 "cd /D $\"$INSTDIR$\"$\r$\n" 
-  fileWrite $0 "start qlandkartegt-pn.exe %*"
+  ;create batch file for a GDAL shell
+  fileOpen $0 "$INSTDIR\gdal.bat" w
+  fileWrite $0 "cd /D $\"$INSTDIR\gdal\apps$\"$\r$\n" 
+  fileWrite $0 "SET PATH=$INSTDIR;$INSTDIR\gdal\python\osgeo;$INSTDIR\proj\apps;$INSTDIR\gdal\apps;$INSTDIR\curl;%PATH%$\r$\n"
+  fileWrite $0 "SET GDAL_DATA=$INSTDIR\gdal-data$\r$\n"
+  fileWrite $0 "SET GDAL_DRIVER_PATH=$INSTDIR\gdal\plugins$\r$\n"
+  fileWrite $0 "SET PYTHONPATH=$INSTDIR\gdal\python\osgeo$\r$\n"
+  fileWrite $0 "SET PROJ_LIB=$INSTDIR\proj\SHARE$\r$\n"
   fileClose $0
 
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
-   	;Create shortcuts
-  	CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
+     ;Create shortcuts
+    CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
-    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\QLandkarteGT-PN.lnk" "$INSTDIR\QLandkarteGT-PN.bat" "" "$INSTDIR\Globe128x128.ico"
- 	!insertmacro MUI_STARTMENU_WRITE_END
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\QLandkarteGT-PN.lnk" "$INSTDIR\qlandkartegt-pn.exe" "" "$INSTDIR\GlobeWin.ico"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\qlandkarte.org.lnk" "http://www.qlandkarte.org/" "" "$INSTDIR\kfm_home.ico"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Help.lnk" "https://sourceforge.net/apps/mediawiki/qlandkartegt/index.php?title=Help_for_QLandkarte_GT" "" "$INSTDIR\khelpcenter.ico"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Download.lnk" "http://sourceforge.net/projects/qlandkartegt/" "" "$INSTDIR\kget.ico"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\GDAL.lnk" %COMSPEC% "/k $\"$INSTDIR\gdal.bat$\""
+   !insertmacro MUI_STARTMENU_WRITE_END
 
   ;Create registry entries
-	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT PN" "DisplayName" "QLandkarte GT (remove only)"
+	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT PN" "DisplayName" "QLandkarte GT PN(remove only)"
 	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\QLandkarte GT PN" "UninstallString" "$INSTDIR\Uninstall.exe"
 
 SectionEnd
@@ -181,12 +178,11 @@ LangString DESC_QLandkarteGT-PN ${LANG_GERMAN}  "Landkarten im GeoTiff und Garmi
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
    !insertmacro MUI_DESCRIPTION_TEXT ${QLandkarteGT-PN} $(DESC_QLandkarteGT-PN)
-   !insertmacro MUI_DESCRIPTION_TEXT ${FWTools} $(DESC_FWTools)
    !insertmacro MUI_DESCRIPTION_TEXT ${MSVC} $(DESC_MSVC)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;------------------------------------------------------------------------
-;Uninstaller Sections							                                      -
+;Uninstaller Sections                                                    -
 ;------------------------------------------------------------------------
 Section "Uninstall"
 
@@ -203,6 +199,11 @@ Section "Uninstall"
 
   Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
   Delete "$SMPROGRAMS\$StartMenuFolder\QLandkarteGT-PN.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\qlandkarte.org.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\Help.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\Download.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\GDAL.lnk"
+  
   RMDir "$SMPROGRAMS\$StartMenuFolder"
 
   DeleteRegKey /ifempty HKCU "Software\QLandkarteGT-PN"
@@ -210,4 +211,8 @@ Section "Uninstall"
 
 SectionEnd
 
+Function .onInit
+  # set section 'MSVC' as unselected
+  SectionSetFlags ${MSVC} 0
+FunctionEnd
 
