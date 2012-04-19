@@ -30,6 +30,8 @@
 #include "CMapDB.h"
 #include "IMap.h"
 #include "IUnit.h"
+#include "CSettings.h"
+#include "GeoMath.h"
 
 #include <QtGui>
 #include "CUndoStackModel.h"
@@ -63,11 +65,13 @@ CTrackDB::CTrackDB(QTabWidget * tb, QObject * parent)
 : IDB(tb,parent)
 , cnt(0)
 , showBullets(true)
+, showMinMax(true)
 {
     m_self      = this;
 
-    QSettings cfg;
+    SETTINGS;
     showBullets = cfg.value("track/showBullets", showBullets).toBool();
+    showMinMax = cfg.value("track/showMinMax", showMinMax).toBool();
     toolview    = new CTrackToolWidget(tb);
     undoStack   = CUndoStackModel::getInstance();
 
@@ -76,8 +80,9 @@ CTrackDB::CTrackDB(QTabWidget * tb, QObject * parent)
 
 CTrackDB::~CTrackDB()
 {
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("track/showBullets", showBullets);
+    cfg.setValue("track/showMinMax", showMinMax);
 }
 
 
@@ -223,6 +228,13 @@ void CTrackDB::loadGPX(CGpx& gpx)
                     if (colorID >= 0) track->setColor(colorID);
                 }
             }
+
+            tmpelem = extensionsmap.value(CGpx::ql_ns + ":" + "key");
+            if(!tmpelem.isNull())
+            {
+                track->setKey(tmpelem.text());
+            }
+
         }
 
         // QLandkarteGT backward compatibility
@@ -232,9 +244,9 @@ void CTrackDB::loadGPX(CGpx& gpx)
             tmpelem = trkmap.value("extension");
             if(!tmpelem.isNull())
             {
-                QMap<QString,QDomElement> trkextensionmap = CGpx::mapChildElements(tmpelem);
+                QMap<QString,QDomElement> extensionsmap = CGpx::mapChildElements(tmpelem);
 
-                tmpelem = trkextensionmap.value("color");
+                tmpelem = extensionsmap.value("color");
                 if(!tmpelem.isNull()) track->setColor(tmpelem.text().toUInt());
             }
         }
@@ -259,9 +271,12 @@ void CTrackDB::loadGPX(CGpx& gpx)
 
                 pt.lon = trkpt.attribute("lon").toDouble();
                 pt.lat = trkpt.attribute("lat").toDouble();
+                pt._lon = pt.lon;
+                pt._lat = pt.lat;
 
                 tmpelem = trkptmap.value("ele");
                 if(!tmpelem.isNull()) pt.ele = tmpelem.text().toDouble();
+                pt._ele = pt.ele;
 
                 tmpelem = trkptmap.value("time");
                 if(!tmpelem.isNull())
@@ -422,7 +437,6 @@ void CTrackDB::saveGPX(CGpx& gpx, const QStringList& keys)
 {
     QString str;
     QDomElement root = gpx.documentElement();
-    QMap<QString,CTrack*>::iterator track = tracks.begin();
 
     quint32 dummyTimestamp = 0;
 
@@ -456,11 +470,11 @@ void CTrackDB::saveGPX(CGpx& gpx, const QStringList& keys)
             parent.appendChild(_parent_);
         }
 
-        QDomElement ext = gpx.createElement("extensions");
-        trk.appendChild(ext);
+        QDomElement extensions = gpx.createElement("extensions");
+        trk.appendChild(extensions);
 
         QDomElement gpxx_ext = gpx.createElement("gpxx:TrackExtension");
-        ext.appendChild(gpxx_ext);
+        extensions.appendChild(gpxx_ext);
 
         QDomElement color = gpx.createElement("gpxx:DisplayColor");
         gpxx_ext.appendChild(color);
@@ -469,6 +483,10 @@ void CTrackDB::saveGPX(CGpx& gpx, const QStringList& keys)
         QDomText _color_ = gpx.createTextNode(colname);
         color.appendChild(_color_);
 
+        QDomElement qlkey = gpx.createElement("ql:key");
+        extensions.appendChild(qlkey);
+        QDomText _qlkey_ = gpx.createTextNode(track->getKey());
+        qlkey.appendChild(_qlkey_);
 
         QDomElement trkseg = gpx.createElement("trkseg");
         trk.appendChild(trkseg);
@@ -769,24 +787,26 @@ void CTrackDB::splitTrack(int idx)
     CTrack * theTrack = highlightedTrack();
     if(theTrack == 0) return;
 
-    int i;
-    QList<CTrack::pt_t>& track          = theTrack->getTrackPoints();
-    QList<CTrack::pt_t>::iterator trkpt = track.begin();
+    QList<CTrack::pt_t>& track = theTrack->getTrackPoints();
+    if(track.size() < idx - 1) return;
+
+    QList<CTrack::pt_t>::iterator trkpt, splitpt = track.begin() + idx;
 
     CTrack * track1 = new CTrack(this);
     track1->setName(theTrack->getName() + "_1");
     track1->setColor(theTrack->getColorIdx());
-    for(i = 0; (i <= idx) && (trkpt != track.end()); ++i)
+
+    for (trkpt = track.begin(); trkpt != splitpt + 1; ++trkpt)
     {
-        *track1 << *trkpt++;
+        *track1 << *trkpt;
     }
 
     CTrack * track2 = new CTrack(this);
     track2->setName(theTrack->getName() + "_2");
     track2->setColor(theTrack->getColorIdx());
-    for( ;(trkpt != track.end()); ++i)
+    for (trkpt = splitpt; trkpt != track.end(); ++trkpt)
     {
-        *track2 << *trkpt++;
+        *track2 << *trkpt;
     }
 
     addTrack(track1, true);
@@ -813,7 +833,7 @@ void CTrackDB::drawLine(const QPolygon& line, const QRect& extViewport, QPainter
     {
         pt1 = line[i];
 
-        if(!extViewport.contains(pt1) && !extViewport.contains(pt))
+        if(!GPS_Math_LineCrossesRect(pt, pt1, extViewport))
         {
             pt = pt1;
             if(subline.size() > 1)
@@ -922,7 +942,7 @@ void CTrackDB::drawArrows(const QPolygon& line, const QRect& viewport, QPainter&
             {
                 if(0 != pt.x() - pt1.x() && (pt.y() - pt1.y()))
                 {
-                    heading = ( atan2((double)(pt.y() - pt1.y()), (double)(pt.x() - pt1.x())) * 180.) / PI;
+                    heading = ( atan2((double)(pt.y() - pt1.y()), (double)(pt.x() - pt1.x())) * 180.) / M_PI;
 
                     p.save();
                     // draw arrow between bullets
@@ -1107,7 +1127,7 @@ void CTrackDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 
         QString val, unit;
 
-        if(CResources::self().showTrackMax())
+        if(showMinMax)
         {
             if((*track)->ptMaxEle.ele != WPT_NOFLOAT)
             {
@@ -1188,7 +1208,7 @@ void CTrackDB::copyToClipboard(bool deleteSelection /* = false */)
 void CTrackDB::pasteFromClipboard()
 {
     QClipboard *clipboard = QApplication::clipboard();
-    qDebug() << clipboard->mimeData()->formats();
+
     if (clipboard->mimeData()->hasFormat("qlandkartegt/qlb"))
     {
         QBuffer buffer;

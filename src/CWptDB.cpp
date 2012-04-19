@@ -33,6 +33,7 @@
 #include "WptIcons.h"
 #include "GeoMath.h"
 #include "config.h"
+#include "CSettings.h"
 #ifdef HAS_POWERDB
 #include "CPowerDB.h"
 #endif
@@ -49,20 +50,24 @@ typedef void (*exif_data_unref_t)(ExifData *);
 typedef ExifData* (*exif_data_new_from_file_t)(const char *);
 typedef void (*exif_data_foreach_content_t)(ExifData *, ExifDataForeachContentFunc , void *);
 typedef ExifIfd (*exif_content_get_ifd_t)(ExifContent *);
+typedef ExifRational (*exif_get_rational_t)(const unsigned char *, ExifByteOrder);
+typedef ExifByteOrder (*exif_data_get_byte_order_t)(ExifData *);
 
 static exif_content_foreach_entry_t f_exif_content_foreach_entry;
 static exif_data_unref_t f_exif_data_unref;
 static exif_data_new_from_file_t f_exif_data_new_from_file;
 static exif_data_foreach_content_t f_exif_data_foreach_content;
 static exif_content_get_ifd_t f_exif_content_get_ifd;
+static exif_get_rational_t f_exif_get_rational;
+static exif_data_get_byte_order_t f_exif_data_get_byte_order;
 #endif
 
 CWptDB::CWptDB(QTabWidget * tb, QObject * parent)
 : IDB(tb,parent)
 , showNames(true)
 {
-    QSettings cfg;
-    showNames = cfg.value("waypoint/showNames", showNames).toBool();
+    SETTINGS;
+    showNames   = cfg.value("waypoint/showNames", showNames).toBool();
 
     m_self      = this;
     toolview    = new CWptToolWidget(tb);
@@ -78,12 +83,16 @@ CWptDB::CWptDB(QTabWidget * tb, QObject * parent)
     f_exif_data_new_from_file       = (exif_data_new_from_file_t)QLibrary::resolve("libexif-12", "exif_data_new_from_file");
     f_exif_data_foreach_content     = (exif_data_foreach_content_t)QLibrary::resolve("libexif-12", "exif_data_foreach_content");
     f_exif_content_get_ifd          = (exif_content_get_ifd_t)QLibrary::resolve("libexif-12", "exif_content_get_ifd");
+    f_exif_get_rational             = (exif_get_rational_t)QLibrary::resolve("libexif-12", "exif_get_rational");
+    f_exif_data_get_byte_order      = (exif_data_get_byte_order_t)QLibrary::resolve("libexif-12", "exif_data_get_byte_order");
 #else
-    f_exif_content_foreach_entry    = (exif_content_foreach_entry_t)QLibrary::resolve("libexif", "exif_content_foreach_entry");
-    f_exif_data_unref               = (exif_data_unref_t)QLibrary::resolve("libexif", "exif_data_unref");
-    f_exif_data_new_from_file       = (exif_data_new_from_file_t)QLibrary::resolve("libexif", "exif_data_new_from_file");
-    f_exif_data_foreach_content     = (exif_data_foreach_content_t)QLibrary::resolve("libexif", "exif_data_foreach_content");
-    f_exif_content_get_ifd          = (exif_content_get_ifd_t)QLibrary::resolve("libexif", "exif_content_get_ifd");
+    f_exif_content_foreach_entry    = exif_content_foreach_entry;
+    f_exif_data_unref               = exif_data_unref;
+    f_exif_data_new_from_file       = exif_data_new_from_file;
+    f_exif_data_foreach_content     = exif_data_foreach_content;
+    f_exif_content_get_ifd          = exif_content_get_ifd;
+    f_exif_get_rational             = exif_get_rational;
+    f_exif_data_get_byte_order      = exif_data_get_byte_order;
 #endif
 #endif
 
@@ -93,7 +102,7 @@ CWptDB::CWptDB(QTabWidget * tb, QObject * parent)
 
 CWptDB::~CWptDB()
 {
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("waypoint/showNames", showNames);
 
     CQlb qlb(this);
@@ -111,6 +120,34 @@ CWptDB::~CWptDB()
     qlb.save(QDir::home().filePath(CONFIGDIR "sticky.qlb"));
 }
 
+QString CWptDB::getNewWptName()
+{
+    const int s = lastWptName.size();
+    int idx;
+
+    if(s == 0) return lastWptName;
+
+    for(idx = s; idx > 0; idx--)
+    {
+        if(!lastWptName[idx - 1].isDigit())
+        {
+            break;
+        }
+    }
+
+    if(idx == s)
+    {
+        return ""; //lastWptName + "1";
+    }
+    else if(idx == 0)
+    {
+        return QString::number(lastWptName.toInt() + 1);
+    }
+    else
+    {
+        return lastWptName.left(idx) + QString::number(lastWptName.mid(idx).toInt() + 1);
+    }
+}
 
 bool CWptDB::keyLessThanAlpha(CWptDB::keys_t&  s1, CWptDB::keys_t&  s2)
 {
@@ -175,9 +212,7 @@ QList<CWptDB::keys_t> CWptDB::keys()
             k2.comment  = wpts[k1]->comment;
         }
 
-        k2.comment.remove(QRegExp("<head.*[^>]*><\\/head>"));
-        k2.comment.remove(QRegExp("<[^>]*>"));
-        k2.comment = k2.comment.simplified();
+        IItem::removeHtml(k2.comment);
 
         // truncate comment if necessary
         if(k2.comment.size() > 33)
@@ -220,7 +255,7 @@ QList<CWptDB::keys_t> CWptDB::keys()
             break;
         case CWptToolWidget::eSortByDistance:
             {
-                XY p1, p2;
+                projXY p1, p2;
                 float lon, lat;
                 GPS_Math_Str_To_Deg(pos, lon, lat, true);
                 p1.u = lon * DEG_TO_RAD;
@@ -254,14 +289,17 @@ CWpt * CWptDB::newWpt(float lon, float lat, float ele, const QString& name)
     wpt->ele    = ele;
     wpt->name   = name;
 
-    QSettings cfg;
+    SETTINGS;
     wpt->setIcon(cfg.value("waypoint/lastSymbol","").toString());
 
-    CDlgEditWpt dlg(*wpt,theMainWindow->getCanvas());
-    if(dlg.exec() == QDialog::Rejected)
+    if(name.isEmpty())
     {
-        delete wpt;
-        return 0;
+        CDlgEditWpt dlg(*wpt,theMainWindow->getCanvas());
+        if(dlg.exec() == QDialog::Rejected)
+        {
+            delete wpt;
+            return 0;
+        }
     }
     wpts[wpt->getKey()] = wpt;
 
@@ -269,6 +307,8 @@ CWpt * CWptDB::newWpt(float lon, float lat, float ele, const QString& name)
 
     emit sigChanged();
     emit sigModified();
+
+    lastWptName = wpt->getName();
 
     return wpt;
 }
@@ -445,7 +485,6 @@ void CWptDB::loadGPX(CGpx& gpx)
             wpt->setParentWpt(waypoint.namedItem("parent").toElement().text());
         }
 
-
         if(waypoint.namedItem("extensions").isElement())
         {
             QDomElement tmpelem;
@@ -467,25 +506,31 @@ void CWptDB::loadGPX(CGpx& gpx)
             }
 
             // new garmin proximity format namespace
-            tmpelem = extensionsmap.value(CGpx::gpxwpx_ns + ":" + "WaypointExtension");
+            tmpelem = extensionsmap.value(CGpx::wptx1_ns + ":" + "WaypointExtension");
             if(!tmpelem.isNull())
             {
                 QMap<QString,QDomElement> waypointextensionmap = CGpx::mapChildElements(tmpelem);
 
-                tmpelem = waypointextensionmap.value(CGpx::gpxwpx_ns + ":" + "Proximity");
+                tmpelem = waypointextensionmap.value(CGpx::wptx1_ns + ":" + "Proximity");
                 if(!tmpelem.isNull())
                 {
                     wpt->prx = tmpelem.text().toDouble();
                 }
             }
 
-
+            // parent (cache) waypoint
             tmpelem = extensionsmap.value(CGpx::ql_ns + ":" + "parent");
             if(!tmpelem.isNull())
             {
                 wpt->setParentWpt(tmpelem.text());
             }
 
+            // the qlgt internal item key
+            tmpelem = extensionsmap.value(CGpx::ql_ns + ":" + "key");
+            if(!tmpelem.isNull())
+            {
+                wpt->setKey(tmpelem.text());
+            }
 
             // QLandkarteGT backward compatibility
             if (gpx.version() == CGpx::qlVer_1_0)
@@ -573,10 +618,7 @@ void CWptDB::saveGPX(CGpx& gpx, const QStringList& keys)
         if(!wpt->comment.isEmpty())
         {
             QString comment = wpt->comment;
-            comment.remove(QRegExp("<head.*[^>]*><\\/head>"));
-            comment.remove(QRegExp("<[^>]*>"));
-            comment = comment.simplified();
-
+            IItem::removeHtml(comment);
 
             QDomElement cmt = gpx.createElement("cmt");
             waypoint.appendChild(cmt);
@@ -642,20 +684,12 @@ void CWptDB::saveGPX(CGpx& gpx, const QStringList& keys)
         }
 
 
-        if(wpt->prx != 1e25f || !wpt->getParentWpt().isEmpty())
+        QDomElement extensions = gpx.createElement("extensions");
+        waypoint.appendChild(extensions);
+        if(!wpt->getParentWpt().isEmpty())
         {
-            QDomElement extensions = gpx.createElement("extensions");
-            waypoint.appendChild(extensions);
             QDomElement gpxx_ext = gpx.createElement("gpxx:WaypointExtension");
             extensions.appendChild(gpxx_ext);
-
-            if(wpt->prx != 1e25f)
-            {
-                QDomElement proximity = gpx.createElement("gpxx:Proximity");
-                gpxx_ext.appendChild(proximity);
-                QDomText _proximity_ = gpx.createTextNode(QString::number(wpt->prx));
-                proximity.appendChild(_proximity_);
-            }
 
 
             if(!wpt->getParentWpt().isEmpty() && (gpx.getExportMode() == CGpx::eQlgtExport))
@@ -666,6 +700,24 @@ void CWptDB::saveGPX(CGpx& gpx, const QStringList& keys)
                 parent.appendChild(_parent_);
             }
         }
+
+        if(wpt->prx != 1e25f)
+        {
+            QDomElement gpxx_ext = gpx.createElement("wptx1:WaypointExtension");
+            extensions.appendChild(gpxx_ext);
+
+            QDomElement proximity = gpx.createElement("wptx1:Proximity");
+            gpxx_ext.appendChild(proximity);
+            QDomText _proximity_ = gpx.createTextNode(QString::number(wpt->prx));
+            proximity.appendChild(_proximity_);
+
+        }
+
+        QDomElement qlkey = gpx.createElement("ql:key");
+        extensions.appendChild(qlkey);
+        QDomText _qlkey_ = gpx.createTextNode(wpt->getKey());
+        qlkey.appendChild(_qlkey_);
+
 
         wpt->saveGpxExt(waypoint, gpx.getExportMode());
 
@@ -724,7 +776,6 @@ void CWptDB::saveGPX(CGpx& gpx, const QStringList& keys)
 
 void CWptDB::loadQLB(CQlb& qlb, bool newKey)
 {
-
     QDataStream stream(&qlb.waypoints(),QIODevice::ReadOnly);
     stream.setVersion(QDataStream::Qt_4_5);
 
@@ -745,6 +796,7 @@ void CWptDB::loadQLB(CQlb& qlb, bool newKey)
     {
         emit sigChanged();
     }
+
 }
 
 
@@ -824,15 +876,32 @@ void CWptDB::selWptByKey(const QString& key, bool selectMode)
     }
 }
 
-//void CWptDB::updateToolview()
-//{
-//    CWptToolWidget * t = qobject_cast<CWptToolWidget*>(toolview);
-//    if(t)
-//    {
-//        t->slotDBChanged();
-//        gainFocus();
-//    }
-//}
+void CWptDB::selWptInRange(const QPointF& center, double radius)
+{
+    projXY p0;
+    p0.u = center.x();
+    p0.v = center.y();
+    CWptToolWidget * t = qobject_cast<CWptToolWidget*>(toolview);
+
+    foreach(CWpt * wpt, wpts)
+    {
+        projXY p1;
+        p1.u = wpt->lon * DEG_TO_RAD;
+        p1.v = wpt->lat * DEG_TO_RAD;
+
+        double d,a1,a2;
+        d = distance(p0, p1, a1, a2);
+
+        if(d < radius)
+        {
+            wpt->selected = true;
+            if(t)
+            {
+                t->selWptByKey(wpt->getKey());
+            }
+        }
+    }
+}
 
 
 void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
@@ -1009,7 +1078,7 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
     {
         if((*wpt)->prx != WPT_NOFLOAT)
         {
-            XY pt1, pt2;
+            projXY pt1, pt2;
 
             double u = (*wpt)->lon * DEG_TO_RAD;
             double v = (*wpt)->lat * DEG_TO_RAD;
@@ -1049,14 +1118,13 @@ static void exifContentForeachEntryFuncGPS(ExifEntry * exifEntry, void *user_dat
         }
         case EXIF_TAG_GPS_LATITUDE:
         {
-            ExifRational * p = (ExifRational*)exifEntry->data;
             if(exifEntry->components == 3)
             {
-                //                 qDebug() << "lat" << exifEntry->components;
-                //                 qDebug() <<  p[0].numerator <<  p[0].denominator << ((double)p[0].numerator / p[0].denominator);
-                //                 qDebug() <<  p[1].numerator <<  p[1].denominator << ((double)p[1].numerator / (p[1].denominator * 60));
-                //                 qDebug() <<  p[2].numerator <<  p[2].denominator << ((double)p[2].numerator / ((double)p[2].denominator * 3600.0));
-                exifGPS.lat = (double)p[0].numerator/p[0].denominator + (double)p[1].numerator/(p[1].denominator * 60) + (double)p[2].numerator/((double)p[2].denominator * 3600.0);
+                ExifRational * p = (ExifRational*)exifEntry->data;
+                ExifRational deg = f_exif_get_rational((const unsigned char*)p++, exifGPS.byte_order);
+                ExifRational min = f_exif_get_rational((const unsigned char*)p++, exifGPS.byte_order);
+                ExifRational sec = f_exif_get_rational((const unsigned char*)p++, exifGPS.byte_order);
+                exifGPS.lat = (double)deg.numerator/deg.denominator + (double)min.numerator/(min.denominator * 60) + (double)sec.numerator/((double)sec.denominator * 3600.0);
             }
             break;
         }
@@ -1070,16 +1138,14 @@ static void exifContentForeachEntryFuncGPS(ExifEntry * exifEntry, void *user_dat
         }
         case EXIF_TAG_GPS_LONGITUDE:
         {
-            ExifRational * p = (ExifRational*)exifEntry->data;
             if(exifEntry->components == 3)
             {
-                //                 qDebug() << "lon" << exifEntry->components;
-                //                 qDebug() <<  p[0].numerator <<  p[0].denominator << ((double)p[0].numerator / p[0].denominator);
-                //                 qDebug() <<  p[1].numerator <<  p[1].denominator << ((double)p[1].numerator / (p[1].denominator * 60));
-                //                 qDebug() <<  p[2].numerator <<  p[2].denominator << ((double)p[2].numerator / ((double)p[2].denominator * 3600.0));
-                exifGPS.lon = (double)p[0].numerator/p[0].denominator + (double)p[1].numerator/(p[1].denominator * 60) + (double)p[2].numerator/((double)p[2].denominator * 3600.0);
+                ExifRational * p = (ExifRational*)exifEntry->data;
+                ExifRational deg = f_exif_get_rational((const unsigned char*)p++, exifGPS.byte_order);
+                ExifRational min = f_exif_get_rational((const unsigned char*)p++, exifGPS.byte_order);
+                ExifRational sec = f_exif_get_rational((const unsigned char*)p++, exifGPS.byte_order);
+                exifGPS.lon = (double)deg.numerator/deg.denominator + (double)min.numerator/(min.denominator * 60) + (double)sec.numerator/((double)sec.denominator * 3600.0);
             }
-
             break;
         }
         default:;
@@ -1142,7 +1208,7 @@ void CWptDB::createWaypointsFromImages()
         return;
     }
 
-    QSettings cfg;
+    SETTINGS;
     QString path = cfg.value("path/images", "./").toString();
     path = QFileDialog::getExistingDirectory(0, tr("Select path..."), path, FILE_DIALOG_FLAGS);
 
@@ -1171,7 +1237,9 @@ void CWptDB::createWaypointsFromImages()
 
         ExifData * exifData = f_exif_data_new_from_file(dir.filePath(file).toLocal8Bit());
 
-        exifGPS_t exifGPS;
+        ExifByteOrder exifByteOrder = f_exif_data_get_byte_order(exifData);
+
+        exifGPS_t exifGPS(exifByteOrder);
 
         f_exif_data_foreach_content(exifData, exifDataForeachContentFunc, &exifGPS);
 
@@ -1181,8 +1249,6 @@ void CWptDB::createWaypointsFromImages()
         wpt->timestamp  = exifGPS.timestamp;
         wpt->setIcon("Flag, Red");
         wpt->name       = file;
-
-        qDebug() << wpt->name << wpt->lon << wpt->lat;
 
         CWpt::image_t image;
 

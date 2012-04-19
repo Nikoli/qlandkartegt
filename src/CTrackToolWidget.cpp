@@ -29,10 +29,11 @@
 #include "CMegaMenu.h"
 #include "CDlgTrackFilter.h"
 #include "GeoMath.h"
+#include "CSettings.h"
 
 #include <QtGui>
 
-#define N_LINES 6
+#define N_LINES 7
 
 CTrackToolWidget::sortmode_e CTrackToolWidget::sortmode = eSortByName;
 
@@ -53,13 +54,14 @@ CTrackToolWidget::CTrackToolWidget(QTabWidget * parent)
 
     contextMenu     = new QMenu(this);
     actEdit         = contextMenu->addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit..."),this,SLOT(slotEdit()));
-    actFilter       = contextMenu->addAction(QPixmap(":/icons/iconFilter16x16.png"),tr("Filter..."),this,SLOT(slotFilter()));        
+    actFilter       = contextMenu->addAction(QPixmap(":/icons/iconFilter16x16.png"),tr("Filter..."),this,SLOT(slotFilter()));
     actRevert       = contextMenu->addAction(QPixmap(":/icons/iconReload16x16.png"),tr("Revert"),this,SLOT(slotRevert()));
     contextMenu->addSeparator();
     actDistance     = contextMenu->addAction(QPixmap(":/icons/iconDistance16x16.png"),tr("Make Overlay"),this,SLOT(slotToOverlay()));
     contextMenu->addSeparator();
     actHide         = contextMenu->addAction(tr("Show"),this,SLOT(slotShow()));
     actShowBullets  = contextMenu->addAction(tr("Show Bullets"),this,SLOT(slotShowBullets()));
+    actShowMinMax   = contextMenu->addAction(tr("Show Min/Max"),this,SLOT(slotShowMinMax()));
     contextMenu->addSeparator();
     actZoomToFit    = contextMenu->addAction(QPixmap(":/icons/iconZoomArea16x16.png"),tr("Zoom to fit"),this,SLOT(slotZoomToFit()));
     actDel          = contextMenu->addAction(QPixmap(":/icons/iconClear16x16.png"),tr("Delete"),this,SLOT(slotDelete()));
@@ -67,6 +69,8 @@ CTrackToolWidget::CTrackToolWidget(QTabWidget * parent)
     actHide->setCheckable(true);
     actShowBullets->setCheckable(true);
     actShowBullets->setChecked(CTrackDB::self().getShowBullets());
+    actShowMinMax->setCheckable(true);
+    actShowMinMax->setChecked(CTrackDB::self().getShowMinMax());
 
     connect(listTracks,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenu(const QPoint&)));
 
@@ -80,7 +84,7 @@ CTrackToolWidget::CTrackToolWidget(QTabWidget * parent)
     toolSortAlpha->setIcon(QPixmap(":/icons/iconDec16x16.png"));
     toolSortTime->setIcon(QPixmap(":/icons/iconTime16x16.png"));
 
-    QSettings cfg;
+    SETTINGS;
     toolSortAlpha->setChecked(cfg.value("track/sortAlpha", true).toBool());
     toolSortTime->setChecked(cfg.value("track/sortTime", true).toBool());
 
@@ -90,7 +94,7 @@ CTrackToolWidget::CTrackToolWidget(QTabWidget * parent)
 
 CTrackToolWidget::~CTrackToolWidget()
 {
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("track/sortAlpha", toolSortAlpha->isChecked());
     cfg.setValue("track/sortTime", toolSortTime->isChecked());
 
@@ -412,9 +416,12 @@ void CTrackToolWidget::slotRevert()
 
 void CTrackToolWidget::slotShowBullets()
 {
-
     CTrackDB::self().setShowBullets(!CTrackDB::self().getShowBullets());
+}
 
+void CTrackToolWidget::slotShowMinMax()
+{
+    CTrackDB::self().setShowMinMax(!CTrackDB::self().getShowMinMax());
 }
 
 bool CTrackToolWidget::eventFilter(QObject *obj, QEvent *event)

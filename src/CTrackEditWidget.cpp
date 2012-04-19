@@ -35,9 +35,44 @@
 #include "IUnit.h"
 #include "CMenus.h"
 #include "CActions.h"
+#include "CDlgTrackFilter.h"
+#include "CWptDB.h"
+#include "CSettings.h"
 
 
 #include <QtGui>
+
+
+#ifdef Q_WS_MAC
+#include <CoreFoundation/CoreFoundation.h>
+
+template<class T>
+class CFType
+{
+public:
+    CFType(const T & t) : ref(t) { }
+    ~CFType() { CFRelease(ref); }
+    operator T() const { return ref; }
+
+private:
+    T ref;
+};
+
+static QString CFStringToQString(const CFStringRef & str)
+{
+    CFIndex length = CFStringGetLength(str);
+    const UniChar * chars = CFStringGetCharactersPtr(str);
+    if (chars == 0) {
+        UniChar buffer[length];
+        CFStringGetCharacters(str, CFRangeMake(0, length), buffer);
+        return QString(reinterpret_cast<const QChar *>(buffer), length);
+    } else {
+        return QString(reinterpret_cast<const QChar *>(chars), length);
+    }
+}
+
+#endif
+
 
 bool CTrackTreeWidgetItem::operator< ( const QTreeWidgetItem & other ) const
 {
@@ -83,7 +118,7 @@ CTrackEditWidget::CTrackEditWidget(QWidget * parent)
     setAttribute(Qt::WA_DeleteOnClose,true);
 
 #ifndef GPX_EXTENSIONS
-    tabWidget->removeTab(1);
+    tabWidget->removeTab(eSetup);
 #endif
 
     toolGraphDistance->setIcon(QIcon(":/icons/iconGraph16x16.png"));
@@ -95,6 +130,15 @@ CTrackEditWidget::CTrackEditWidget(QWidget * parent)
     traineeGraph->setIcon(QIcon(":/icons/package_favorite.png"));
     connect(traineeGraph, SIGNAL(clicked()), this, SLOT(slotToggleTrainee()));
 
+    toolFilter->setIcon(QIcon(":/icons/iconFilter16x16.png"));
+    connect(toolFilter, SIGNAL(clicked()), this, SLOT(slotFilter()));
+
+    toolReset->setIcon(QIcon(":/icons/editundo.png"));
+    connect(toolReset, SIGNAL(clicked()), this, SLOT(slotReset()));
+
+    toolDelete->setIcon(QIcon(":/icons/iconDelete16x16.png"));
+    connect(toolDelete, SIGNAL(clicked()), this, SLOT(slotDelete()));
+
     QPixmap icon(16,8);
     for(int i=0; i < 17; ++i)
     {
@@ -102,9 +146,6 @@ CTrackEditWidget::CTrackEditWidget(QWidget * parent)
         comboColor->addItem(icon,"",QVariant(i));
     }
 
-    connect(checkRemoveDelTrkPt,SIGNAL(clicked(bool)),this,SLOT(slotCheckRemove(bool)));
-    connect(checkResetDelTrkPt,SIGNAL(clicked(bool)),this,SLOT(slotCheckReset(bool)));
-    connect(buttonBox,SIGNAL(clicked (QAbstractButton*)),this,SLOT(slotApply()));
     connect(treePoints,SIGNAL(itemSelectionChanged()),this,SLOT(slotPointSelectionChanged()));
     connect(treePoints,SIGNAL(itemClicked(QTreeWidgetItem*,int)),this,SLOT(slotPointSelection(QTreeWidgetItem*)));
 
@@ -145,7 +186,16 @@ CTrackEditWidget::CTrackEditWidget(QWidget * parent)
     connect(treePoints,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenu(const QPoint&)));
 
     connect(comboColor, SIGNAL(currentIndexChanged(int)), this, SLOT(slotColorChanged(int)));
-    connect(lineName, SIGNAL(textChanged(const QString&)), this, SLOT(slotNameChanged(const QString&)));
+    connect(lineName, SIGNAL(returnPressed()), this, SLOT(slotNameChanged()));
+    connect(lineName, SIGNAL(textChanged(QString)), this, SLOT(slotNameChanged(QString)));
+
+    connect(tabWidget, SIGNAL(currentChanged(int)), this, SLOT(slotCurrentChanged(int)));
+
+    connect(&CWptDB::self(), SIGNAL(sigChanged()), this, SLOT(slotStagesChanged()));
+    connect(&CTrackDB::self(), SIGNAL(sigChanged()), this, SLOT(slotStagesChanged()));
+    connect(checkStages, SIGNAL(stateChanged(int)), this, SLOT(slotStagesChanged(int)));
+
+    //connect(textStages, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
 }
 
 
@@ -206,6 +256,17 @@ void CTrackEditWidget::keyPressEvent(QKeyEvent * e)
     }
 }
 
+void CTrackEditWidget::resizeEvent(QResizeEvent * e)
+{
+    QWidget::resizeEvent(e);
+
+    if(oldSize.width() != e->size().width())
+    {
+        updateStages(wpts);
+    }
+
+    oldSize = e->size();
+}
 
 void CTrackEditWidget::slotContextMenu(const QPoint& pos)
 {
@@ -242,20 +303,13 @@ void CTrackEditWidget::slotSetTrack(CTrack * t)
 {
     if(originator) return;
 
+    treePoints->clear();
+
     if(track)
     {
         disconnect(track,SIGNAL(sigChanged()), this, SLOT(slotUpdate()));
         disconnect(track,SIGNAL(destroyed(QObject*)), this, SLOT(deleteLater()));
 
-        // clean view
-        QList<CTrack::pt_t>& trkpts           = track->getTrackPoints();
-        QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
-        while(trkpt != trkpts.end())
-        {
-            trkpt->editItem = 0;
-            ++trkpt;
-        }
-        treePoints->clear();     // this also delete the items
 
 #ifdef GPX_EXTENSIONS
         //delete all extension tabs and reset tab status
@@ -400,14 +454,16 @@ void CTrackEditWidget::slotSetTrack(CTrack * t)
     slotUpdate();
 
     //TODO: resize of the TrackEditWidget
-    QSettings cfg;
+    SETTINGS;
     // restore last session position and size of TrackEditWidget
     if ( cfg.contains("TrackEditWidget/geometry"))
     {
         QRect r = cfg.value("TrackEditWidget/geometry").toRect();
 
         if (r.isValid() && QDesktopWidget().screenGeometry().intersects(r))
-            {tabWidget->setGeometry(r);}
+        {
+            tabWidget->setGeometry(r);
+        }
     }
     else
     {
@@ -428,6 +484,7 @@ void CTrackEditWidget::slotSetTrack(CTrack * t)
 
     QApplication::restoreOverrideCursor();
 
+    slotStagesChanged();
 }
 
 
@@ -475,13 +532,19 @@ void CTrackEditWidget::slotUpdate()
     QList<CTrack::pt_t>& trkpts           = track->getTrackPoints();
     QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
 
+#ifdef Q_WS_MAC
+    // work around https://bugreports.qt.nokia.com/browse/QTBUG-21678
+    CFType<CFLocaleRef> loc(CFLocaleCopyCurrent());
+    CFType<CFDateFormatterRef> df(CFDateFormatterCreate(NULL, loc, kCFDateFormatterNoStyle, kCFDateFormatterNoStyle));
+    CFDateFormatterSetFormat(df, CFSTR("EEE MMM d HH:mm:ss yyyy"));
+#endif
+
     while(trkpt != trkpts.end())
     {
         CTrackTreeWidgetItem * item;
         if ( !trkpt->editItem )
         {
-            trkpt->editItem = (QObject*)new CTrackTreeWidgetItem(treePoints);
-            item = (CTrackTreeWidgetItem *)trkpt->editItem;
+            item = new CTrackTreeWidgetItem(treePoints);
             item->setTextAlignment(eNum,Qt::AlignLeft);
             item->setTextAlignment(eAltitude,Qt::AlignRight);
             item->setTextAlignment(eDelta,Qt::AlignRight);
@@ -491,6 +554,7 @@ void CTrackEditWidget::slotUpdate()
             item->setTextAlignment(eDescend,Qt::AlignRight);
             item->setTextAlignment(eSpeed,Qt::AlignRight);
 
+            trkpt->editItem = item;
             trkpt->flags.setChanged(true);
         }
 
@@ -500,7 +564,7 @@ void CTrackEditWidget::slotUpdate()
             continue;
         }
 
-        item = (CTrackTreeWidgetItem *)trkpt->editItem;
+        item = (CTrackTreeWidgetItem *)trkpt->editItem.data();
         item->setData(0, Qt::UserRole, trkpt->idx);
 
         // gray shade deleted items
@@ -554,7 +618,13 @@ void CTrackEditWidget::slotUpdate()
         {
             QDateTime time = QDateTime::fromTime_t(trkpt->timestamp);
             time.setTimeSpec(Qt::LocalTime);
+#ifdef Q_WS_MAC
+            CFType<CFDateRef> cfdate(CFDateCreate(NULL, time.toTime_t() - kCFAbsoluteTimeIntervalSince1970));
+            CFType<CFStringRef> cfstr(CFDateFormatterCreateStringWithDate(NULL, df, cfdate));
+            str = CFStringToQString(cfstr);
+#else
             str = time.toString();
+#endif
         }
         else
         {
@@ -660,84 +730,6 @@ void CTrackEditWidget::slotUpdate()
     }
     treePoints->setSelectionMode(QAbstractItemView::ExtendedSelection);
     treePoints->setUpdatesEnabled(true);
-}
-
-
-void CTrackEditWidget::slotCheckReset(bool checked)
-{
-    if(checked)
-    {
-        checkRemoveDelTrkPt->setChecked(false);
-    }
-}
-
-
-void CTrackEditWidget::slotCheckRemove(bool checked)
-{
-    if(checked)
-    {
-        checkResetDelTrkPt->setChecked(false);
-    }
-}
-
-
-void CTrackEditWidget::slotApply()
-{
-    if(track.isNull()) return;
-
-    originator = true;
-
-    if(checkResetDelTrkPt->isChecked())
-    {
-        QList<CTrack::pt_t>& trkpts           = track->getTrackPoints();
-        QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
-        while(trkpt != trkpts.end())
-        {
-            trkpt->flags &= ~CTrack::pt_t::eDeleted;
-            ++trkpt;
-        }
-        checkResetDelTrkPt->setChecked(false);
-        originator = false;
-    }
-
-    if(checkRemoveDelTrkPt->isChecked())
-    {
-        QMessageBox::warning(0,tr("Remove track points ...")
-            ,tr("You are about to remove purged track points permanently. If you press 'yes', all information will be lost.")
-            ,QMessageBox::Yes|QMessageBox::No);
-        QList<CTrack::pt_t>& trkpts           = track->getTrackPoints();
-        QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
-        while(trkpt != trkpts.end())
-        {
-
-            if(trkpt->flags & CTrack::pt_t::eDeleted)
-            {
-                if ( trkpt->editItem )
-                {
-                    int idx = treePoints->indexOfTopLevelItem((CTrackTreeWidgetItem *)trkpt->editItem);
-                    if ( idx != -1 )
-                        treePoints->takeTopLevelItem(idx);
-                    delete (CTrackTreeWidgetItem *)trkpt->editItem;
-                    trkpt->editItem = 0;
-                }
-                trkpt = trkpts.erase(trkpt);
-            }
-            else
-            {
-                ++trkpt;
-            }
-        }
-        checkRemoveDelTrkPt->setChecked(false);
-        originator = false;
-    }
-
-    track->setName(lineName->text());
-    track->setColor(comboColor->currentIndex());
-    track->rebuild(true);
-    originator = false;
-
-    emit CTrackDB::self().sigModified();
-    emit CTrackDB::self().sigModified(track->getKey());
 }
 
 
@@ -1147,15 +1139,33 @@ void CTrackEditWidget::slotColorChanged(int idx)
         track->rebuild(true);
         emit CTrackDB::self().sigModified();
         emit CTrackDB::self().sigModified(track->getKey());
-        qDebug() << "void CTrackEditWidget::slotColorChanged(const QString& name)";
     }
 }
 
 void CTrackEditWidget::slotNameChanged(const QString& name)
 {
     if(track.isNull()) return;
-
     QString _name_ = track->getName();
+    QPalette palette = lineName->palette();
+    if(_name_ != name)
+    {
+        palette.setColor(QPalette::Base, QColor(255, 128, 128));
+    }
+    else
+    {
+        palette.setColor(QPalette::Base, QColor(255, 255, 255));
+    }
+    lineName->setPalette(palette);
+}
+
+void CTrackEditWidget::slotNameChanged()
+{
+    if(track.isNull()) return;
+
+    QString  name  = lineName->text();
+    QString _name_ = track->getName();
+
+    QPalette palette = lineName->palette();
 
     if(_name_ != name)
     {
@@ -1163,7 +1173,537 @@ void CTrackEditWidget::slotNameChanged(const QString& name)
         track->rebuild(true);
         emit CTrackDB::self().sigModified();
         emit CTrackDB::self().sigModified(track->getKey());
-        qDebug() << "void CTrackEditWidget::slotNameChanged(const QString& name)";
+
+        palette.setColor(QPalette::Base, QColor(128, 255, 128));
+    }
+
+
+    lineName->setPalette(palette);
+}
+
+void CTrackEditWidget::slotFilter()
+{
+    if(track.isNull()) return;
+    CDlgTrackFilter dlg(*track, this);
+    dlg.exec();
+}
+
+
+void CTrackEditWidget::slotReset()
+{
+    if(track.isNull()) return;
+    track->reset();
+    emit CTrackDB::self().sigModified();
+    emit CTrackDB::self().sigModified(track->getKey());
+}
+
+void CTrackEditWidget::slotDelete()
+{
+    if(track.isNull()) return;
+    originator = true;
+
+    if(QMessageBox::warning(0,tr("Remove track points ...")
+        ,tr("You are about to remove hidden track points permanently. If you press 'yes', all information will be lost.")
+        ,QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
+    {
+        return;
+    }
+
+    QList<CTrack::pt_t>& trkpts           = track->getTrackPoints();
+    QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
+    while(trkpt != trkpts.end())
+    {
+
+        if(trkpt->flags & CTrack::pt_t::eDeleted)
+        {
+            if ( trkpt->editItem )
+            {
+                int idx = treePoints->indexOfTopLevelItem((CTrackTreeWidgetItem *)trkpt->editItem.data());
+                if ( idx != -1 )
+                {
+                    treePoints->takeTopLevelItem(idx);
+                }
+                delete (CTrackTreeWidgetItem *)trkpt->editItem.data();
+            }
+            trkpt = trkpts.erase(trkpt);
+        }
+        else
+        {
+            ++trkpt;
+        }
+    }
+    originator = false;
+
+    track->rebuild(true);
+    emit CTrackDB::self().sigModified();
+    emit CTrackDB::self().sigModified(track->getKey());
+}
+
+void CTrackEditWidget::slotCurrentChanged(int idx)
+{
+    if(idx == eStages)
+    {
+        updateStages(wpts);
     }
 }
 
+static bool qSortWptLessDistance(CTrack::wpt_t& p1, CTrack::wpt_t& p2)
+{
+    return p1.trkpt.distance < p2.trkpt.distance;
+}
+
+void CTrackEditWidget::slotStagesChanged(int state)
+{
+    if(track.isNull() || originator) return;
+    track->setDoScaleWpt2Track((Qt::CheckState)state);
+}
+
+void CTrackEditWidget::slotStagesChanged()
+{
+    textStages->clear();
+    if(track.isNull() || originator) return;
+
+    // get waypoints near track
+    originator = true;
+    track->scaleWpt2Track(wpts);
+    checkStages->setCheckState(track->getDoScaleWpt2Track());
+    originator = false;
+
+    QList<CTrack::wpt_t>::iterator wpt = wpts.begin();
+    while(wpt != wpts.end())
+    {
+        if(wpt->d > WPT_TO_TRACK_DIST)
+        {
+            wpt = wpts.erase(wpt);
+            continue;
+        }
+        ++wpt;
+    }
+
+
+    if(wpts.isEmpty())
+    {
+        tabWidget->setTabEnabled(eStages, false);
+        return;
+    }
+
+    updateStages(wpts);
+
+}
+
+#define CHAR_PER_LINE 120
+#define ROOT_FRAME_MARGIN 5
+#define BASE_FONT_SIZE  9
+
+
+void CTrackEditWidget::updateStages(QList<CTrack::wpt_t>& wpts)
+{
+
+    if(track.isNull()) return;
+    if(wpts.isEmpty()) return;
+
+    tabWidget->setTabEnabled(eStages, true);
+    qSort(wpts.begin(), wpts.end(), qSortWptLessDistance);
+
+    // resize font
+
+    QTextDocument * doc = new QTextDocument(textStages);
+
+    doc->setTextWidth(textStages->size().width() - 20);
+    QFontMetrics fm(QFont(textStages->font().family(),BASE_FONT_SIZE));
+    int w = doc->textWidth();
+    int pointSize = ((BASE_FONT_SIZE * (w - 2 * ROOT_FRAME_MARGIN)) / (CHAR_PER_LINE *  fm.width("X")));
+    if(pointSize == 0) return;
+
+    QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
+    QFont f = textStages->font();
+    f.setPointSize(pointSize);
+    textStages->setFont(f);
+
+
+    // copied from CDiaryEdit
+    QTextCharFormat fmtCharStandard;
+    fmtCharStandard.setFont(f);
+
+    QTextCharFormat fmtCharShade;
+    fmtCharShade.setFont(f);
+    fmtCharShade.setBackground(Qt::lightGray);
+
+    QTextCharFormat fmtCharHeader;
+    fmtCharHeader.setFont(f);
+    fmtCharHeader.setBackground(Qt::darkBlue);
+    fmtCharHeader.setFontWeight(QFont::Bold);
+    fmtCharHeader.setForeground(Qt::white);
+
+
+    QTextBlockFormat fmtBlockStandard;
+    fmtBlockStandard.setTopMargin(10);
+    fmtBlockStandard.setBottomMargin(10);
+    fmtBlockStandard.setAlignment(Qt::AlignJustify);
+
+    QTextBlockFormat fmtBlockCenter;
+    fmtBlockCenter.setAlignment(Qt::AlignCenter);
+
+    QTextBlockFormat fmtBlockRight;
+    fmtBlockRight.setAlignment(Qt::AlignRight);
+
+    QTextFrameFormat fmtFrameStandard;
+    fmtFrameStandard.setTopMargin(5);
+    fmtFrameStandard.setBottomMargin(5);
+    fmtFrameStandard.setWidth(w - 2 * ROOT_FRAME_MARGIN);
+
+    QTextFrameFormat fmtFrameRoot;
+    fmtFrameRoot.setTopMargin(ROOT_FRAME_MARGIN);
+    fmtFrameRoot.setBottomMargin(ROOT_FRAME_MARGIN);
+    fmtFrameRoot.setLeftMargin(ROOT_FRAME_MARGIN);
+    fmtFrameRoot.setRightMargin(ROOT_FRAME_MARGIN);
+
+    QTextTableFormat fmtTableStandard;
+    fmtTableStandard.setBorder(1);
+    fmtTableStandard.setBorderStyle(QTextFrameFormat::BorderStyle_Groove);
+    fmtTableStandard.setBorderBrush(QColor("#a0a0a0"));
+    fmtTableStandard.setCellPadding(4);
+    fmtTableStandard.setCellSpacing(0);
+    fmtTableStandard.setHeaderRowCount(2);
+    fmtTableStandard.setTopMargin(10);
+    fmtTableStandard.setBottomMargin(20);
+    fmtTableStandard.setWidth(w - 2 * ROOT_FRAME_MARGIN);
+
+    QVector<QTextLength> constraints;
+    constraints << QTextLength(QTextLength::FixedLength, 32);
+//    constraints << QTextLength(QTextLength::VariableLength, 50);
+//    constraints << QTextLength(QTextLength::VariableLength, 30);
+//    constraints << QTextLength(QTextLength::VariableLength, 30);
+//    constraints << QTextLength(QTextLength::VariableLength, 30);
+//    constraints << QTextLength(QTextLength::VariableLength, 100);
+    fmtTableStandard.setColumnWidthConstraints(constraints);
+
+    doc->rootFrame()->setFrameFormat(fmtFrameRoot);
+    QTextCursor cursor = doc->rootFrame()->firstCursorPosition();
+
+    // 2 rows header, 2 rows start/stop
+    table = cursor.insertTable(wpts.count()+2+2, eMax, fmtTableStandard);
+
+    for(int i = eSym; i < eMax; i++)
+    {
+        table->cellAt(0,i).setFormat(fmtCharHeader);
+        table->cellAt(1,i).setFormat(fmtCharHeader);
+    }
+
+
+    // header -------------------------
+    table->mergeCells(0, eEleWpt, 1, 2);
+    table->cellAt(0,eEleWpt).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->mergeCells(0, eToNextDist, 1, 4);
+    table->cellAt(0,eToNextDist).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->mergeCells(0, eTotalDist, 1, 4);
+    table->cellAt(0,eTotalDist).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+
+    table->cellAt(0,eInfo).firstCursorPosition().insertText(tr("Name"));
+    table->cellAt(0,eProx).firstCursorPosition().insertText(tr("Prox."));
+    table->cellAt(0,ePic).firstCursorPosition().insertText(tr("Pic."));
+    table->cellAt(0,eEleWpt).firstCursorPosition().insertText(tr("Elevation"));
+    table->cellAt(0,eToNextDist).firstCursorPosition().insertText(tr("To Next"));
+    table->cellAt(0,eTotalDist).firstCursorPosition().insertText(tr("Total"));
+    table->cellAt(0,eComment).firstCursorPosition().insertText(tr("Comment"));
+
+    table->cellAt(1,eEleWpt).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eEleWpt).firstCursorPosition().insertText(tr("wpt"));
+
+    table->cellAt(1,eEleTrk).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eEleTrk).firstCursorPosition().insertText(tr("trk"));
+
+    table->cellAt(1,eToNextDist).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eToNextDist).firstCursorPosition().insertText(QChar(0x21A6));
+    table->cellAt(1,eToNextTime).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eToNextTime).firstCursorPosition().insertText(QChar(0x231a));
+    table->cellAt(1,eToNextAsc).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eToNextAsc).firstCursorPosition().insertText(QChar(0x2197));
+    table->cellAt(1,eToNextDesc).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eToNextDesc).firstCursorPosition().insertText(QChar(0x2198));
+
+    table->cellAt(1,eTotalDist).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eTotalDist).firstCursorPosition().insertText(QChar(0x21A6));
+    table->cellAt(1,eTotalTime).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eTotalTime).firstCursorPosition().insertText(QChar(0x231a));
+    table->cellAt(1,eTotalAsc).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eTotalAsc).firstCursorPosition().insertText(QChar(0x2197));
+    table->cellAt(1,eTotalDesc).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+    table->cellAt(1,eTotalDesc).firstCursorPosition().insertText(QChar(0x2198));
+
+
+    // first entry -------------------------
+    QString val, unit;
+    if(track->getStartElevation() != WPT_NOFLOAT)
+    {
+        IUnit::self().meter2elevation(track->getStartElevation(),val,unit);
+    }
+    else
+    {
+        val     = "-";
+        unit    = "";
+    }
+
+    table->cellAt(2,eSym).firstCursorPosition().insertImage(":/icons/face-plain.png");
+    table->cellAt(2,eInfo).firstCursorPosition().insertText(tr("Start"), fmtCharStandard);
+    table->cellAt(2,ePic).firstCursorPosition().insertText(tr(""), fmtCharStandard);
+    table->cellAt(2,eProx).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(2,eProx).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(2,eEleWpt).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(2,eEleWpt).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(2,eEleTrk).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(2,eEleTrk).firstCursorPosition().insertText(tr("%1 %2").arg(val).arg(unit), fmtCharStandard);
+
+    table->cellAt(2,eTotalDist).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(2,eTotalDist).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(2,eTotalTime).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(2,eTotalTime).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(2,eTotalAsc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(2,eTotalAsc).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(2,eTotalDesc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(2,eTotalDesc).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+
+    table->cellAt(2,eComment).firstCursorPosition().insertText(tr("Start of track."), fmtCharStandard);
+
+    int cnt = 3;
+
+    float   distLast = 0;
+    int     timeLast = track->getStartTimestamp().toTime_t();
+    float   ascLast  = 0;
+    float   dscLast  = 0;
+
+    foreach(const CTrack::wpt_t& wpt, wpts)
+    {
+
+        // n...N-2  entry-------------------------
+        if((cnt & 0x1))
+        {
+            for(int i = eSym; i < eMax; i++)
+            {
+                table->cellAt(cnt,i).setFormat(fmtCharShade);
+            }
+        }
+
+        // prepare data -------------------------------
+        QString comment = wpt.wpt->getComment();
+        IItem::removeHtml(comment);
+
+        QString proximity;
+        if(wpt.wpt->prx != WPT_NOFLOAT)
+        {
+            QString val, unit;
+            IUnit::self().meter2distance(wpt.wpt->prx, val, unit);
+            proximity = tr("%1 %2").arg(val).arg(unit);
+        }
+        else
+        {
+            proximity = "-";
+        }
+
+        QString eleWpt, eleTrk;
+        {
+            QString valWpt, unitWpt, valTrk, unitTrk;
+            if(wpt.wpt->ele != WPT_NOFLOAT)
+            {
+                IUnit::self().meter2elevation(wpt.wpt->ele, valWpt, unitWpt);
+            }
+            else
+            {
+                valWpt = "-";
+            }
+            if(wpt.trkpt.ele != WPT_NOFLOAT)
+            {
+                IUnit::self().meter2elevation(wpt.trkpt.ele, valTrk, unitTrk);
+            }
+            else
+            {
+                valTrk = "-";
+            }
+
+            eleWpt = tr("%1 %2").arg(valWpt).arg(unitWpt);
+            eleTrk = tr("%1 %2").arg(valTrk).arg(unitTrk);
+        }
+        QString val,unit;
+
+        IUnit::self().meter2distance(wpt.trkpt.distance - distLast, val, unit);
+        QString strDistToNext = tr("%1 %2").arg(val).arg(unit);
+
+        IUnit::self().meter2distance(wpt.trkpt.distance, val, unit);
+        QString strDistTotal  = tr("%1 %2").arg(val).arg(unit);
+
+        IUnit::self().meter2elevation(wpt.trkpt.ascend - ascLast, val, unit);
+        QString strAscToNext  = tr("%1 %2 ").arg(val).arg(unit);
+        IUnit::self().meter2elevation(wpt.trkpt.descend - dscLast, val, unit);
+        QString strDescToNext = tr("%1 %2").arg(val).arg(unit);
+
+        IUnit::self().meter2elevation(wpt.trkpt.ascend, val, unit);
+        QString strAscTotal   = tr("%1 %2 ").arg(val).arg(unit);
+        IUnit::self().meter2elevation(wpt.trkpt.descend, val, unit);
+        QString strDescTotal  = tr("%1 %2").arg(val).arg(unit);
+
+        QString strTimeToNext, strTimeTotal;
+        quint32 timestamp = wpt.trkpt.timestamp;
+        if(timeLast && timestamp)
+        {
+            quint32 t1s     = timestamp - timeLast;
+            quint32 t1h     = qreal(t1s)/3600;
+            quint32 t1m     = quint32(qreal(t1s - t1h * 3600)/60  + 0.5);
+            strTimeToNext   = tr("%1:%2 h").arg(t1h).arg(t1m, 2, 10, QChar('0'));
+
+            quint32 t2s     = timestamp - track->getStartTimestamp().toTime_t();
+            quint32 t2h     = qreal(t2s)/3600;
+            quint32 t2m     = quint32(qreal(t2s - t2h * 3600)/60  + 0.5);
+            strTimeTotal    = tr("%1:%2 h").arg(t2h).arg(t2m, 2, 10, QChar('0'));
+
+            timeLast = timestamp;
+        }
+
+        // fill in data -------------------------------
+        table->cellAt(cnt ,eSym).firstCursorPosition().insertImage(wpt.wpt->getIcon().toImage().scaledToWidth(16, Qt::SmoothTransformation));
+        table->cellAt(cnt ,eInfo).firstCursorPosition().insertText(wpt.wpt->getName(), fmtCharStandard);
+
+        if(!wpt.wpt->images.isEmpty())
+        {
+            table->cellAt(cnt ,ePic).firstCursorPosition().setBlockFormat(fmtBlockCenter);
+            table->cellAt(cnt, ePic).firstCursorPosition().insertImage(wpt.wpt->images.first().pixmap.scaledToWidth(32, Qt::SmoothTransformation).toImage());
+        }
+
+        table->cellAt(cnt ,eProx).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt ,eProx).firstCursorPosition().insertText(proximity, fmtCharStandard);
+        table->cellAt(cnt ,eEleWpt).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt ,eEleWpt).firstCursorPosition().insertText(eleWpt, fmtCharStandard);
+        table->cellAt(cnt ,eEleTrk).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt ,eEleTrk).firstCursorPosition().insertText(eleTrk, fmtCharStandard);
+
+        table->cellAt(cnt - 1,eToNextDist).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt - 1,eToNextDist).firstCursorPosition().insertText(strDistToNext, fmtCharStandard);
+        table->cellAt(cnt - 1,eToNextTime).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt - 1,eToNextTime).firstCursorPosition().insertText(strTimeToNext, fmtCharStandard);
+        table->cellAt(cnt - 1,eToNextAsc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt - 1,eToNextAsc).firstCursorPosition().insertText(strAscToNext, fmtCharStandard);
+        table->cellAt(cnt - 1,eToNextDesc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt - 1,eToNextDesc).firstCursorPosition().insertText(strDescToNext, fmtCharStandard);
+
+        table->cellAt(cnt ,eTotalDist).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt ,eTotalDist).firstCursorPosition().insertText(strDistTotal, fmtCharStandard);
+        table->cellAt(cnt ,eTotalTime).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt ,eTotalTime).firstCursorPosition().insertText(strTimeTotal, fmtCharStandard);
+        table->cellAt(cnt ,eTotalAsc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt ,eTotalAsc).firstCursorPosition().insertText(strAscTotal, fmtCharStandard);
+        table->cellAt(cnt ,eTotalDesc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+        table->cellAt(cnt ,eTotalDesc).firstCursorPosition().insertText(strDescTotal, fmtCharStandard);
+
+        table->cellAt(cnt ,eComment).firstCursorPosition().insertText(comment, fmtCharStandard);
+
+        distLast    = wpt.trkpt.distance;
+        ascLast     = wpt.trkpt.ascend;
+        dscLast     = wpt.trkpt.descend;
+
+        cnt++;
+    }
+    // n...N-2  entry-------------------------
+    if((cnt & 0x1))
+    {
+        for(int i = eSym; i < eMax; i++)
+        {
+            table->cellAt(cnt,i).setFormat(fmtCharShade);
+        }
+    }
+
+    // prepare data -------------------------------
+
+
+    QString eleTrk;
+    {
+        QString valTrk, unitTrk;
+        if(track->getEndElevation() != WPT_NOFLOAT)
+        {
+            IUnit::self().meter2elevation(track->getEndElevation(), valTrk, unitTrk);
+        }
+        else
+        {
+            valTrk = "-";
+        }
+
+        eleTrk = tr("%1 %2").arg(valTrk).arg(unitTrk);
+    }
+
+    IUnit::self().meter2distance(track->getTotalDistance() - distLast, val, unit);
+    QString strDistToNext = tr("%1 %2").arg(val).arg(unit);
+
+    IUnit::self().meter2distance(track->getTotalDistance(), val, unit);
+    QString strDistTotal  = tr("%1 %2").arg(val).arg(unit);
+
+    IUnit::self().meter2elevation(track->getAscend() - ascLast, val, unit);
+    QString strAscToNext  = tr("%1 %2 ").arg(val).arg(unit);
+    IUnit::self().meter2elevation(track->getDescend() - dscLast, val, unit);
+    QString strDescToNext = tr("%1 %2").arg(val).arg(unit);
+
+    IUnit::self().meter2elevation(track->getAscend(), val, unit);
+    QString strAscTotal   = tr("%1 %2 ").arg(val).arg(unit);
+    IUnit::self().meter2elevation(track->getDescend(), val, unit);
+    QString strDescTotal  = tr("%1 %2").arg(val).arg(unit);
+
+    QString strTimeToNext, strTimeTotal;
+    quint32 timestamp = track->getEndTimestamp().toTime_t();
+    if(timeLast && timestamp)
+    {
+        quint32 t1s     = timestamp - timeLast;
+        quint32 t1h     = qreal(t1s)/3600;
+        quint32 t1m     = quint32(qreal(t1s - t1h * 3600)/60  + 0.5);
+        strTimeToNext   = tr("%1:%2 h").arg(t1h).arg(t1m, 2, 10, QChar('0'));
+
+        quint32 t2s     = timestamp - track->getStartTimestamp().toTime_t();
+        quint32 t2h     = qreal(t2s)/3600;
+        quint32 t2m     = quint32(qreal(t2s - t2h * 3600)/60  + 0.5);
+        strTimeTotal    = tr("%1:%2 h").arg(t2h).arg(t2m, 2, 10, QChar('0'));
+
+        timeLast = timestamp;
+    }
+
+    // fill in data -------------------------------
+    table->cellAt(cnt ,eSym).firstCursorPosition().insertImage(":/icons/face-laugh.png");
+    table->cellAt(cnt ,eInfo).firstCursorPosition().insertText(tr("End"), fmtCharStandard);
+
+    table->cellAt(cnt ,eProx).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eProx).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(cnt ,eEleWpt).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eEleWpt).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(cnt ,eEleTrk).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eEleTrk).firstCursorPosition().insertText(eleTrk, fmtCharStandard);
+
+    table->cellAt(cnt - 1,eToNextDist).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt - 1,eToNextDist).firstCursorPosition().insertText(strDistToNext, fmtCharStandard);
+    table->cellAt(cnt - 1,eToNextTime).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt - 1,eToNextTime).firstCursorPosition().insertText(strTimeToNext, fmtCharStandard);
+    table->cellAt(cnt - 1,eToNextAsc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt - 1,eToNextAsc).firstCursorPosition().insertText(strAscToNext, fmtCharStandard);
+    table->cellAt(cnt - 1,eToNextDesc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt - 1,eToNextDesc).firstCursorPosition().insertText(strDescToNext, fmtCharStandard);
+
+    table->cellAt(cnt ,eToNextDist).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eToNextDist).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(cnt ,eToNextTime).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eToNextTime).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(cnt ,eToNextAsc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eToNextAsc).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+    table->cellAt(cnt ,eToNextDesc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eToNextDesc).firstCursorPosition().insertText(tr("-"), fmtCharStandard);
+
+    table->cellAt(cnt ,eTotalDist).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eTotalDist).firstCursorPosition().insertText(strDistTotal, fmtCharStandard);
+    table->cellAt(cnt ,eTotalTime).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eTotalTime).firstCursorPosition().insertText(strTimeTotal, fmtCharStandard);
+    table->cellAt(cnt ,eTotalAsc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eTotalAsc).firstCursorPosition().insertText(strAscTotal, fmtCharStandard);
+    table->cellAt(cnt ,eTotalDesc).firstCursorPosition().setBlockFormat(fmtBlockRight);
+    table->cellAt(cnt ,eTotalDesc).firstCursorPosition().insertText(strDescTotal, fmtCharStandard);
+
+    table->cellAt(cnt ,eComment).firstCursorPosition().insertText(tr("End of track."), fmtCharStandard);
+
+    textStages->setDocument(doc);
+
+    QApplication::restoreOverrideCursor();
+
+}

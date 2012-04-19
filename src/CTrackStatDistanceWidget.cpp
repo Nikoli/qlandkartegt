@@ -22,6 +22,7 @@
 #include "CTrackDB.h"
 #include "CTrack.h"
 #include "IUnit.h"
+#include "CWptDB.h"
 
 #include <QtGui>
 
@@ -34,6 +35,7 @@ CTrackStatDistanceWidget::CTrackStatDistanceWidget(QWidget * parent)
     plot->setYLabel(tr("distance [m]"));
 
     connect(&CTrackDB::self(),SIGNAL(sigChanged()),this,SLOT(slotChanged()));
+    connect(&CWptDB::self(),SIGNAL(sigChanged()),this,SLOT(slotChanged()));
     connect(&CTrackDB::self(), SIGNAL(sigHighlightTrack(CTrack*)), this, SLOT(slotSetTrack(CTrack*)));
 
     slotChanged();
@@ -90,15 +92,15 @@ void CTrackStatDistanceWidget::slotChanged()
         ++trkpt;
     }
 
-    QVector<wpt_t> wpts;
-
     plot->clear();
-    addWptTags(wpts);
 
-    QVector<wpt_t>::const_iterator wpt = wpts.begin();
+    QList<CTrack::wpt_t> wpts;
+    track->scaleWpt2Track(wpts);
+
+    QList<CTrack::wpt_t>::const_iterator wpt = wpts.begin();
     while(wpt != wpts.end())
     {
-        if(wpt->d < 400)
+        if(wpt->d < WPT_TO_TRACK_DIST)
         {
             CPlotData::point_t tag;
             tag.point = QPointF((double)wpt->trkpt.timestamp, wpt->trkpt.distance);
@@ -109,8 +111,6 @@ void CTrackStatDistanceWidget::slotChanged()
         }
         ++wpt;
     }
-
-
 
     plot->newLine(lineDist,focusDist, "dist.");
     plot->newMarks(marksDist);
