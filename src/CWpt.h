@@ -160,19 +160,23 @@ class CWpt : public IItem
         friend class CDlgEditWpt;
         friend class CDlgWptEdit;
         friend class CWptDB;
+        friend class CDeviceTwoNav;
         static QDir path;
 
         void loadGcExt(const QDomNode& gpxCache);
         void loadOcExt(const QDomNode& gpxCache);
+        void loadTwoNavExt(const QDomNode& gpxCache);
         void saveGcExt(QDomElement& gpxCache, bool isExport);
-        void saveOcExt(QDomElement& gpxCache, bool isExport);
+        void saveOcExt(QDomElement& gpxCache, bool isExport);        
+        void saveTwoNavExt(QDomElement& gpxCache, bool isExport);
+
 
         void setEntry(const QString& tag, const QString& val, QDomDocument& gpx, QDomElement& parent);
         void setEntryHtml(const QString& tag, const QString& val, QDomDocument& gpx, QDomElement& parent);
         QString getEntry(const QString& tag, const QDomNode& parent);
         QString getEntryHtml(const QString& tag, const QDomNode& parent);
         QString htmlScale(float val);
-        QString insertBuddies(const QString& html);        
+        QString insertBuddies(const QString& html);
 
         geocache_t geocache;
 
@@ -196,6 +200,7 @@ class CWpt : public IItem
             QString info;
             QPixmap pixmap;
             QString filePath;
+            QString filename;
         };
         QList<image_t> images;
 

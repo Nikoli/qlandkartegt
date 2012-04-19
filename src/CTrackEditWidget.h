@@ -26,8 +26,8 @@
 #include <CGpxExtension.h>
 #include <QVBoxLayout>
 #include "ui_ITrackEditWidget.h"
+#include "CTrack.h"
 
-class CTrack;
 class CTrackStatProfileWidget;
 class CTrackStatSpeedWidget;
 class CTrackStatTraineeWidget;
@@ -39,15 +39,19 @@ class QMenu;
 class CTrackStatExtensionWidget;
 #endif
 
-class CTrackTreeWidgetItem : public QTreeWidgetItem
+class CTrackTreeWidgetItem : public QTreeWidgetItem, public QObject
 {
 
     public:
-        CTrackTreeWidgetItem(QTreeWidget *tree) : QTreeWidgetItem(tree)
+        CTrackTreeWidgetItem(QTreeWidget *tree)
+            : QTreeWidgetItem(tree)
+            , QObject(tree)
         {
         }
 
-        CTrackTreeWidgetItem ( QTreeWidget * parent, const QStringList & strings) : QTreeWidgetItem (parent,strings)
+        CTrackTreeWidgetItem ( QTreeWidget * parent, const QStringList & strings)
+            : QTreeWidgetItem (parent,strings)
+            , QObject(parent)
         {
         }
 
@@ -61,11 +65,12 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
         CTrackEditWidget(QWidget * parent);
         virtual ~CTrackEditWidget();
 
+    signals:
+        void sigZoomToDistance(float d1, float d2);
+        void sigZoomToTime(quint32 t1, quint32 t2);
+
     public slots:
         void slotSetTrack(CTrack * t);
-        void slotCheckReset(bool checked);
-        void slotCheckRemove(bool checked);
-        void slotApply();
         void slotPointSelectionChanged();
         void slotPointSelection(QTreeWidgetItem * item);
         void slotPurge();
@@ -74,6 +79,9 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
         void slotToggleStatTime();
         void slotToggleTrainee();
         void slotShowProfile();
+        void slotFilter();
+        void slotReset();
+        void slotDelete();
 
 #ifdef GPX_EXTENSIONS
         //TODO: Deklaration der Methode fr die Extensions Graphen
@@ -90,13 +98,19 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
         void slotContextMenu(const QPoint& pos);
         void slotSplit();
         void slotColorChanged(int idx);
-        void slotNameChanged(const QString&);
+        void slotNameChanged();
+        void slotNameChanged(const QString& name);
+
+        void slotCurrentChanged(int idx);
+        void slotStagesChanged();
+        void slotStagesChanged(int state);
 
     protected:
         void keyPressEvent(QKeyEvent * e);
-
+        void resizeEvent(QResizeEvent * e);
 
     private:
+        void updateStages(QList<CTrack::wpt_t>& wpts);
         enum columns_e
         {
             eNum       = 0
@@ -111,6 +125,10 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
             ,ePosition  = 9
             ,eMaxColumn = 10
         };
+
+        enum eTblCol{eSym, eInfo, eProx, ePic, eEleWpt, eEleTrk, eToNextDist, eToNextTime, eToNextAsc, eToNextDesc, eTotalDist, eTotalTime, eTotalAsc, eTotalDesc, eComment, eMax};
+
+        enum eTabs {eStages, ePoints, eSetup};
 
         QPointer<CTrack> track;
 
@@ -137,5 +155,10 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
 
         QMenu * contextMenu;
         QAction * actSplit;
+
+        QList<CTrack::wpt_t> wpts;
+        QPointer<QTextTable> table;
+
+        QSize oldSize;
 };
 #endif                           //CTRACKEDITWIDGET_H

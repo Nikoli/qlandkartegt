@@ -24,6 +24,15 @@
 #include <QString>
 #include <QMap>
 #include <QStringList>
+#include <QPointF>
+
+#ifdef HAS_EXIF
+#include <libexif/exif-data.h>
+#endif
+
+#ifdef HAS_EXIF
+#include <libexif/exif-data.h>
+#endif
 
 class CWptToolWidget;
 class CWpt;
@@ -84,17 +93,20 @@ class CWptDB : public IDB
         void download();
         void clear();
         void selWptByKey(const QString& key, bool selectMode);
+        void selWptInRange(const QPointF& center, double radius);
         void makeVisible(const QStringList& keys);
 
         int count(){return wpts.count();}
 
+        QString getNewWptName();
+        void    setNewWptName(const QString& name){lastWptName = name;}
 
 #ifdef HAS_EXIF
         void createWaypointsFromImages();
 
         struct exifGPS_t
         {
-            exifGPS_t(): lon(0.0), lat(0.0), lon_sign(1), lat_sign(1){}
+            exifGPS_t(ExifByteOrder exif_byte_order): lon(0.0), lat(0.0), lon_sign(1), lat_sign(1), byte_order(exif_byte_order) {}
             double lon;
             double lat;
 
@@ -102,6 +114,8 @@ class CWptDB : public IDB
             int lat_sign;
 
             int timestamp;
+
+            ExifByteOrder byte_order;
         };
 #endif
 
@@ -134,5 +148,6 @@ class CWptDB : public IDB
 
         bool showNames;
 
+        QString lastWptName;
 };
 #endif                           //CWPTDB_H

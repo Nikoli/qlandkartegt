@@ -27,6 +27,7 @@
 #include <QDateTime>
 #include <QMap>
 #include <QList>
+#include <QPointer>
 #include "CWpt.h"
 #include "IItem.h"
 
@@ -35,8 +36,10 @@
 #endif
 
 #define MAX_TRACK_SIZE 10000
+#define WPT_TO_TRACK_DIST 2500
 
 class QHttp;
+class QProgressDialog;
 
 class CFlags
 {
@@ -68,7 +71,7 @@ class CTrack : public IItem
 
         virtual ~CTrack();
         int ref;
-        enum type_e {eEnd,eBase,eTrkPts,eTrain,eTrkExt1,eTrkGpxExt};
+        enum type_e {eEnd,eBase,eTrkPts,eTrain,eTrkExt1,eTrkGpxExt,eTrkShdw};
 
 #ifdef GPX_EXTENSIONS
         CGpxExtTr tr_ext;        //TODO: CGpxExtPt -> tr_ext
@@ -89,6 +92,7 @@ class CTrack : public IItem
                 ascend(0), descend(0), heartReateBpm(-1), cadenceRpm(-1), slope(0), timeSinceStart(0),
                 fix(""), sat(0), velocity(WPT_NOFLOAT), heading(WPT_NOFLOAT),
                 vdop(WPT_NOFLOAT), hdop(WPT_NOFLOAT), pdop(WPT_NOFLOAT),
+                _lon(WPT_NOFLOAT),_lat(WPT_NOFLOAT),_ele(WPT_NOFLOAT),
                 flags(0), px_valid(FALSE), dem(WPT_NOFLOAT), editItem(NULL){}
 
             bool operator==(const pt_t& pt){return pt.idx == idx;}
@@ -150,6 +154,14 @@ class CTrack : public IItem
             CGpxExtPt gpx_exts;  //TODO: CGpxExtPt -> gpx_exts
 #endif
 
+            // track shadow data (copy of original data)
+            /// longitude [deg]
+            float   _lon;
+            /// latitude [deg]
+            float   _lat;
+            /// elevation [m]
+            float   _ele;
+
             /// display flags
             CFlags flags;
             /// the current location in pixel
@@ -159,8 +171,19 @@ class CTrack : public IItem
             float  dem;
 
             /// QTreeWidgetItem
-            QObject * editItem;
+            QPointer<QObject> editItem;
         };
+
+        struct wpt_t
+        {
+            wpt_t() : wpt(0), d(1e25f), x(0), y(0) {}
+            CWpt * wpt;
+            double d;
+            double x;
+            double y;
+            pt_t trkpt;
+        };
+
 
         /// set color by id
         void setColor(unsigned i);
@@ -186,20 +209,27 @@ class CTrack : public IItem
         double getTotalDistance(){return totalDistance;}
         /// get the total time covered by the track in seconds
         quint32 getTotalTime(){return totalTime;}
+        /// get the total time while moving around
+        quint32 getTotalTimeMoving(){return totalTimeMoving;}
         /// select tarckpoint by index
         void setPointOfFocus(int idx, bool eraseSelection, bool moveMap);
         /// set point of focus to a point with a given distance from start
         pt_t * getPointOfFocus(double dist);
         ///
         QDateTime getStartTimestamp();
+        ///
         QDateTime getEndTimestamp();
         /// get the ascend in [m]
         double getAscend(){return totalAscend;}
         /// get the descend in [m]
         double getDescend(){return totalDescend;}
-
+        /// get information string for a particular trackpoint
+        QString getTrkPtInfo(pt_t& trkpt);
+        /// get the bounding rectangular that fits the track
         QRectF getBoundingRectF();
+        /// sort trackpoints by timestamp
         void sortByTimestamp();
+        /// combine tracks
         CTrack& operator+=(const CTrack& trk);
 
         static const QColor lineColors[];
@@ -221,14 +251,26 @@ class CTrack : public IItem
         /// set the icon defined by a string
         void setIcon(const QString& str);
 
-
         void setTimestamp(quint32 ts){timestamp = ts;}
+        void scaleWpt2Track(QList<wpt_t>& wpts);
+        float getStartElevation();
+        float getEndElevation();
+
+        Qt::CheckState getDoScaleWpt2Track(){return (Qt::CheckState)doScaleWpt2Track;}
+        void setDoScaleWpt2Track(Qt::CheckState state);
+
+        /// smooth profile with a median filter
+        void medianFilter(QProgressDialog& progress);
+
+        /// reset all smoothed and purged data to it's original state
+        void reset();
+
+        quint32 getMedianFilterCount(){return cntMedianFilterApplied;}
 
         signals:
         void sigChanged();
 
     private slots:
-        void slotSetupLink();
         void slotRequestStarted(int );
         void slotRequestFinished(int , bool error);
 
@@ -256,6 +298,8 @@ class CTrack : public IItem
 
         /// total time covered by all track points
         quint32 totalTime;
+        /// total time moving
+        quint32 totalTimeMoving;
         /// total distance of track [m]
         double  totalDistance;
 
@@ -277,16 +321,18 @@ class CTrack : public IItem
 
         bool traineeData;
         bool ext1Data;
-
         bool firstTime;
-
         bool m_hide;
+
+        quint32 doScaleWpt2Track;
 
         QHttp * geonames;
 
         QMap<int,int> id2idx;
 
         quint32 visiblePointCount;
+
+        quint32 cntMedianFilterApplied;
 
 };
 
