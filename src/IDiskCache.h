@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2008 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,38 +16,29 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-#ifndef ITRACKSTAT_H
-#define ITRACKSTAT_H
 
-#include <QWidget>
-#include <QPointer>
-#include "ui_ITrackStatWidget.h"
+#ifndef IDISKCACHE_H
+#define IDISKCACHE_H
 
-#include "CTrack.h"
+#include <QObject>
+#include <QDir>
+#include <QHash>
+#include <QImage>
 
-class CPlot;
-class CWpt;
-
-class ITrackStat : public QWidget, private Ui::ITrackStatWidget
+class IDiskCache : public QObject
 {
     Q_OBJECT;
     public:
-        enum type_e {eOverDistance, eOverTime};
+#ifdef STANDALONE
+        IDiskCache(const QString &path, QObject *parent);
+#else
+        IDiskCache(QObject *parent);
+#endif                       //STANDALONE
+        virtual ~IDiskCache();
 
-        ITrackStat(type_e type, QWidget * paren);
-        virtual ~ITrackStat();
+        virtual void store(const QString& key, QImage& img);
+        virtual void restore(const QString& key, QImage& img);
+        virtual bool contains(const QString& key);
 
-    signals:
-        void sigFocus(quint32 idx);
-
-    protected:
-
-        type_e type;
-        CPlot * plot;
-        QPointer<CTrack> track;
-    protected slots:
-        void slotActivePoint(double x);
-        void slotFocusPoint(double x);
-        void slotSetWaypoint(double dist);
 };
-#endif                           //ITRACKSTAT_H
+#endif                           //IDISKCACHE_H
