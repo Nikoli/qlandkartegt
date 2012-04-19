@@ -23,6 +23,7 @@
 #include "GeoMath.h"
 #include "CMainWindow.h"
 #include "CMapDB.h"
+#include "CSettings.h"
 
 #include "config.h"
 
@@ -43,7 +44,7 @@ CCreateMapQMAP::CCreateMapQMAP(QWidget * parent)
     helpStep2->setHelp(tr("Add Maps"),
         tr("You can stack maps of different detail as layer. For each detail layer you can define the number of zoom levels. Several map files can be grouped into a detail layer. All map files in a layer must have the same projection and scale. You need at least one layer with one file."));
 
-    QSettings cfg;
+    SETTINGS;
     mapPath = cfg.value("path/maps",mapPath).toString();
 
     connect(toolOpen, SIGNAL(clicked()), this, SLOT(slotOpenMap()));
@@ -55,14 +56,14 @@ CCreateMapQMAP::CCreateMapQMAP(QWidget * parent)
     connect(pushUp, SIGNAL(clicked()), this, SLOT(slotUp()));
     connect(pushDown, SIGNAL(clicked()), this, SLOT(slotDown()));
     connect(pushSave, SIGNAL(clicked()), this, SLOT(slotSaveMap()));
-    
-    toolBox->setItemEnabled(1, false);
+
+    tabWidget->setTabEnabled(1, false);
 }
 
 
 CCreateMapQMAP::~CCreateMapQMAP()
 {
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("path/maps",mapPath);
 }
 
@@ -98,7 +99,7 @@ void CCreateMapQMAP::slotNewMap()
 
     pushAdd->setEnabled(true);
     helpStep2->setEnabled(true);
-    toolBox->setItemEnabled(1, true);
+    tabWidget->setTabEnabled(1, true);
 }
 
 
@@ -135,8 +136,6 @@ void CCreateMapQMAP::mapData2Item(QTreeWidgetItem *& item)
     QStringList files = item->text(eFiles).split("; ",QString::SkipEmptyParts);
     QString     file;
     QString     projection;
-    double      xscale  = 0;
-    double      yscale  = 0;
     double      north   =  -90.0 * DEG_TO_RAD;
     double      west    = -180.0 * DEG_TO_RAD;
     double      south   =   90.0 * DEG_TO_RAD;
@@ -160,8 +159,6 @@ void CCreateMapQMAP::mapData2Item(QTreeWidgetItem *& item)
         }
         projection = map.strProj;
 
-        xscale = map.xscale;
-        yscale = map.yscale;
 
         if(north < map.lat1) north = map.lat1;
         if(south > map.lat2) south = map.lat2;
@@ -176,7 +173,7 @@ void CCreateMapQMAP::mapData2Item(QTreeWidgetItem *& item)
     item->setData(0,eEast, east);
 
     double a1,a2;
-    XY p1, p2, p4;
+    projXY p1, p2, p4;
     p1.u = west;
     p1.v = north;
     p2.u = east;
@@ -221,7 +218,7 @@ void CCreateMapQMAP::processLevelList()
     str += tr("Bottom/right corner:\t%1\n").arg(bottomRight);
 
     double a1,a2;
-    XY p1, p2, p4;
+    projXY p1, p2, p4;
     p1.u = west;
     p1.v = north;
     p2.u = east;
@@ -241,6 +238,7 @@ void CCreateMapQMAP::processLevelList()
 void CCreateMapQMAP::readqmap(const QString& filename)
 {
     QSettings mapdef(filename,QSettings::IniFormat);
+    mapdef.setIniCodec(QTextCodec::codecForName("UTF-8"));
 
     labelCurrentMap->setText(filename);
 
@@ -268,13 +266,14 @@ void CCreateMapQMAP::readqmap(const QString& filename)
     pushAdd->setEnabled(true);
     pushSave->setEnabled(treeLevels->topLevelItemCount());
     helpStep2->setEnabled(true);
-    toolBox->setItemEnabled(1, true);
+    tabWidget->setTabEnabled(1, true);
 }
 
 
 void CCreateMapQMAP::writeqmap(const QString& filename)
 {
     QSettings mapdef(filename,QSettings::IniFormat);
+    mapdef.setIniCodec(QTextCodec::codecForName("UTF-8"));
     mapdef.beginGroup("description");
     mapdef.setValue("bottomright",bottomRight);
     mapdef.setValue("topleft",topLeft);

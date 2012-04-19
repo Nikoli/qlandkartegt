@@ -47,7 +47,9 @@ ITrackStat::ITrackStat(type_e type, QWidget * parent)
         plot = new CPlot(CPlotData::eTime, CPlot::eNormal, this);
     }
     layout()->addWidget(plot);
-    QObject::connect(plot, SIGNAL(activePointSignal(double)), this, SLOT(activePointEvent(double)));
+    QObject::connect(plot, SIGNAL(sigActivePoint(double)), this, SLOT(slotActivePoint(double)));
+    QObject::connect(plot, SIGNAL(sigFocusPoint(double)), this, SLOT(slotFocusPoint(double)));
+    QObject::connect(plot, SIGNAL(sigSetWaypoint(double)), this, SLOT(slotSetWaypoint(double)));
 
 }
 
@@ -58,9 +60,8 @@ ITrackStat::~ITrackStat()
 }
 
 
-void ITrackStat::activePointEvent(double dist)
+void ITrackStat::slotActivePoint(double dist)
 {
-    qDebug() << "ITrackStat::activePointEvent" << endl;
     if(track.isNull()) return;
     if(plot == 0) return;
     QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
@@ -89,55 +90,83 @@ void ITrackStat::activePointEvent(double dist)
     }
 }
 
-
-void ITrackStat::addWptTags(QVector<wpt_t>& wpts)
+void ITrackStat::slotFocusPoint(double dist)
 {
+    if(plot == 0) return;
+    plot->setSelTrackPoint(0);
 
-    CWptDB& wptdb = CWptDB::self();
-    if(wptdb.count() == 0 || track.isNull()) return;
-    wpts.resize(wptdb.count());
-
-    IMap& map = CMapDB::self().getMap();
-
-    QVector<wpt_t>::iterator wpt = wpts.begin();
-    QMap<QString,CWpt*>::const_iterator w = wptdb.begin();
-
-    while(wpt != wpts.end())
-    {
-        wpt->wpt    = (*w);
-        wpt->x      = wpt->wpt->lon * DEG_TO_RAD;
-        wpt->y      = wpt->wpt->lat * DEG_TO_RAD;
-
-        map.convertRad2M(wpt->x, wpt->y);
-
-        ++wpt; ++w;
-    }
-
-    QList<CTrack::pt_t>& trkpts                 = track->getTrackPoints();
-    QList<CTrack::pt_t>::const_iterator trkpt   = trkpts.begin();
+    if(track.isNull()) return;
+    QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
+    QList<CTrack::pt_t>::iterator trkpt = trkpts.begin();
+    quint32 idx = 0;
     while(trkpt != trkpts.end())
     {
         if(trkpt->flags & CTrack::pt_t::eDeleted)
         {
-            ++trkpt;
-            continue;
+            ++trkpt; continue;
         }
 
-        double x = trkpt->lon * DEG_TO_RAD;
-        double y = trkpt->lat * DEG_TO_RAD;
-        map.convertRad2M(x, y);
-
-        wpt = wpts.begin();
-        while(wpt != wpts.end())
+        if(type == eOverDistance && dist < trkpt->distance)
         {
-            double d = (x - wpt->x) * (x - wpt->x) + (y - wpt->y) * (y - wpt->y);
-            if(d < wpt->d)
-            {
-                wpt->d      = d;
-                wpt->trkpt  = *trkpt;
-            }
-            ++wpt;
+            plot->setSelTrackPoint(&(*trkpt));
+            emit sigFocus(idx);
+            break;
         }
+        if(type == eOverTime && dist < trkpt->timestamp)
+        {
+            plot->setSelTrackPoint(&(*trkpt));
+            emit sigFocus(idx);
+            break;
+        }
+        idx = trkpt->idx;
+
+        ++trkpt;
+    }
+}
+
+void ITrackStat::slotSetWaypoint(double dist)
+{
+    if(track.isNull()) return;
+
+    IMap& dem = CMapDB::self().getDEM();
+    QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
+    QList<CTrack::pt_t>::iterator trkpt = trkpts.begin();
+
+    while(trkpt != trkpts.end())
+    {
+        if(trkpt->flags & CTrack::pt_t::eDeleted)
+        {
+            ++trkpt; continue;
+        }
+
+        if(type == eOverDistance && dist < trkpt->distance)
+        {
+            plot->setSelTrackPoint(&(*trkpt));
+
+            double lon = trkpt->lon * DEG_TO_RAD;
+            double lat = trkpt->lat * DEG_TO_RAD;
+            double ele = dem.getElevation(lon, lat);
+            if(ele == WPT_NOFLOAT)
+            {
+                ele = trkpt->ele;
+            }
+            CWptDB::self().newWpt(lon, lat, ele, "");
+            break;
+        }
+        if(type == eOverTime && dist < trkpt->timestamp)
+        {
+            plot->setSelTrackPoint(&(*trkpt));
+            double lon = trkpt->lon * DEG_TO_RAD;
+            double lat = trkpt->lat * DEG_TO_RAD;
+            double ele = dem.getElevation(lon, lat);
+            if(ele == WPT_NOFLOAT)
+            {
+                ele = trkpt->ele;
+            }
+            CWptDB::self().newWpt(lon, lat, ele, "");
+            break;
+        }
+
         ++trkpt;
     }
 }

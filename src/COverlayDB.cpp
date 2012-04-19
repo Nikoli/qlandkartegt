@@ -29,9 +29,10 @@
 #include "CGpx.h"
 #include "CDlgCombineDistOvl.h"
 #include "CMapDB.h"
+#include "CSettings.h"
 
 #include <QtGui>
-#include <projects.h>
+#include <proj_api.h>
 #ifdef __MINGW32__
 #undef LP
 #endif
@@ -44,7 +45,7 @@ COverlayDB::COverlayDB(QTabWidget * tb, QObject * parent)
 {
     m_self      = this;
 
-    QSettings cfg;
+    SETTINGS;
     COverlayDistance::setShowBullets(cfg.value("overlay/showBullets", COverlayDistance::getShowBullets()).toBool());
 
     toolview    = new COverlayToolWidget(tb);
@@ -53,7 +54,7 @@ COverlayDB::COverlayDB(QTabWidget * tb, QObject * parent)
 
 COverlayDB::~COverlayDB()
 {
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("overlay/showBullets", COverlayDistance::getShowBullets());
 }
 
@@ -289,7 +290,7 @@ void COverlayDB::saveGPX(CGpx& gpx, const QStringList& keys)
             elem.appendChild(speed);
             speed.appendChild(gpx.createTextNode(QString("%1").arg(ovl->speed)));
 
-            XY pt;
+            projXY pt;
             foreach(pt, ovl->points)
             {
                 QDomElement point = gpx.createElement("ql:point");
@@ -522,7 +523,7 @@ void COverlayDB::copyToClipboard(bool deleteSelection)
 void COverlayDB::pasteFromClipboard()
 {
     QClipboard *clipboard = QApplication::clipboard();
-    qDebug() << clipboard->mimeData()->formats();
+
     if (clipboard->mimeData()->hasFormat("qlandkartegt/qlb"))
     {
         QBuffer buffer;

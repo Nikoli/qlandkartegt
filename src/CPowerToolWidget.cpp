@@ -1113,10 +1113,10 @@ void CPowerToolWidget::slotZoomToFitNW()
 
 void CPowerToolWidget::slotZoomToFitLine()
 {
-    QRectF r;
+//    QRectF r;
 
-    const QList<QListWidgetItem*>& items = listLines->selectedItems();
-    QList<QListWidgetItem*>::const_iterator item = items.begin();
+//    const QList<QListWidgetItem*>& items = listLines->selectedItems();
+//    QList<QListWidgetItem*>::const_iterator item = items.begin();
 
     /*r = CPowerDB::self().getBoundingRectF((*item)->data(Qt::UserRole).toString());
 

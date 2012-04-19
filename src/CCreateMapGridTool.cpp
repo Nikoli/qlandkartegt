@@ -24,6 +24,7 @@
 #include "CMapDB.h"
 #include "GeoMath.h"
 #include "CDlgProjWizzard.h"
+#include "CSettings.h"
 
 #include <QtGui>
 
@@ -57,7 +58,7 @@ CCreateMapGridTool::CCreateMapGridTool(CCreateMapGeoTiff * geotifftool, QWidget 
         mapedit->hide();
     }
 
-    QSettings cfg;
+    SETTINGS;
     lineProjection->setText(cfg.value("create/ref.proj","").toString());
     lineXSpacing->setText(cfg.value("create/grid.x.spacing","1000").toString());
     lineYSpacing->setText(cfg.value("create/grid.y.spacing","1000").toString());
@@ -92,7 +93,7 @@ CCreateMapGridTool::CCreateMapGridTool(CCreateMapGeoTiff * geotifftool, QWidget 
 CCreateMapGridTool::~CCreateMapGridTool()
 {
 
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("create/ref.proj",lineProjection->text());
     cfg.setValue("create/grid.x.spacing",lineXSpacing->text());
     cfg.setValue("create/grid.y.spacing",lineYSpacing->text());
@@ -154,13 +155,11 @@ void CCreateMapGridTool::place4GCPs()
 void CCreateMapGridTool::slotCheck()
 {
     pushOk->setEnabled(false);
-    toolBox->setItemEnabled(2, false);
     if(lineLongitude->isEnabled() && lineLongitude->text().isEmpty()) return;
     if(lineLatitude->isEnabled() && lineLatitude->text().isEmpty()) return;
     if(lineXSpacing->text().isEmpty()) return;
     if(lineYSpacing->text().isEmpty()) return;
     pushOk->setEnabled(true);
-    toolBox->setItemEnabled(2, true);
 }
 
 
@@ -301,7 +300,7 @@ void CCreateMapGridTool::slotOk()
 
     GDALInvGeoTransform(adfGeoTransform1, adfGeoTransform2);
 
-    PJ * pjWGS84 = 0, * pjSrc = 0;
+    projPJ  pjWGS84 = 0, pjSrc = 0;
     if(!lineProjection->text().isEmpty())
     {
         pjSrc   = pj_init_plus(lineProjection->text().toLatin1());

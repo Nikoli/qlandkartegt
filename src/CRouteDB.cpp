@@ -26,6 +26,7 @@
 #include "CGpx.h"
 #include "CResources.h"
 #include "IDevice.h"
+#include "GeoMath.h"
 
 #include <QtGui>
 
@@ -33,14 +34,12 @@ CRouteDB * CRouteDB::m_self = 0;
 
 bool CRouteDB::keyLessThanAlpha(keys_t&  s1, keys_t&  s2)
 {
-    qDebug() << s1.name << s2.name;
     return s1.name.toLower() < s2.name.toLower();
 }
 
 
 bool CRouteDB::keyLessThanTime(keys_t&  s1, keys_t&  s2)
 {
-    qDebug() << s1.time << s2.time;
     return s1.time < s2.time;
 }
 
@@ -175,6 +174,7 @@ void CRouteDB::loadGPX(CGpx& gpx)
     for(uint n = 0; n < N; ++n)
     {
         hasItems = true;
+        QDomElement tmpelem;
         const QDomNode& rte = rtes.item(n);
 
         CRoute * r = 0;
@@ -199,6 +199,19 @@ void CRouteDB::loadGPX(CGpx& gpx)
             }
         }
 
+        tmpelem = rte.namedItem("extensions").toElement();
+        if(!tmpelem.isNull())
+        {
+            QMap<QString,QDomElement> extensionsmap = CGpx::mapChildElements(tmpelem);
+
+            tmpelem = extensionsmap.value(CGpx::ql_ns + ":" + "key");
+            if(!tmpelem.isNull())
+            {
+                r->setKey(tmpelem.text());
+            }
+
+        }
+
         if(rte.namedItem("parent").isElement())
         {
             r->setParentWpt(rte.namedItem("parent").toElement().text());
@@ -210,7 +223,7 @@ void CRouteDB::loadGPX(CGpx& gpx)
         while (!rtept.isNull())
         {
             QString name;
-            XY pt;
+            projXY pt;
             QDomNamedNodeMap attr = rtept.attributes();
 
             if(rtept.namedItem("name").isElement())
@@ -266,19 +279,27 @@ void CRouteDB::saveGPX(CGpx& gpx, const QStringList& keys)
         }
 
 
-        QDomElement gpxRoute = gpx.createElement("rte");
-        root.appendChild(gpxRoute);
+        QDomElement rte = gpx.createElement("rte");
+        root.appendChild(rte);
 
         QDomElement name = gpx.createElement("name");
-        gpxRoute.appendChild(name);
+        rte.appendChild(name);
         QDomText _name_ = gpx.createTextNode((*route)->getName());
         name.appendChild(_name_);
+
+        QDomElement extensions = gpx.createElement("extensions");
+        rte.appendChild(extensions);
+
+        QDomElement qlkey = gpx.createElement("ql:key");
+        extensions.appendChild(qlkey);
+        QDomText _qlkey_ = gpx.createTextNode((*route)->getKey());
+        qlkey.appendChild(_qlkey_);
 
         if(!(*route)->getParentWpt().isEmpty())
         {
             QDomElement parent = gpx.createElement("parent");
             parent.setAttribute("xmlns", "http://opencachemanage.sourceforge.net/schema1");
-            gpxRoute.appendChild(parent);
+            rte.appendChild(parent);
             QDomText _parent_ = gpx.createTextNode((*route)->getParentWpt());
             parent.appendChild(_parent_);
         }
@@ -303,7 +324,7 @@ void CRouteDB::saveGPX(CGpx& gpx, const QStringList& keys)
             }
 
             QDomElement gpxRtept = gpx.createElement("rtept");
-            gpxRoute.appendChild(gpxRtept);
+            rte.appendChild(gpxRtept);
 
             gpxRtept.setAttribute("lat",QString::number(rtept->lat,'f',6));
             gpxRtept.setAttribute("lon",QString::number(rtept->lon,'f',6));
@@ -316,9 +337,7 @@ void CRouteDB::saveGPX(CGpx& gpx, const QStringList& keys)
             name.appendChild(_name_);
 
             QString action = rtept->action;
-//            action.remove(QRegExp("<head.*[^>]*><\\/head>"));
-//            action.remove(QRegExp("<[^>]*>"));
-//            action = action.simplified();
+            IItem::removeHtml(action);
 
             QDomElement cmt = gpx.createElement("cmt");
             gpxRtept.appendChild(cmt);
@@ -591,7 +610,7 @@ void CRouteDB::drawArrows(const QPolygon& line, const QRect& viewport, QPainter&
             {
                 if(0 != pt.x() - pt1.x() && (pt.y() - pt1.y()))
                 {
-                    heading = ( atan2((double)(pt.y() - pt1.y()), (double)(pt.x() - pt1.x())) * 180.) / PI;
+                    heading = ( atan2((double)(pt.y() - pt1.y()), (double)(pt.x() - pt1.x())) * 180.) / M_PI;
 
                     p.save();
                     // draw arrow between bullets
@@ -609,6 +628,7 @@ void CRouteDB::drawArrows(const QPolygon& line, const QRect& viewport, QPainter&
 
 }
 
+
 void CRouteDB::drawLine(const QPolygon& line, const QRect& extViewport, QPainter& p)
 {
     QPolygon subline;
@@ -625,7 +645,7 @@ void CRouteDB::drawLine(const QPolygon& line, const QRect& extViewport, QPainter
     {
         pt1 = line[i];
 
-        if(!extViewport.contains(pt1) && !extViewport.contains(pt))
+        if(!GPS_Math_LineCrossesRect(pt, pt1, extViewport))
         {
             pt = pt1;
             if(subline.size() > 1)
@@ -681,7 +701,6 @@ QList<CRouteDB::keys_t> CRouteDB::keys()
 
     CRouteToolWidget::sortmode_e sortmode = CRouteToolWidget::getSortMode();
 
-    qDebug() << "--";
     switch(sortmode)
     {
         case CRouteToolWidget::eSortByName:
@@ -723,11 +742,11 @@ void CRouteDB::makeVisible(const QStringList& keys)
 
 }
 
-void CRouteDB::loadSecondaryRoute(const QString& key, QDomDocument& xml)
+void CRouteDB::loadSecondaryRoute(const QString& key, QDomDocument& xml, CRoute::service_e service)
 {
     if(routes.contains(key))
     {
-        routes[key]->loadSecondaryRoute(xml);
+        routes[key]->loadSecondaryRoute(xml, service);
         emit sigChanged();
         emit sigModified();
         emit sigModified(key);

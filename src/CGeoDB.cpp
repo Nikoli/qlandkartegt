@@ -154,11 +154,28 @@ CGeoDB::CGeoDB(QTabWidget * tb, QWidget * parent)
 
     QSqlQuery query(db);
 
-    if(!query.exec("PRAGMA locking_mode=EXCLUSIVE")) {
+    if(!query.exec("PRAGMA locking_mode=EXCLUSIVE"))
+    {
       return;
     }
 
-    if(!query.exec("PRAGMA synchronous=OFF")) {
+    if(!query.exec("PRAGMA synchronous=OFF"))
+    {
+      return;
+    }
+
+    if(!query.exec("PRAGMA temp_store=MEMORY"))
+    {
+      return;
+    }
+
+    if(!query.exec("PRAGMA default_cache_size=50"))
+    {
+      return;
+    }
+
+    if(!query.exec("PRAGMA page_size=8192"))
+    {
       return;
     }
 
@@ -235,7 +252,15 @@ CGeoDB::CGeoDB(QTabWidget * tb, QWidget * parent)
     initTreeWidget();
     itemDatabase->setExpanded(true);
 
-    saveOnExit = CResources::self().saveGeoDBOnExit();
+    saveOnExit      = CResources::self().saveGeoDBOnExit();
+    saveOnMinutes   = CResources::self().saveGeoDBMinutes();
+
+    qDebug() << "saveOnMinutes" << saveOnMinutes;
+
+    if(saveOnMinutes)
+    {
+        QTimer::singleShot(saveOnMinutes * 60000, this, SLOT(saveWorkspace()));
+    }
 }
 
 CGeoDB::~CGeoDB()
@@ -1792,6 +1817,8 @@ void CGeoDB::saveWorkspace()
         return;
     }
 
+    qDebug() << "saveWorkspace()";
+
     quint32 total, progCnt = 0;
     total = itemWksWpt->childCount() + itemWksTrk->childCount() + itemWksRte->childCount() + itemWksOvl->childCount() + CDiaryDB::self().count();
     PROGRESS_SETUP(tr("Saving workspace. Please wait."), total);
@@ -1920,6 +1947,11 @@ void CGeoDB::saveWorkspace()
         query.bindValue(":key", (*dry)->getKey());
         query.bindValue(":data", data);
         QUERY_EXEC(continue);
+    }
+
+    if(saveOnMinutes)
+    {
+        QTimer::singleShot(saveOnMinutes * 60000, this, SLOT(saveWorkspace()));
     }
 }
 
@@ -2366,6 +2398,10 @@ void CGeoDB::slotContextMenuDatabase(const QPoint& pos)
     {
         if(item->data(eCoName, eUrType).toInt() >= eFolder0)
         {
+            actAddDiary->setVisible(false);
+            actShowDiary->setVisible(false);
+            actDelDiary->setVisible(false);
+
             if(item == itemDatabase)
             {
                 actDelDir->setVisible(false);
@@ -2407,9 +2443,6 @@ void CGeoDB::slotContextMenuDatabase(const QPoint& pos)
                 {
                     actMoveDir->setVisible(false);
                     actCopyDir->setVisible(false);
-                    actAddDiary->setVisible(false);
-                    actShowDiary->setVisible(false);
-                    actDelDiary->setVisible(false);
                 }
             }
 
@@ -3314,8 +3347,6 @@ void CGeoDB::slotDelDiary()
 
     CDiaryDB::self().delDiary(key, false);
     parent->setIcon(eCoDiary, QIcon());
-
-    updateDiaryIcon();
 }
 
 
@@ -3493,6 +3524,7 @@ bool CGeoDB::setProjectDiaryData(quint64 id, CDiary& diary)
     CTrackDB::self().loadQLB(qlb, false);
     CRouteDB::self().loadQLB(qlb, false);
 
+    changedWorkspace();
     return true;
 }
 

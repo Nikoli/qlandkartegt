@@ -19,6 +19,8 @@
 
 #include "CResources.h"
 #include "CDeviceGarmin.h"
+#include "CDeviceGarminBulk.h"
+#include "CDeviceTwoNav.h"
 #include "CDeviceQLandkarteM.h"
 #ifdef HS_MIKROKOPTER
 #include "CDeviceMikrokopter.h"
@@ -33,6 +35,14 @@
 #include "CUnitImperial.h"
 #include "CMapTDB.h"
 #include "config.h"
+#include "CSettings.h"
+
+#ifndef Q_OS_WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <unistd.h>
+#endif
 
 #include <QtGui>
 
@@ -50,6 +60,7 @@ CResources::CResources(QObject * parent)
 #ifdef HAS_GEODB
 , m_useGeoDB(true)
 , m_saveGeoDBOnExit(false)
+, m_saveGeoDBMinutes(5)
 #ifndef Q_WS_MAC
 , m_pathGeoDB(QDir::homePath())
 #else
@@ -60,50 +71,55 @@ CResources::CResources(QObject * parent)
 , m_showNorth(true)
 , m_showScale(true)
 , m_showToolTip(true)
-, m_showTrackMax(true)
 , m_showZoomLevel(true)
 , m_useAntiAliasing(true)
 , m_reducePoiIcons(true)
 , m_WptTextColor(Qt::black)
-
+, m_pathMapCache(QDir::temp().filePath("qlandkartegt/cache"))
+, m_sizeMapCache(100)
+, m_expireMapCache(8)
 {
     m_self = this;
 
-    QSettings cfg;
+    SETTINGS;
 
-    QString family  = cfg.value("environment/mapfont/family","Arial").toString();
-    int size        = cfg.value("environment/mapfont/size",8).toInt();
-    bool bold       = cfg.value("environment/mapfont/bold",false).toBool();
-    bool italic     = cfg.value("environment/mapfont/italic",false).toBool();
+    QString family      = cfg.value("environment/mapfont/family","Arial").toString();
+    int size            = cfg.value("environment/mapfont/size",8).toInt();
+    bool bold           = cfg.value("environment/mapfont/bold",false).toBool();
+    bool italic         = cfg.value("environment/mapfont/italic",false).toBool();
     m_mapfont = QFont(family,size);
     m_mapfont.setBold(bold);
     m_mapfont.setItalic(italic);
 
     //m_doMetric        = cfg.value("environment/doMetric",true).toBool();
-    m_flipMouseWheel  = cfg.value("environment/flipMouseWheel",m_flipMouseWheel).toBool();
+    m_flipMouseWheel    = cfg.value("environment/flipMouseWheel",m_flipMouseWheel).toBool();
 #ifdef HAS_GEODB
-    m_useGeoDB  = cfg.value("environment/GeoDB",m_useGeoDB).toBool();
-    m_saveGeoDBOnExit  = cfg.value("environment/saveGeoDBOnExit",m_saveGeoDBOnExit).toBool();
-    m_pathGeoDB = QDir(cfg.value("environment/pathGeoDB", m_pathGeoDB.absolutePath()).toString());
+    m_useGeoDB          = cfg.value("environment/GeoDB",m_useGeoDB).toBool();
+    m_saveGeoDBOnExit   = cfg.value("environment/saveGeoDBOnExit",m_saveGeoDBOnExit).toBool();
+    m_saveGeoDBMinutes  = cfg.value("environment/saveGeoDBMinutes",m_saveGeoDBMinutes).toUInt();
+    m_pathGeoDB         = QDir(cfg.value("environment/pathGeoDB", m_pathGeoDB.absolutePath()).toString());
 #endif
 
-    m_useHttpProxy    = cfg.value("network/useProxy",m_useHttpProxy).toBool();
-    m_httpProxy       = cfg.value("network/proxy/url",m_httpProxy).toString();
-    m_httpProxyPort   = cfg.value("network/proxy/port",m_httpProxyPort).toUInt();
+    m_useHttpProxy      = cfg.value("network/useProxy",m_useHttpProxy).toBool();
+    m_httpProxy         = cfg.value("network/proxy/url",m_httpProxy).toString();
+    m_httpProxyPort     = cfg.value("network/proxy/port",m_httpProxyPort).toUInt();
 
-    emit sigProxyChanged();
+    if(m_useHttpProxy)
+      QNetworkProxy::setApplicationProxy(QNetworkProxy(QNetworkProxy::HttpProxy,m_httpProxy,m_httpProxyPort));
+    else
+      QNetworkProxy::setApplicationProxy(QNetworkProxy(QNetworkProxy::NoProxy));
 
-    m_devKey          = cfg.value("device/key",m_devKey).toString();
-    m_devIPAddress    = cfg.value("device/ipAddr",m_devIPAddress).toString();
-    m_devIPPort       = cfg.value("device/ipPort",m_devIPPort).toUInt();
-    m_devSerialPort   = cfg.value("device/serialPort",m_devSerialPort).toString();
-    m_devBaudRate     = cfg.value("device/baudRate",m_devBaudRate).toString();
-    m_devType         = cfg.value("device/type",m_devType).toString();
-    m_devCharset      = cfg.value("device/charset",m_devCharset).toString();
+    m_devKey            = cfg.value("device/key",m_devKey).toString();
+    m_devIPAddress      = cfg.value("device/ipAddr",m_devIPAddress).toString();
+    m_devIPPort         = cfg.value("device/ipPort",m_devIPPort).toUInt();
+    m_devSerialPort     = cfg.value("device/serialPort",m_devSerialPort).toString();
+    m_devBaudRate       = cfg.value("device/baudRate",m_devBaudRate).toString();
+    m_devType           = cfg.value("device/type",m_devType).toString();
+    m_devCharset        = cfg.value("device/charset",m_devCharset).toString();
 
     emit sigDeviceChanged();
 
-    m_playSound       = cfg.value("device/playSound",m_playSound).toBool();
+    m_playSound         = cfg.value("device/playSound",m_playSound).toBool();
     IDevice::m_DownloadAllTrk   = cfg.value("device/dnlTrk",IDevice::m_DownloadAllTrk).toBool();
     IDevice::m_DownloadAllWpt   = cfg.value("device/dnlWpt",IDevice::m_DownloadAllWpt).toBool();
     IDevice::m_DownloadAllRte   = cfg.value("device/dnlRte",IDevice::m_DownloadAllRte).toBool();
@@ -130,14 +146,13 @@ CResources::CResources(QObject * parent)
         unit = new CUnitMetric(this);
     }
 
-    m_showTrackProfile  = cfg.value("environment/showTrackProfile",m_showTrackProfile).toBool();
-    m_showNorth     = cfg.value("environment/showNorth",m_showNorth).toBool();
-    m_showScale     = cfg.value("environment/showScale",m_showScale).toBool();
-    m_showToolTip   = cfg.value("environment/showToolTip",m_showToolTip).toBool();
-    m_showTrackMax  = cfg.value("environment/showTrackMax",m_showTrackMax).toBool();
-    m_showZoomLevel = cfg.value("environment/showZoomLevel",m_showZoomLevel).toBool();
-    m_useAntiAliasing = cfg.value("environment/useAntiAliasing",m_useAntiAliasing).toBool();
-    m_reducePoiIcons = cfg.value("environment/reducePoiIcons",m_reducePoiIcons).toBool();
+    m_showTrackProfile = cfg.value("environment/showTrackProfile",m_showTrackProfile).toBool();
+    m_showNorth        = cfg.value("environment/showNorth",m_showNorth).toBool();
+    m_showScale        = cfg.value("environment/showScale",m_showScale).toBool();
+    m_showToolTip      = cfg.value("environment/showToolTip",m_showToolTip).toBool();
+    m_showZoomLevel    = cfg.value("environment/showZoomLevel",m_showZoomLevel).toBool();
+    m_useAntiAliasing  = cfg.value("environment/useAntiAliasing",m_useAntiAliasing).toBool();
+    m_reducePoiIcons   = cfg.value("environment/reducePoiIcons",m_reducePoiIcons).toBool();
 
     m_WptTextColor = QColor(cfg.value("environment/wptTextColor", m_WptTextColor.name()).toString());
 
@@ -155,12 +170,41 @@ CResources::CResources(QObject * parent)
     QPixmap(":/webstuff/frame_bottom_right.png").save(dirWeb.filePath("frame_bottom_right.png"));
     QPixmap(":/webstuff/scale.png").save(dirWeb.filePath("scale.png"));
 
+
+    QString cacheFolder;
+#ifndef Q_OS_WIN32
+    const char *envCache = getenv("QLGT_CACHE");
+
+    if (envCache)
+    {
+        cacheFolder = envCache;
+    }
+    else
+    {
+#ifndef Q_WS_MAC
+        struct passwd * userInfo = getpwuid(getuid());
+        cacheFolder = QDir::tempPath() + "/qlandkarteqt-" + userInfo->pw_name + "/cache/";
+#else
+        // Mac OS X: points to /Users/<user name>/Library/Caches/QLandkarteGT/QLandkarteGT
+        cacheFolder = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
+#endif
+    }
+#else
+    cacheFolder = m_pathMapCache.absolutePath();
+#endif
+
+    m_pathMapCache = QDir(cfg.value("network/mapcache/path", cacheFolder).toString());
+    m_sizeMapCache = cfg.value("network/mapcache/size", m_sizeMapCache).toInt();
+    m_expireMapCache = cfg.value("network/mapcache/expire", m_expireMapCache).toInt();
+
 }
 
 
 CResources::~CResources()
 {
-    QSettings cfg;
+    SETTINGS;
+
+    cfg.setValue("path/maps",pathMaps);
 
     cfg.setValue("environment/mapfont/family",m_mapfont.family());
     cfg.setValue("environment/mapfont/size",m_mapfont.pointSize());
@@ -171,6 +215,7 @@ CResources::~CResources()
 #ifdef HAS_GEODB
     cfg.setValue("environment/GeoDB",m_useGeoDB);
     cfg.setValue("environment/saveGeoDBOnExit",m_saveGeoDBOnExit);
+    cfg.setValue("environment/saveGeoDBMinutes",m_saveGeoDBMinutes);
     cfg.setValue("environment/pathGeoDB",m_pathGeoDB.absolutePath());
 #endif
     cfg.setValue("network/useProxy",m_useHttpProxy);
@@ -199,12 +244,15 @@ CResources::~CResources()
     cfg.setValue("environment/showNorth",m_showNorth);
     cfg.setValue("environment/showScale",m_showScale);
     cfg.setValue("environment/showToolTip",m_showToolTip);
-    cfg.setValue("environment/showTrackMax",m_showTrackMax);
     cfg.setValue("environment/showZoomLevel",m_showZoomLevel);
     cfg.setValue("environment/useAntiAliasing",m_useAntiAliasing);
     cfg.setValue("environment/reducePoiIcons",m_reducePoiIcons);
 
     cfg.setValue("environment/wptTextColor", m_WptTextColor.name());
+
+    cfg.setValue("network/mapcache/path", m_pathMapCache.absolutePath());
+    cfg.setValue("network/mapcache/size", m_sizeMapCache);
+    cfg.setValue("network/mapcache/expire", m_expireMapCache);
 }
 
 
@@ -271,6 +319,14 @@ IDevice * CResources::device()
             m_device = new CDeviceGPSD(this);
         }
 #endif
+        else if(m_devKey == "Garmin Mass Storage")
+        {
+            m_device = new CDeviceGarminBulk(this);
+        }
+        else if(m_devKey == "TwoNav")
+        {
+            m_device = new CDeviceTwoNav(this);
+        }
 
         connect(m_device, SIGNAL(sigLiveLog(const CLiveLog&)), &CLiveLogDB::self(), SLOT(slotLiveLog(const CLiveLog&)));
     }

@@ -19,6 +19,7 @@
 
 #include "WptIcons.h"
 #include "config.h"
+#include "CSettings.h"
 #include <QtCore>
 
 
@@ -73,11 +74,9 @@ void initWptIcons()
     wptIcons["Blue Diamond"]        = ":/icons/wpt/diamond_blue15x15.png";
     wptIcons["Green Diamond"]       = ":/icons/wpt/diamond_green15x15.png";
     wptIcons["Red Diamond"]         = ":/icons/wpt/diamond_red15x15.png";
-#ifdef HAS_POWERDB
-    wptIcons["Lightning"]           = ":/icons/wpt/lightning.png";
-#endif 
 
-    QSettings cfg;
+
+    SETTINGS;
 
     setWptIconByName("Custom 1", cfg.value("garmin/icons/custom1", ":/icons/wpt/custom15x15.bmp").toString());
     setWptIconByName("Custom 2", cfg.value("garmin/icons/custom2", ":/icons/wpt/custom15x15.bmp").toString());
@@ -113,10 +112,6 @@ void initWptIcons()
     setWptIconByName("Letterbox Hybrid", ":/icons/cache/Letterbox-Hybrid.png");
     setWptIconByName("Virtual Cache", ":/icons/cache/Virtual-Cache.png");
     setWptIconByName("Webcam Cache", ":/icons/cache/Webcam-Cache.png");
-    
-#ifdef HAS_POWERDB
-    setWptIconByName("Power network", ":/icons/wpt/lightning.png");    
-#endif
 
     QDir dirIcon(QDir::home().filePath(CONFIGDIR));
     dirIcon.mkdir("WaypointIcons");

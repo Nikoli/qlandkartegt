@@ -25,8 +25,9 @@
 #include "GeoMath.h"
 
 #include "config.h"
+#include "CSettings.h"
 
-#include <projects.h>
+#include <proj_api.h>
 #ifdef __MINGW32__
 #undef LP
 #endif
@@ -77,7 +78,7 @@ CCreateMapGeoTiff::CCreateMapGeoTiff(QWidget * parent)
     connect(toolProjWizard, SIGNAL(clicked()), this, SLOT(slotProjWizard()));
     connect(toolGCPProjWizard, SIGNAL(clicked()), this, SLOT(slotGCPProjWizard()));
 
-    QSettings cfg;
+    SETTINGS;
     lineMapProjection->setText(cfg.value("create/mapproj","+proj=merc +ellps=WGS84 +datum=WGS84 +no_defs").toString());
     lineGCPProjection->setText(cfg.value("create/gcpproj","+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs").toString());
     check2x->setChecked(cfg.value("create/overview/2", false).toBool());
@@ -99,9 +100,9 @@ CCreateMapGeoTiff::CCreateMapGeoTiff(QWidget * parent)
     theMainWindow->getCanvas()->setMouseMode(CCanvas::eMouseMoveRefPoint);
     theMainWindow->getCanvas()->installEventFilter(this);
 
-    toolBox->setItemEnabled(1, false);
-    toolBox->setItemEnabled(2, false);
-    toolBox->setCurrentIndex(0);
+    tabWidget->setTabEnabled(1, false);
+    tabWidget->setTabEnabled(2, false);
+    tabWidget->setCurrentIndex(0);
 }
 
 CCreateMapGeoTiff::~CCreateMapGeoTiff()
@@ -110,7 +111,7 @@ CCreateMapGeoTiff::~CCreateMapGeoTiff()
     if(theMainWindow->getCanvas()) theMainWindow->getCanvas()->setMouseMode(CCanvas::eMouseMoveArea);
     m_self = 0;
 
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("create/overview/2", check2x->isChecked());
     cfg.setValue("create/overview/4", check4x->isChecked());
     cfg.setValue("create/overview/8", check8x->isChecked());
@@ -208,7 +209,7 @@ int CCreateMapGeoTiff::getNumberOfGCPs()
 
 void CCreateMapGeoTiff::enableStep2()
 {
-    toolBox->setItemEnabled(1, true);
+    tabWidget->setTabEnabled(1, true);
     toolOutFile->setEnabled(true);
     toolReload->setEnabled(true);
     treeWidget->setEnabled(true);
@@ -222,7 +223,7 @@ void CCreateMapGeoTiff::enableStep2()
 
 void CCreateMapGeoTiff::enableStep3(bool doEnable)
 {
-    toolBox->setItemEnabled(2, doEnable);
+    tabWidget->setTabEnabled(2, doEnable);
     helpStep3->setEnabled(doEnable);
     pushGoOn->setEnabled(doEnable);
     textBrowser->setEnabled(doEnable);
@@ -235,7 +236,7 @@ void CCreateMapGeoTiff::slotOpenFile()
     char str[1024];
     char * ptr = str;
 
-    QSettings cfg;
+    SETTINGS;
     path = QDir(cfg.value("path/create",path.path()).toString());
 
     QString filename = QFileDialog::getOpenFileName(0, tr("Open map file..."),path.path(), tr("Raw bitmaps (*.tif *.tiff *.png *.gif)"), 0, FILE_DIALOG_FLAGS);
@@ -279,7 +280,7 @@ void CCreateMapGeoTiff::slotOpenFile()
 
 void CCreateMapGeoTiff::slotOutFile()
 {
-    QSettings cfg;
+    SETTINGS;
     path = QDir(cfg.value("path/create",path.path()).toString());
 
     QString filename = QFileDialog::getSaveFileName(0, tr("Save result as..."),path.filePath(labelOutputFile->text()), tr("GeoTiff (*.tif *.tiff)"), 0, FILE_DIALOG_FLAGS);
@@ -603,7 +604,7 @@ void CCreateMapGeoTiff::gdalGCP2RefPt(const GDAL_GCP* gcps, int n)
 
 void CCreateMapGeoTiff::slotSaveRef()
 {
-    QSettings cfg;
+    SETTINGS;
     QString filter = cfg.value("create/filter.out","Ref. points (*.gcp)").toString();
 
     QFileInfo fin(labelInputFile->text());
@@ -612,7 +613,6 @@ void CCreateMapGeoTiff::slotSaveRef()
     QString filename = QFileDialog::getSaveFileName(0, tr("Save reference points..."),path.filePath(base),"Ref. points (*.gcp);;Mapinfo (*.tab)", &filter, FILE_DIALOG_FLAGS);
     if(filename.isEmpty()) return;
 
-    qDebug() << filename;
     QFileInfo fi(filename);
 
     if((filter == "Ref. points (*.gcp)") && (fi.suffix() != "gcp"))
@@ -640,7 +640,6 @@ void CCreateMapGeoTiff::slotSaveRef()
 
 void CCreateMapGeoTiff::saveGCP(const QString& filename)
 {
-    qDebug() << "CCreateMapGeoTiff::saveGCP()" << filename;
     QFile file(filename);
     file.open(QIODevice::WriteOnly);
 
@@ -682,7 +681,6 @@ void CCreateMapGeoTiff::saveGCP(const QString& filename)
 
 void CCreateMapGeoTiff::saveTAB(const QString& filename)
 {
-    qDebug() << "CCreateMapGeoTiff::saveGCP()";
     QMessageBox::information(0,tr("Sorry..."),tr("No Mapinfo TAB file support yet."), QMessageBox::Abort, QMessageBox::Abort);
 }
 
@@ -728,6 +726,11 @@ void CCreateMapGeoTiff::slotGoOn()
     QStringList args;
     bool islonlat = false;
 
+    tabWidget->setTabEnabled(2,true);
+    tabWidget->setCurrentIndex(2);
+
+
+
     // get / store target projection
     QString gcpproj = lineGCPProjection->text();
     QString mapproj = lineMapProjection->text();
@@ -739,7 +742,7 @@ void CCreateMapGeoTiff::slotGoOn()
 
 
 
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("create/mapproj",mapproj);
 
     args << "-a_srs" << mapproj;
@@ -839,7 +842,7 @@ void CCreateMapGeoTiff::slotGoOn()
     cmd.start(GDALTRANSLATE, args);
 
     enableStep3(true);
-    toolBox->setCurrentIndex(2);
+    tabWidget->setCurrentIndex(2);
 }
 
 
@@ -862,7 +865,6 @@ void CCreateMapGeoTiff::slotStdout()
 
 void CCreateMapGeoTiff::slotFinished( int exitCode, QProcess::ExitStatus status)
 {
-    qDebug() << exitCode << status;
     if(exitCode != 0)
     {
         textBrowser->append(tr("Failed!\n"));
@@ -1017,9 +1019,9 @@ void CCreateMapGeoTiff::slotClearAll()
 
     textBrowser->setEnabled(false);
     helpStep3->setEnabled(false);
-    toolBox->setItemEnabled(1, false);
+    tabWidget->setTabEnabled(1, false);
     enableStep3(false);
-    toolBox->setCurrentIndex(0);
+    tabWidget->setCurrentIndex(0);
 
     theMainWindow->getCanvas()->update();
 }

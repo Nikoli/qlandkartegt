@@ -20,7 +20,7 @@
 #include "CCopyright.h"
 #include "version.h"
 #include <gdal.h>
-#include <projects.h>
+#include <proj_api.h>
 #ifdef __MINGW32__
 #undef LP
 #endif
@@ -51,6 +51,7 @@ CCopyright::CCopyright()
         "Albrecht Dre&szlig;<br>"
         "Christian Ehrlicher<br/>"
         "Christian Treffs<br/>"
+        "Michael Klein<br/>"
         "Jan Rheinl&auml;nder (power network extension)<br/>"
         "</p>"
         "<p>Translation:<br>"
@@ -58,7 +59,7 @@ CCopyright::CCopyright()
         "Fabrice Crohas (French)<br>"
         "Alessandro Briosi (Italian)<br>"
         "Mike Markov (Russian)<br>"
-        "Oscar A. (Spanish)<br>"
+        "Oscar A. and Luis Llorente (Spanish)<br>"
         "Harrie Klomp (Dutch)<br>"
         "</p>"
         "<p>"
@@ -88,8 +89,15 @@ CCopyright::CCopyright()
     }
     else
     {
-        textGdalFmts->setText(tr("running gdal_translate failed!"));
+        textGdalFmts->setText(tr("running gdal_translate failed!"));		
     }
+
+	textGdalFmts->append(tr("\nGDAL Environment\n"));
+	textGdalFmts->append(QString("\nPATH = %1").arg(QString(qgetenv("PATH"))));
+	textGdalFmts->append(QString("\nGDAL_DATA = %1").arg(QString(qgetenv("GDAL_DATA"))));
+	textGdalFmts->append(QString("\nGDAL_DRIVER_PATH = %1").arg(QString(qgetenv("GDAL_DRIVER_PATH"))));
+	textGdalFmts->append(QString("\nPROJ_LIB = %1").arg(QString(qgetenv("PROJ_LIB"))));
+
 }
 
 

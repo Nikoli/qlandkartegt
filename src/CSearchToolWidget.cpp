@@ -25,6 +25,7 @@
 #include "GeoMath.h"
 #include "CMapDB.h"
 #include "CWptDB.h"
+#include "CSettings.h"
 
 #include <QtGui>
 
@@ -52,9 +53,11 @@ CSearchToolWidget::CSearchToolWidget(QTabWidget * parent)
     connect(listResults,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenu(const QPoint&)));
 
     comboHost->addItem(tr("OpenRouteService"), CSearchDB::eOpenRouteService);
+//    comboHost->addItem(tr("MapQuest"), CSearchDB::eMapQuest);
     comboHost->addItem(tr("Google"), CSearchDB::eGoogle);
 
-    QSettings cfg;
+
+    SETTINGS;
     cfg.beginGroup("search");
     int idx = comboHost->findData(cfg.value("host", CSearchDB::eOpenRouteService));
     if(idx != -1)
@@ -101,7 +104,6 @@ void CSearchToolWidget::slotReturnPressed()
 void CSearchToolWidget::slotQueryFinished()
 {
     lineInput->setEnabled(true);
-
 }
 
 
@@ -204,7 +206,7 @@ void CSearchToolWidget::keyPressEvent(QKeyEvent * e)
 
 void CSearchToolWidget::slotHostChanged(int idx)
 {
-    QSettings cfg;
+    SETTINGS;
     cfg.beginGroup("search");
     cfg.setValue("host", comboHost->itemData(idx).toInt());
     cfg.endGroup();

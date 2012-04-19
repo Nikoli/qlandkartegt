@@ -326,7 +326,7 @@ void CRoute::calcDistance()
     dist = 0.0;
     if(priRoute.size() < 2) return;
 
-    XY pt1,pt2;
+    projXY pt1,pt2;
     double a1,a2;
 
     QVector<pt_t>::const_iterator p1;
@@ -429,7 +429,7 @@ QString CRoute::getInfo()
     return str;
 }
 
-void CRoute::loadSecondaryRoute(QDomDocument& xml)
+void CRoute::loadSecondaryRoute(QDomDocument& xml, service_e service)
 {
 //    qDebug() << xml.toString();
 
@@ -438,8 +438,82 @@ void CRoute::loadSecondaryRoute(QDomDocument& xml)
     secRoute.clear();
     firstTime = true;
 
-    QDomElement root = xml.documentElement();
+    switch(service)
+    {
+    case eOpenRouteService:
+        loadSecondaryRouteORS(xml);
+        break;
+    case eMapQuest:
+        loadSecondaryRouteMQ(xml);
+        break;
+    }
 
+    calcDistance();
+    emit sigChanged();
+
+}
+
+void CRoute::loadSecondaryRouteMQ(QDomDocument& xml)
+{
+    QStringList instructions;
+
+    QDomElement response    = xml.firstChildElement("response");
+    QDomElement route       = response.firstChildElement("route");
+
+    // get time of travel
+    QDomElement time        = route.firstChildElement("time");
+    ttime = time.text().toUInt();
+
+    // build list of maneuvers
+    QDomElement legs        = route.firstChildElement("legs");
+    QDomElement leg         = legs.firstChildElement("leg");
+    QDomNodeList maneuvers  = leg.firstChildElement("maneuvers").elementsByTagName("maneuver");
+    const qint32 M = maneuvers.size();
+    for(int i = 0; i < M; i++)
+    {
+        QDomNode maneuver    = maneuvers.item(i);
+        instructions << maneuver.firstChildElement("narrative").text();
+    }
+
+    // read the shape
+    QDomElement shape       = route.firstChildElement("shape");
+    QDomElement shapePoints = shape.firstChildElement("shapePoints");
+    QDomNodeList latLng     = shapePoints.elementsByTagName("latLng");
+    const qint32 N = latLng.size();
+    for(int i = 0; i < N; i++)
+    {
+        QDomNode elem   = latLng.item(i);
+        QDomElement lat = elem.firstChildElement("lat");
+        QDomElement lng = elem.firstChildElement("lng");
+
+        pt_t rtept;
+        rtept.lon = lng.text().toFloat();
+        rtept.lat = lat.text().toFloat();
+
+        secRoute << rtept;
+    }
+
+    // maneuvre index
+    QDomElement maneuverIndexes = shape.firstChildElement("maneuverIndexes");
+    QDomNodeList index = maneuverIndexes.elementsByTagName("index");
+    const qint32 I = index.size();
+
+    if(I == instructions.size())
+    {
+        for(int i = 0; i < I; i++)
+        {
+            int idx = index.item(i).toElement().text().toInt();
+            if(idx < secRoute.size())
+            {
+                secRoute[idx].action = instructions[i];
+            }
+        }
+    }
+}
+
+void CRoute::loadSecondaryRouteORS(QDomDocument& xml)
+{
+    QDomElement root = xml.documentElement();
     QDomNodeList RouteSummaries = root.elementsByTagName("xls:RouteSummary");
     if(!RouteSummaries.isEmpty())
     {
@@ -511,11 +585,6 @@ void CRoute::loadSecondaryRoute(QDomDocument& xml)
             }
         }
     }
-
-    calcDistance();
-
-    emit sigChanged();
-
 }
 
 void CRoute::reset()

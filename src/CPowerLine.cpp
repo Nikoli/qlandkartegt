@@ -455,14 +455,14 @@ const QLine CPowerLine::getLine(QPoint& middle, double& angle) const {
     middle = (QPoint(u1, v1) + QPoint(u2, v2))/2;
 
     // Find angle of line
-    angle = atan2(v2 - v1, u2 - u1) * 180.0 / PI;
+    angle = atan2(v2 - v1, u2 - u1) * 180.0 / M_PI;
     
     return QLine(u1, v1, u2, v2);
 } // getLine()
 
 const double CPowerLine::getDistance() const {
   double a1, a2;
-  XY pt1, pt2;
+  projXY pt1, pt2;
   double dist;
 
   CWpt* wpt1 = CWptDB::self().getWptByKey(keyFirst);

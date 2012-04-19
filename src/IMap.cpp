@@ -24,6 +24,7 @@
 #include "CMapDEM.h"
 #include "IMapSelection.h"
 #include "GeoMath.h"
+#include "CSettings.h"
 
 #include <QtGui>
 #include <math.h>
@@ -45,7 +46,7 @@ IMap::IMap(maptype_e type, const QString& key, CCanvas * parent)
 {
     pjtar   = pj_init_plus("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
 
-    QSettings cfg;
+    SETTINGS;
     zoomidx = cfg.value("map/zoom",zoomidx).toUInt();
 
     if(parent)
@@ -72,7 +73,7 @@ IMap::~IMap()
         delete ovlMap;
     }
 
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("map/zoom",zoomidx);
 }
 
@@ -86,7 +87,12 @@ void IMap::resize(const QSize& s)
 {
     size = s;
     rect.setSize(s);
-    buffer = QImage(size, QImage::Format_ARGB32_Premultiplied);
+
+    if(!isThread())
+    {
+        pixBuffer = QPixmap(size);
+    }
+    imgBuffer = QImage(size,QImage::Format_ARGB32_Premultiplied);
 
     needsRedraw = true;
     emit sigResize(s);
@@ -97,14 +103,14 @@ void IMap::resize(const QSize& s)
 
 void IMap::setAngleNorth()
 {
-    XY p1,p2;
-    double d, a1 = 0, a2 = 0;
-    p2.u = p1.u = rect.center().x();
-    p2.v = p1.v = rect.bottom();
-    p2.v -= 400;
+    projXY p1,p2;
+    double a1 = 0, a2 = 0;
+    p2.u = p1.u = rect.right()  - COMPASS_OFFSET_X - COMPASS_W / 2;
+    p2.v = p1.v = rect.bottom() - COMPASS_OFFSET_Y;
+    p2.v -= COMPASS_H;
     convertPt2Rad(p1.u, p1.v);
     convertPt2Rad(p2.u, p2.v);
-    d = distance(p1, p2, a1, a2);
+    distance(p1, p2, a1, a2);
     angleNorth = a1;
 }
 
@@ -119,7 +125,8 @@ void IMap::draw(QPainter& p)
 
 void IMap::draw()
 {
-    QPainter p(&buffer);
+    QPainter p(isThread() ? (QPaintDevice*)&imgBuffer : (QPaintDevice*)&pixBuffer);
+
     p.fillRect(rect,QColor("#ffffcc"));
     p.drawText(rect,Qt::AlignCenter,"no map");
     needsRedraw = false;
@@ -135,7 +142,7 @@ void IMap::convertPt2Rad(double& u, double& v)
     }
     convertPt2M(u,v);
 
-    XY pt;
+    projXY pt;
     pt.u = u;
     pt.v = v;
 
@@ -153,7 +160,7 @@ void IMap::convertRad2Pt(double& u, double& v)
         return;
     }
 
-    XY pt;
+    projXY pt;
     pt.u = u;
     pt.v = v;
 
@@ -194,7 +201,7 @@ float IMap::getElevation(double lon, double lat)
 }
 
 
-void IMap::getArea_n_Scaling_fromBase(XY& p1, XY& p2, float& my_xscale, float& my_yscale)
+void IMap::getArea_n_Scaling_fromBase(projXY& p1, projXY& p2, float& my_xscale, float& my_yscale)
 {
     CMapDB::self().getMap().getArea_n_Scaling(p1,p2,my_xscale,my_yscale);
 }
@@ -225,7 +232,7 @@ void IMap::registerDEM(CMapDEM& dem)
     //     if(ptr1) free(ptr1);
     //     if(ptr2) free(ptr2);
 
-    QSettings cfg;
+    SETTINGS;
     bool ignoreWarning = cfg.value(QString("map/dem/%1/ignoreWarning").arg(getKey()), false).toBool();
 
     if(proj1 != proj2)
@@ -383,4 +390,14 @@ void IMap::decYOffset(int i)
 void IMap::getClosePolyline(QPoint& pt1, QPoint& pt2, qint32 threshold, QPolygon& line)
 {
     line.clear();
+}
+
+const QImage& IMap::getBuffer()
+{
+    if(!isThread())
+    {
+        imgBuffer = pixBuffer.toImage();
+    }
+
+    return imgBuffer;
 }

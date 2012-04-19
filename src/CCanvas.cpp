@@ -43,6 +43,7 @@
 #include "CMouseAddDistance.h"
 #include "CMouseOverlay.h"
 #include "CMouseColorPicker.h"
+#include "CMouseSelWpt.h"
 #include "CWpt.h"
 #include "CTrack.h"
 #include "CSearchDB.h"
@@ -66,8 +67,11 @@
 #ifdef HAS_POWERDB
 #include "CPowerDB.h"
 #endif
+#include "CGridDB.h"
 
 #include <QtGui>
+
+#include <stdio.h>
 
 QPen CCanvas::penBorderBlue(QColor(10,10,150,220),3);
 QPen CCanvas::penBorderBlack(QColor(0,0,0,200),3);
@@ -107,16 +111,20 @@ CCanvas::CCanvas(QWidget * parent)
     mouseAddDistance= new CMouseAddDistance(this);
     mouseOverlay    = new CMouseOverlay(this);
     mouseColorPicker = new CMouseColorPicker(this);
+    mouseSelWpt     = new CMouseSelWpt(this);
 
     cursorFocus = false;
 
     profile = new CPlot(CPlotData::eLinear, CPlot::eIcon, this);
     profile->resize(300,120);
     profile->hide();
-//    profile->setToolTip(tr("Click to edit track and to see large profile"));
 
-    connect(profile, SIGNAL(activePointSignal(double)), this, SLOT(slotActiveTrackPoint(double)));
+    connect(profile, SIGNAL(sigFocusPoint(double)), this, SLOT(slotFocusTrackPoint(double)));
     connect(mouseMoveMap, SIGNAL(sigTrkPt(CTrack::pt_t*)), profile, SLOT(slotTrkPt(CTrack::pt_t*)));
+
+    timerFadingMessage = new QTimer(this);
+    timerFadingMessage->setSingleShot(true);
+    connect(timerFadingMessage, SIGNAL(timeout()), this, SLOT(slotFadingMessage()));
 }
 
 
@@ -237,6 +245,10 @@ void CCanvas::setMouseMode(mouse_mode_e mode)
             mouse = mouseColorPicker;
             break;
 
+        case eMouseSelWpt:
+            mouse = mouseSelWpt;
+            break;
+
         default:;
 
     }
@@ -255,8 +267,16 @@ void CCanvas::resizeEvent(QResizeEvent * e)
 
     QSize s = e->size();
 
-    profile->move(20, s.height() - profile->height() - 20);
+    if(s.height() < 700)
+    {
+        profile->resize(200,80);
+    }
+    else
+    {
+        profile->resize(300,120);
+    }
 
+    profile->move(20, s.height() - profile->height() - 20);
 
     emit sigResize(e->size());
 }
@@ -338,11 +358,8 @@ void CCanvas::leaveEvent(QEvent * )
 
 void CCanvas::print(QPainter& p, const QSize& pagesize)
 {
-    bool  rotate = false;
     QSize _size_ = pagesize;
     qreal s = 0.0;
-
-    qDebug() << "pagesize" << pagesize;
 
     p.save();
 
@@ -350,7 +367,6 @@ void CCanvas::print(QPainter& p, const QSize& pagesize)
     {
         _size_.setWidth(pagesize.height());
         _size_.setHeight(pagesize.width());
-        rotate = true;
         p.rotate(90.0);
         p.translate(0,-pagesize.width());
     }
@@ -416,40 +432,6 @@ void CCanvas::print(QImage& img, const QSize& pagesize)
         matrix.rotate(90);
         img = img.transformed(matrix, Qt::SmoothTransformation);
     }
-
-
-//    bool rotate = false;
-//    QImage _img_(size(), QImage::Format_ARGB32);
-//    if(pagesize.height() > pagesize.width())
-//    {
-//        _img_ = QImage(size().height(), size().width(), QImage::Format_ARGB32);
-//        rotate = true;
-//    }
-
-//    _img_.fill(Qt::white);
-
-//    QPainter p;
-//    p.begin(&_img_);
-//    if(rotate)
-//    {
-//        p.rotate(90.0);
-//        p.translate(0,-size().height());
-//    }
-//    draw(p);
-//    p.end();
-
-//    qreal s1 = (qreal)(_img_.width())  / (qreal)pagesize.width();
-//    qreal s2 = (qreal)(_img_.height()) / (qreal)pagesize.height();
-
-//    if(s1 < s2)
-//    {
-//        img = _img_.scaledToHeight(pagesize.height(),  Qt::SmoothTransformation);
-//    }
-//    else
-//    {
-//        img = _img_.scaledToWidth(pagesize.width(),  Qt::SmoothTransformation);
-//    }
-
 }
 
 
@@ -457,8 +439,6 @@ void CCanvas::draw(QPainter& p)
 {
     IMap& map = CMapDB::self().getMap();
     bool needsRedraw = map.getNeedsRedraw();
-
-    // printf("draw canvas %d\n",needsRedraw);
 
     USE_ANTI_ALIASING(p,!map.getFastDrawFlag() && CResources::self().useAntiAliasing());
 
@@ -469,6 +449,7 @@ void CCanvas::draw(QPainter& p)
     CLiveLogDB::self().draw(p, rect(), needsRedraw);
     CWptDB::self().draw(p, rect(), needsRedraw);
     CSearchDB::self().draw(p, rect(), needsRedraw);
+    CGridDB::self().draw(p, rect(), needsRedraw);
 #ifdef HAS_POWERDB
     CPowerDB::self().draw(p, rect(), needsRedraw);
 #endif
@@ -476,6 +457,7 @@ void CCanvas::draw(QPainter& p)
     drawRefPoints(p);
     drawScale(p);
     drawCompass(p);
+    drawFadingMessage(p);
 
     mouse->draw(p);
 }
@@ -518,8 +500,8 @@ void CCanvas::drawScale(QPainter& p)
 
     double a,b,d;
     int yshift = 0;
-    if (QApplication::desktop()->height() < 650) yshift = 60 ;
-    QPoint px1(rect().bottomRight() - QPoint(100,50 + yshift));
+
+    QPoint px1(rect().bottomRight() - QPoint(50,30 + yshift));
 
     // step I: get the approximate distance for 200px in the bottom right corner
     double u1 = px1.x();
@@ -533,7 +515,7 @@ void CCanvas::drawScale(QPainter& p)
 
     if(map.isLonLat())
     {
-        XY p1,p2;
+        projXY p1,p2;
         double a1,a2;
         p1.u = u1;
         p1.v = v1;
@@ -568,7 +550,7 @@ void CCanvas::drawScale(QPainter& p)
     //     qDebug() << "----" << d;
 
     // step III: convert the scale length from [m] into [px]
-    XY pt1, pt2;
+    projXY pt1, pt2;
     pt1.u = px1.x();
     pt1.v = px1.y();
     map.convertPt2Rad(pt1.u,pt1.v);
@@ -616,14 +598,12 @@ void CCanvas::drawCompass(QPainter& p)
     }
     QPolygon arrow;
 
-#define H 60
-#define W 30
 
-    arrow << QPoint(0, -H/2) << QPoint(-W/2, H/2) << QPoint(0, H/3) << QPoint(W/2, H/2);
+    arrow << QPoint(0, -COMPASS_H/2) << QPoint(-COMPASS_W/2, COMPASS_H/2) << QPoint(0, COMPASS_H/3) << QPoint(COMPASS_W/2, COMPASS_H/2);
 
     p.save();
 
-    p.translate(size().width() - 50, size().height() - 50);
+    p.translate(size().width() - COMPASS_OFFSET_X - COMPASS_W/2, size().height() - COMPASS_OFFSET_Y);
     p.rotate(-CMapDB::self().getMap().getAngleNorth());
 
     p.setBrush(Qt::NoBrush);
@@ -634,8 +614,8 @@ void CCanvas::drawCompass(QPainter& p)
     p.setBrush(QColor(150,150,255,100));
     p.drawPolygon(arrow);
 
-    drawText("N", p, QPoint(0, -H/2));
-    drawText("S", p, QPoint(0, +H/2 + 15));
+    drawText("N", p, QPoint(0, -COMPASS_H/2));
+    drawText("S", p, QPoint(0, +COMPASS_H/2 + 15));
 
     p.restore();
 }
@@ -748,6 +728,23 @@ void CCanvas::move(move_direction_e dir)
             p2.ry() -= height() / 4;
             break;
 
+        case eMoveLeftSmall:
+            p2.rx() += width() / 50;
+            break;
+
+        case eMoveRightSmall:
+            p2.rx() -= width() / 50;
+            break;
+
+        case eMoveUpSmall:
+            p2.ry() += height() / 50;
+            break;
+
+        case eMoveDownSmall:
+            p2.ry() -= height() / 50;
+            break;
+
+
         case eMoveCenter:
         {
             double lon1 = 0, lat1 = 0, lon2 = 0, lat2 = 0;
@@ -777,6 +774,8 @@ void CCanvas::mouseMoveEventCoord(QMouseEvent * e)
     IMap& map = CMapDB::self().getMap();
     QString info;                // = QString("%1 %2, ").arg(e->x()).arg(e->y());
 
+    bool isLonLat = false;
+
     double x = e->x();
     double y = e->y();
 
@@ -784,7 +783,7 @@ void CCanvas::mouseMoveEventCoord(QMouseEvent * e)
     double y_m = e->y();
 
     map.convertPt2Rad(x,y);
-    map.convertPt2M(x_m,y_m);
+    CGridDB::self().convertPt2Pos(x_m, y_m, isLonLat);
 
     //    qDebug() << x * RAD_TO_DEG << y * RAD_TO_DEG << ">>>" << x_m << y_m;
 
@@ -805,7 +804,18 @@ void CCanvas::mouseMoveEventCoord(QMouseEvent * e)
             info += QString(" (ele: %1 %2) ").arg(val).arg(unit);
         }
 
-        info += QString("[%1m, %2m] ").arg(x_m,0,'f',0).arg(y_m,0,'f',0);
+        if(isLonLat)
+        {
+            QString str;
+            x_m *= RAD_TO_DEG;
+            y_m *= RAD_TO_DEG;
+            GPS_Math_Deg_To_Str(x_m,y_m, str);
+            info += tr("[Grid: %1] ").arg(str);
+        }
+        else
+        {
+            info += tr("[Grid: %1m, %2m] ").arg(x_m,0,'f',0).arg(y_m,0,'f',0);
+        }
 
         x *= RAD_TO_DEG;
         y *= RAD_TO_DEG;
@@ -838,7 +848,9 @@ void CCanvas::raiseContextMenu(const QPoint& pos)
     mouse->contextMenu(menu);
 
     QPoint p = mapToGlobal(pos);
+    setMouseTracking(false);
     menu.exec(p);
+    setMouseTracking(true);
 }
 
 
@@ -854,7 +866,7 @@ void CCanvas::slotTrackChanged()
     slotHighlightTrack(trk);
 }
 
-void CCanvas::slotActiveTrackPoint(double dist)
+void CCanvas::slotFocusTrackPoint(double dist)
 {
     CTrack * trk = CTrackDB::self().highlightedTrack();
     if(trk == 0)
@@ -917,4 +929,47 @@ void CCanvas::slotHighlightTrack(CTrack * track)
         profile->hide();
         disconnect(profile, SIGNAL(sigClicked()), CTrackDB::self().getToolWidget(), SLOT(slotShowProfile()));
     }
+}
+
+void CCanvas::setFadingMessage(const QString& msg)
+{
+    fadingMessage = msg;
+    update();
+    timerFadingMessage->start(1000);
+}
+
+void CCanvas::slotFadingMessage()
+{
+    fadingMessage.clear();
+    update();
+
+}
+
+void CCanvas::drawFadingMessage(QPainter& p)
+{
+    if(fadingMessage.isEmpty())
+    {
+        timerFadingMessage->stop();
+        return;
+    }
+
+    QFont           f = CResources::self().getMapFont();
+    f.setPixelSize(f.pointSize() + 10);
+    QFontMetrics    fm(f);
+    QRect           r1 = fm.boundingRect(QRect(0,0,300,0), Qt::AlignLeft|Qt::AlignTop|Qt::TextWordWrap, fadingMessage);
+    r1.moveCenter(rect().center());
+
+    QRect           r2 = r1;
+    r2.setWidth(r1.width() + 20);
+    r2.moveLeft(r1.left() - 10);
+    r2.setHeight(r1.height() + 20);
+    r2.moveTop(r1.top() - 10);
+
+    p.setPen(penBorderBlue);
+    p.setBrush(brushBackWhite);
+    PAINT_ROUNDED_RECT(p,r2);
+
+    p.setFont(f);
+    p.setPen(Qt::darkBlue);
+    p.drawText(r1, Qt::AlignLeft|Qt::AlignTop|Qt::TextWordWrap,fadingMessage);
 }

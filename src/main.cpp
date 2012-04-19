@@ -23,7 +23,7 @@
 #include <QtGui>
 #include <QRegExp>
 #include <gdal_priv.h>
-#include <projects.h>
+#include <proj_api.h>
 
 #include "CGetOpt.h"
 #include "CAppOpts.h"
@@ -32,10 +32,12 @@
 #undef LP
 #endif
 
+#include "CApplication.h"
 #include "CMainWindow.h"
 #include "CGarminTyp.h"          //TODO: this shall not be commented out when building a debug version with Visual Studio 2005
 
 #include "config.h"
+#include "version.h"
 
 static void usage(std::ostream &s)
 {
@@ -43,6 +45,7 @@ static void usage(std::ostream &s)
         "                    [-h | --help]\n"
         "                    [-m FD | --monitor=FD]\n"
         "                    [-n | --no-splash]\n"
+        "                    [-c | --config=file]\n"
         "                    [files...]\n"
         "\n"
         "The monitor function will read data from files if there is input on stream FD.\n"
@@ -101,6 +104,8 @@ static void processOptions()
     opts.addSwitch('n', "no-splash", &nValue);
     QStringList args;
     opts.addOptionalArguments("files", &args);
+    QString config;
+    opts.addOptionalOption('c', "config", &config, "");
 
     if (!opts.parse())
     {
@@ -125,9 +130,12 @@ static void processOptions()
             exit(1);
         }
     }
+
+    qDebug() << "use config file:" << config;
     qlOpts = new CAppOpts(dValue,// bool debug
         m,                       // int monitor
         nValue,                  // bool nosplash
+        config,                  // optional config file
         args);                   // arguments
 }
 
@@ -137,8 +145,8 @@ int main(int argc, char ** argv)
     QString str1, str2;
 
     {
-        PJ * pjWGS84 = pj_init_plus("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-        PJ * pjGK    = pj_init_plus("+proj=tmerc +lat_0=0 +lon_0=12 +k=1 +x_0=4500000 +y_0=0 +ellps=bessel +datum=potsdam +units=m +no_defs +towgs84=606.0,23.0,413.0");
+        projPJ  pjWGS84 = pj_init_plus("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+        projPJ  pjGK    = pj_init_plus("+proj=tmerc +lat_0=0 +lon_0=12 +k=1 +x_0=4500000 +y_0=0 +ellps=bessel +datum=potsdam +units=m +no_defs +towgs84=606.0,23.0,413.0");
 
         //     double x = 12.09    * DEG_TO_RAD;
         //     double y = 49.0336  * DEG_TO_RAD;
@@ -166,11 +174,27 @@ int main(int argc, char ** argv)
 #ifndef WIN32
     setenv("LC_NUMERIC","C",1);
 #endif
-    QApplication theApp(argc,argv);
+    CApplication theApp(argc,argv);
     processOptions();
+
 #ifndef WIN32
     qInstallMsgHandler(myMessageOutput);
 #endif
+
+#ifdef WIN32
+	// setup environment variables for GDAL/Proj4
+	QString apppath = QCoreApplication::applicationDirPath();
+	apppath = apppath.replace("/", "\\");
+
+	QString env_path = qgetenv("PATH");
+	env_path += QString(";%1;%1\\proj\\apps;%1\\gdal\\apps;%1\\curl;").arg(apppath);
+	qputenv("PATH", env_path.toUtf8());
+
+	qputenv("GDAL_DATA", QString("%1\\gdal-data").arg(apppath).toUtf8());
+	qputenv("GDAL_DRIVER_PATH", QString("%1\\gdal\\plugins;").arg(apppath).toUtf8());	
+	qputenv("PROJ_LIB", QString("%1\\proj\\SHARE").arg(apppath).toUtf8());
+#endif
+
 
 #ifdef ENABLE_TRANSLATION
     {
@@ -213,8 +237,8 @@ int main(int argc, char ** argv)
 #endif
 
     {
-        PJ * pjWGS84 = pj_init_plus("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
-        PJ * pjGK    = pj_init_plus("+proj=tmerc +lat_0=0 +lon_0=12 +k=1 +x_0=4500000 +y_0=0 +ellps=bessel +datum=potsdam +units=m +no_defs +towgs84=606.0,23.0,413.0");
+        projPJ  pjWGS84 = pj_init_plus("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+        projPJ  pjGK    = pj_init_plus("+proj=tmerc +lat_0=0 +lon_0=12 +k=1 +x_0=4500000 +y_0=0 +ellps=bessel +datum=potsdam +units=m +no_defs +towgs84=606.0,23.0,413.0");
 
         //     double x = 12.09    * DEG_TO_RAD;
         //     double y = 49.0336  * DEG_TO_RAD;
@@ -247,7 +271,16 @@ int main(int argc, char ** argv)
     QSplashScreen *splash = 0;
     if (!qlOpts->nosplash)
     {
-        splash = new QSplashScreen(QPixmap(":/pics/splash.png"));
+        QPixmap pic(":/pics/splash.png");
+        QPainter p(&pic);
+        QFont f = p.font();
+        f.setBold(true);
+
+        p.setPen(Qt::white);
+        p.setFont(f);
+        p.drawText(400,370,"V " VER_STR);
+
+        splash = new QSplashScreen(pic);
         splash->show();
     }
     CMainWindow w;
@@ -265,7 +298,7 @@ int main(int argc, char ** argv)
 
     int res  = theApp.exec();
 
-    delete qlOpts;
+    //delete qlOpts;
 
     return res;
 }

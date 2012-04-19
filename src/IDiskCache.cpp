@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2010 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,44 +17,40 @@
 
 **********************************************************************************************/
 
-#include "IItem.h"
+#include "IDiskCache.h"
+#ifndef STANDALONE
+#include "CResources.h"
+#endif                           //!STANDALONE
 
 #include <QtGui>
 
-quint32 IItem::keycnt = 0;
-
-IItem::IItem(QObject * parent)
+#ifdef STANDALONE
+IDiskCache::IDiskCache(const QString &path, QObject *parent)
+#else
+IDiskCache::IDiskCache(QObject *parent)
+#endif                           //STANDALONE
 : QObject(parent)
-, timestamp(QDateTime::currentDateTime().toUTC().toTime_t ())
 {
-
-}
-
-IItem::~IItem()
-{
-
 }
 
 
-QString IItem::getKey()
+IDiskCache::~IDiskCache()
 {
-    if(key.isEmpty())
-    {
-        genKey();
-    }
-
-    return key;
-}
-
-void IItem::genKey()
-{
-    key = QString("%1%2%3").arg(timestamp).arg(name).arg(keycnt++);
 }
 
 
-void IItem::removeHtml(QString &str)
+void IDiskCache::store(const QString& key, QImage& img)
 {
-    str.remove(QRegExp("<head.*[^>]*><\\/head>"));
-    str.remove(QRegExp("<[^>]*>"));
-    str = str.simplified();
+}
+
+
+void IDiskCache::restore(const QString& key, QImage& img)
+{
+    img = QImage();
+}
+
+
+bool IDiskCache::contains(const QString& key)
+{
+    return false;
 }
