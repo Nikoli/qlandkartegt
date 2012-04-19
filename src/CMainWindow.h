@@ -47,6 +47,8 @@ class CPowerDB;
 #ifdef HAS_DBUS
 class CDBus;
 #endif
+class CGridDB;
+class QCheckBox;
 
 class CMainWindow : public QMainWindow
 {
@@ -71,6 +73,11 @@ class CMainWindow : public QMainWindow
         CMenus *getActionGroupProvider() { return actionGroupProvider;}
 
         void exportToOcm();
+        void loadData(const QString& filename, const QString& filter);
+
+        bool didCrash(){return crashed;}
+
+        QCheckBox * getCheckBoxQuadraticZoom(){return quadraticZoom;}
 
     protected:
         void closeEvent(QCloseEvent * e);
@@ -112,7 +119,6 @@ class CMainWindow : public QMainWindow
         void setupMenuBar();
         void addRecent(const QString& filename);
 
-        void loadData(const QString& filename, const QString& filter);
         void setTitleBar();
         bool maybeSave();
         void saveData(QString& filename, const QString& filter, bool exportFlag = false);
@@ -167,6 +173,7 @@ class CMainWindow : public QMainWindow
 
         CGeoDB * geodb;
 
+        CGridDB * griddb;
 //        CPower * power;
         
         CPowerDB * powerdb;
@@ -191,6 +198,10 @@ class CMainWindow : public QMainWindow
 #ifdef HAS_DBUS
         CDBus * dbus;
 #endif
+        bool locked;
+        bool crashed;
+
+        QCheckBox * quadraticZoom;
 
 };
 

@@ -52,8 +52,17 @@ class CMapToolWidget : public QWidget, private Ui::IMapToolWidget
         void slotAddDEM();
         void slotDelDEM();
         void slotCfgMap();
+        void slotAddTmsMap();
+        void slotReload();
 
     private:
+        enum tabs_t
+        {
+             eTabStream
+            ,eTabRaster
+            ,eTabVector
+        };
+
         enum columns_e
         {
             eMode = 0
@@ -79,6 +88,8 @@ class CMapToolWidget : public QWidget, private Ui::IMapToolWidget
         QAction * actDelDEM;
         QAction * actDelMap;
         QAction * actCfgMap;
+        QAction * actAddTMS;
+        QAction * actReload;
 
         QTreeWidget * lastTreeWidget;
 

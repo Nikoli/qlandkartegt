@@ -32,6 +32,12 @@ class QVBoxLayout;
 class QScrollArea;
 class QStyleOptionMenuItem;
 
+#ifdef HAS_POWERDB
+#define SIZE_OF_MEGAMENU 12
+#else
+#define SIZE_OF_MEGAMENU 11
+#endif
+
 /// the left hand context sensitive menu
 class CMegaMenu : public QLabel
 {

@@ -32,10 +32,6 @@
 class QTimer;
 class QTextDocument;
 
-#ifdef SQL_SEARCH_GARMIN
-class CGarminIndex;
-#endif                           //SQL_SEARCH_GARMIN
-
 class QCheckBox;
 class QComboBox;
 
@@ -59,7 +55,7 @@ class CMapTDB : public IMap
         void draw(QPainter& p);
         void draw();
         void draw(const QSize& s, bool needsRedraw, QPainter& p);
-        void getArea_n_Scaling(XY& p1, XY& p2, float& my_xscale, float& my_yscale);
+        void getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float& my_yscale);
         void registerDEM(CMapDEM& dem);
         void select(IMapSelection& ms, const QRect& rect);
         void getClosePolyline(QPoint& pt1, QPoint& pt2, qint32 threshold, QPolygon& line);
@@ -69,14 +65,6 @@ class CMapTDB : public IMap
         QString getLegendLines();
         QString getLegendArea();
         QString getLegendPoints();
-
-#ifdef SQL_SEARCH_GARMIN
-        void createSearchIndex(QObject * reveiver, const char * slot);
-        CGarminIndex * getSearchIndex(){return index;}
-
-        void highlight(QVector<CGarminPolygon>& res);
-        void highlight(QVector<CGarminPoint>& res);
-#endif                       //SQL_SEARCH_GARMIN
 
         void config();
     protected:
@@ -136,6 +124,9 @@ class CMapTDB : public IMap
 
         void drawLine(QPainter& p, CGarminPolygon& l, const IGarminTyp::polyline_property& property, const QFontMetricsF& metrics, const QFont& font);
         void drawLine(QPainter& p, const CGarminPolygon& l);
+
+        void simplifyPolyline(QPolygonF & line) const;
+        void simplifyPolyline(QPolygonF::iterator begin, QPolygonF::iterator end) const;
 
         QString createLegendString(const QMap<int,QString>& strings);
 
@@ -202,7 +193,7 @@ class CMapTDB : public IMap
             double south;
             double west;
             QRectF area;
-            //             QVector<XY> definitionArea;
+            //             QVector<projXY> definitionArea;
             CGarminTile * img;
             quint32 memSize;
 
@@ -286,9 +277,9 @@ class CMapTDB : public IMap
         /// the used scale
         double zoomFactor;
         /// top left corner as long / lat [rad]
-        XY topLeft;
+        projXY topLeft;
         /// top bottom right as long / lat [rad]
-        XY bottomRight;
+        projXY bottomRight;
 
         QMap<quint32, IGarminTyp::polyline_property> polylineProperties;
         QMap<quint32, IGarminTyp::polygon_property> polygonProperties;
@@ -327,10 +318,6 @@ class CMapTDB : public IMap
 
         QVector<textpath_t> textpaths;
 
-#ifdef SQL_SEARCH_GARMIN
-        CGarminIndex * index;
-#endif                       //SQL_SEARCH_GARMIN
-
         QVector<CGarminPolygon> query1;
         QVector<CGarminPoint> query2;
 
@@ -352,8 +339,6 @@ class CMapTDB : public IMap
         QComboBox * comboLanguages;
 
         qint8 selectedLanguage;
-
-        QPixmap pixBuffer;
 
         QComboBox * comboTypfiles;
 

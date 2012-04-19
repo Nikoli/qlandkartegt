@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2008 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,27 +16,30 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-#ifndef CMAPSELECTIONRASTER_H
-#define CMAPSELECTIONRASTER_H
 
-#include "IMapSelection.h"
+#ifndef CMOUSESELWPT_H
+#define CMOUSESELWPT_H
 
-class CMapSelectionRaster : public IMapSelection
+#include "IMouse.h"
+
+class CMouseSelWpt : public IMouse
 {
+    Q_OBJECT;
     public:
-        CMapSelectionRaster(subtype_e subtype, QObject *parent);
-        virtual ~CMapSelectionRaster();
+        CMouseSelWpt(CCanvas * canvas);
+        virtual ~CMouseSelWpt();
 
-        QDataStream& operator>>(QDataStream&);
+        void mouseMoveEvent(QMouseEvent * e);
+        void mousePressEvent(QMouseEvent * e);
+        void mouseReleaseEvent(QMouseEvent * e);
+        void draw(QPainter& p);
 
-        void draw(QPainter& p, const QRect& rect);
+    private:
+        bool mousePressed;
+        QPointF center;
+        QPointF point1;
 
-        QString getDescription();
-
-        QString getInfo(){return getDescription();}
-
-        void setIcon(const QString&){};
-
-        QMap< QPair<int, int>, bool > selTiles;
 };
-#endif                           //CMAPSELECTIONRASTER_H
+
+#endif //CMOUSESELWPT_H
+

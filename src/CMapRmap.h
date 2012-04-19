@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2008 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,63 +16,72 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-
-#ifndef CMAPGEOTIFF_H
-#define CMAPGEOTIFF_H
+#ifndef CMAPRMAP_H
+#define CMAPRMAP_H
 
 #include "IMap.h"
 
-#include <QRgb>
-#include <QVector>
-
-class GDALDataset;
 class QCheckBox;
 
-class CMapGeoTiff : public IMap
+class CMapRmap : public IMap
 {
     Q_OBJECT;
     public:
-        CMapGeoTiff(const QString& filename, CCanvas * parent);
-        virtual ~CMapGeoTiff();
+        CMapRmap(const QString& key, const QString& filename, CCanvas * parent);
+        virtual ~CMapRmap();
 
-        void draw(QPainter& p);
-        void draw();
         void convertPt2M(double& u, double& v);
         void convertM2Pt(double& u, double& v);
-        void convertPt2Pixel(double& u, double& v);
+
         void move(const QPoint& old, const QPoint& next);
-        void zoom(bool zoomIn, const QPoint& p);
+        void zoom(bool zoomIn, const QPoint& p0);
         void zoom(double lon1, double lat1, double lon2, double lat2);
-        void select(const QRect& rect);
+        void zoom(qint32& level);
         void dimensions(double& lon1, double& lat1, double& lon2, double& lat2);
-        bool is32BitRgb();
-
-        void incXOffset(int i);
-        void decXOffset(int i);
-        void incYOffset(int i);
-        void decYOffset(int i);
-
-        GDALDataset * getDataset();
-
-    protected:
         void getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float& my_yscale);
 
-    private:
-        void zoom(qint32& level);
+        QString getName(){return name;}
 
-        /// instance of GDAL dataset
-        GDALDataset * dataset;
+        void draw(QPainter& p);
+
+    private:
+        struct level_t
+        {
+            level_t(): offsetLevel(0), width(0), height(0), xTiles(0), yTiles(0), xscale(0), yscale(0){}
+            quint64 offsetLevel;
+            qint32 width;
+            qint32 height;
+            qint32 xTiles;
+            qint32 yTiles;
+            QVector<quint64> offsetJpegs;
+
+            quint64 getOffsetJpeg(quint32 x, quint32 y)
+            {
+                qint32 idx = y * xTiles + x;
+                return idx < offsetJpegs.size() ? offsetJpegs[idx] : 0;
+            }
+
+            double xscale;
+            double yscale;
+        };
+
+        bool setProjection(const QString& projection, const QString& datum);
+        void draw();
+        level_t& findBestLevel(double sx, double sy);
+
+        QString name;
+
+        quint32 blockSizeX;
+        quint32 blockSizeY;
 
         /// width in number of px
         quint32 xsize_px;
         /// height in number of px
         quint32 ysize_px;
-
         /// scale [px/m]
         double xscale;
         /// scale [px/m]
         double yscale;
-
         /// reference point [m] (left hand side of map)
         double xref1;
         /// reference point [m] (top of map)
@@ -82,26 +91,19 @@ class CMapGeoTiff : public IMap
         /// reference point [m] (bottom of map)
         double yref2;
 
-//        /// the longitude of the top left reference point [rad]
-//        double lon1;
-//        /// the latitude of the top left reference point [rad]
-//        double lat1;
-//        /// the longitude of the bottom right reference point [rad]
-//        double lon2;
-//        /// the latitude of the bottom right reference point [rad]
-//        double lat2;
-
-        /// QT representation of the GeoTiff's color table
-        QVector<QRgb> colortable;
-
+        /// left of viewport
         double x;
+        /// top of viewport
         double y;
 
         double zoomFactor;
 
-        int rasterBandCount;
+        QList<level_t> levels;
 
+        bool needsRedrawOvl;
         QCheckBox * quadraticZoom;
 
 };
-#endif                           //CMAPGEOTIFF_H
+
+#endif //CMAPRMAP_H
+
