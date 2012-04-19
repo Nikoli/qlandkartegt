@@ -46,6 +46,7 @@ class CMouseAddTextBox;
 class CMouseAddDistance;
 class CMouseOverlay;
 class CMouseColorPicker;
+class CMouseSelWpt;
 class CWpt;
 class QLabel;
 class QSize;
@@ -58,6 +59,10 @@ class CPlot;
 class CTrack;
 
 #define PAINT_ROUNDED_RECT(p,r) p.drawRoundedRect(r,5,5)
+#define COMPASS_H 60
+#define COMPASS_W 30
+#define COMPASS_OFFSET_X 50
+#define COMPASS_OFFSET_Y 100
 
 
 inline  void USE_ANTI_ALIASING(QPainter& p, bool useAntiAliasing)
@@ -71,7 +76,7 @@ class CCanvas : public QWidget
     Q_OBJECT;
     public:
 
-        enum move_direction_e {eMoveLeft, eMoveRight, eMoveUp, eMoveDown, eMoveCenter};
+        enum move_direction_e {eMoveLeft, eMoveRight, eMoveUp, eMoveDown, eMoveLeftSmall, eMoveRightSmall, eMoveUpSmall, eMoveDownSmall, eMoveCenter};
 
         CCanvas(QWidget * parent);
         virtual ~CCanvas();
@@ -92,17 +97,14 @@ class CCanvas : public QWidget
 #endif
             , eMouseMoveWpt      ///< use mouse to drag-n-drop waypoints
             , eMouseMoveRefPoint ///< use mouse to drag-n-drop reference points
-            //, eMouseSearchOC    ///< use mouse to define a search radius for open caching
             , eMouseCutTrack     ///< use mouse to cut a track into two pieces
             , eMouseSelTrack     ///< use mouse to select points of a track by a rectangle
-            //, eMouseEditRte     ///< use mouse to define a new route polyline
-            //, eMouseMoveRte     ///< use mouse to move route points
-            //, eMouseDelRte      ///< use mouse to delete route points
             , eMouseAddText      ///< use mouse to define a new text field on the map
             , eMouseAddTextBox   ///< use mouse to define a new text field with anchor on the map
             , eMouseAddDistance  ///< use mouse to define a new distance polygon
             , eMouseOverlay      ///< use mouse to change overlays
             , eMouseColorPicker  ///< use mouse to pick a color from map
+            , eMouseSelWpt       ///< use mouse to select waypoints in a radius
         };
 
         /// zoom in/out with a given point as static
@@ -143,6 +145,8 @@ class CCanvas : public QWidget
         static QBrush brushBackWhite;
         static QBrush brushBackYellow;
 
+        void setFadingMessage(const QString& msg);
+
         signals:
         void sigResize(const QSize& size);
 
@@ -150,7 +154,8 @@ class CCanvas : public QWidget
         void slotCopyPosition();
         void slotHighlightTrack(CTrack * track);
         void slotTrackChanged();
-        void slotActiveTrackPoint(double dist);
+        void slotFocusTrackPoint(double dist);
+        void slotFadingMessage();
 
     protected:
         void paintEvent(QPaintEvent * e);
@@ -173,6 +178,7 @@ class CCanvas : public QWidget
         void drawRefPoints(QPainter& p);
         void drawScale(QPainter& p);
         void drawCompass(QPainter& p);
+        void drawFadingMessage(QPainter& p);
 
     private:
         friend class CStatusCanvas;
@@ -201,6 +207,7 @@ class CCanvas : public QWidget
         CMouseAddDistance * mouseAddDistance;
         CMouseOverlay * mouseOverlay;
         CMouseColorPicker * mouseColorPicker;
+        CMouseSelWpt * mouseSelWpt;
         bool cursorFocus;
 
         /// current mouse mode
@@ -208,9 +215,10 @@ class CCanvas : public QWidget
 
         /// current mouse position
         QPoint posMouse;
-
         QLabel * info;
-
         CPlot * profile;
+
+        QTimer * timerFadingMessage;
+        QString fadingMessage;
 };
 #endif                           //CCANVAS_H
