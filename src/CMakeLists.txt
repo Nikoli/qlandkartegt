@@ -81,6 +81,7 @@ set(qlandkarte_SRCS
     WptIcons.cpp
     CResources.cpp
     CCopyright.cpp
+    CApplication.cpp
     CMainWindow.cpp
     CCanvas.cpp
     CCanvasUndoCommandZoom.cpp
@@ -100,10 +101,9 @@ set(qlandkarte_SRCS
     CMouseAddDistance.cpp
     CMouseOverlay.cpp
     CMouseColorPicker.cpp
+    CMouseSelWpt.cpp
     IMap.cpp
     CMapNoMap.cpp
-    CMapOSM.cpp
-    CMapOSMType.cpp
     CMapDEM.cpp
     CMapFile.cpp
     CMapLevel.cpp
@@ -111,6 +111,9 @@ set(qlandkarte_SRCS
     CMapQMAPExport.cpp
     CMapRaster.cpp
     CMapGeoTiff.cpp
+    CMapWms.cpp
+    CMapTms.cpp
+    CMapJnx.cpp
     IMapSelection.cpp
     CMapSelectionRaster.cpp
     CMapSelectionGarmin.cpp
@@ -133,27 +136,31 @@ set(qlandkarte_SRCS
     CDlgCombineDistOvl.cpp
     CDlgProjWizzard.cpp
     CDlgEditText.cpp
-    CDlgCreateWorldBasemap.cpp
     CDlgDelWpt.cpp
     CDlgConvertToTrack.cpp
     CDlgEditRoute.cpp
     CDlgMapTDBConfig.cpp
     CDlgMapQMAPConfig.cpp
     CDlgMapJNXConfig.cpp
-    CDlgMapOSMConfig.cpp
+    CDlgMapTmsConfig.cpp
+    CDlgMapWmsConfig.cpp
+    CDlgNoMapConfig.cpp
     CDlgScreenshot.cpp
     CDlgTrackFilter.cpp
     CDlgSetupGarminIcons.cpp
     CDlgConfig3D.cpp
     CDlgExport.cpp
     CDlgWpt2Rte.cpp
+    CDlgSetupGrid.cpp
+    CDlgCropMap.cpp
     CQlb.cpp
     CGpx.cpp
     IDevice.cpp
     CDeviceQLandkarteM.cpp
     CDeviceGarmin.cpp
+    CDeviceGarminBulk.cpp
     CDeviceNMEA.cpp
-    CCreateMapOSM.cpp
+    CDeviceTwoNav.cpp
     CCreateMapQMAP.cpp
     CCreateMapGeoTiff.cpp
     CCreateMapGridTool.cpp
@@ -192,7 +199,6 @@ set(qlandkarte_SRCS
     CLiveLog.cpp
     CLiveLogDB.cpp
     CLiveLogToolWidget.cpp
-    COsmTilesHash.cpp
     IOverlay.cpp
     COverlayDB.cpp
     COverlayToolWidget.cpp
@@ -220,6 +226,11 @@ set(qlandkarte_SRCS
     CHelpButton.cpp
     CSpline.cpp
     IItem.cpp
+    CImageSelect.cpp
+    CGridDB.cpp
+    IDiskCache.cpp
+    CDiskCache.cpp
+    CDiskCacheZip.cpp
 )
 
 if (WIN32)
@@ -237,6 +248,7 @@ set(qlandkarte_HDRS
     WptIcons.h
     CResources.h
     CCopyright.h
+    CApplication.h
     CMainWindow.h
     CCanvas.h
     CStatusDEM.h
@@ -255,10 +267,9 @@ set(qlandkarte_HDRS
     CMouseAddDistance.h
     CMouseOverlay.h
     CMouseColorPicker.h
+    CMouseSelWpt.h
     IMap.h
     CMapNoMap.h
-    CMapOSM.h
-    CMapOSMType.h
     CMapDEM.h
     CMapFile.h
     CMapLevel.h
@@ -266,6 +277,9 @@ set(qlandkarte_HDRS
     CMapQMAPExport.h
     CMapRaster.h
     CMapGeoTiff.h
+    CMapWms.h
+    CMapTms.h
+    CMapJnx.h
     IMapSelection.h
     CMapSelectionRaster.h
     CMapSelectionGarmin.h
@@ -289,26 +303,30 @@ set(qlandkarte_HDRS
     CDlgProjWizzard.h
     CDlgEditText.h
     CDlgDelWpt.h
-    CDlgCreateWorldBasemap.h
     CDlgConvertToTrack.h
     CDlgEditRoute.h
     CDlgMapTDBConfig.h
     CDlgMapQMAPConfig.h
     CDlgMapJNXConfig.h
-    CDlgMapOSMConfig.h
+    CDlgMapTmsConfig.h
+    CDlgMapWmsConfig.h
+    CDlgNoMapConfig.h
     CDlgScreenshot.h
     CDlgTrackFilter.h
     CDlgSetupGarminIcons.h
     CDlgConfig3D.h
     CDlgExport.h
     CDlgWpt2Rte.h
+    CDlgSetupGrid.h
+    CDlgCropMap.h
     CQlb.h
     CGpx.h
     IDevice.h
     CDeviceQLandkarteM.h
     CDeviceGarmin.h
+    CDeviceGarminBulk.h
     CDeviceNMEA.h
-    CCreateMapOSM.h
+    CDeviceTwoNav.h
     CCreateMapQMAP.h
     CCreateMapGeoTiff.h
     CCreateMapGridTool.h
@@ -345,7 +363,6 @@ set(qlandkarte_HDRS
     CLiveLogDB.h
     CLiveLogToolWidget.h
     IOverlay.h
-    COsmTilesHash.h
     COverlayDB.h
     COverlayToolWidget.h
     COverlayText.h
@@ -374,7 +391,14 @@ set(qlandkarte_HDRS
     CHelpButton.h
     CSpline.h
     IItem.h
+    CImageSelect.h
+    CGridDB.h
+    IDiskCache.h
+    CDiskCache.h
+    CDiskCacheZip.h
+    CSettings.h
 )
+
 
 SET(qlandkarte_UIS
     ICopyright.ui
@@ -394,20 +418,22 @@ SET(qlandkarte_UIS
     IDlgCombineTracks.ui
     IDlgCombineDistOvl.ui
     IDlgDelWpt.ui
-    IDlgCreateWorldBasemap.ui
     IDlgConvertToTrack.ui
     IDlgEditRoute.ui
     IDlgMapTDBConfig.ui
     IDlgMapQMAPConfig.ui
     IDlgMapJNXConfig.ui
-    IDlgMapOSMConfig.ui
+    IDlgMapTmsConfig.ui
+    IDlgMapWmsConfig.ui
+    IDlgNoMapConfig.ui
     IDlgScreenshot.ui
     IDlgTrackFilter.ui
     IDlgSetupGarminIcons.ui
     IDlgConfig3D.ui
     IDlgExport.ui
     IDlgWpt2Rte.ui
-    ICreateMapOSM.ui
+    IDlgSetupGrid.ui
+    IDlgCropMap.ui
     ICreateMapQMAP.ui
     ICreateMapGeoTiff.ui
     ICreateMapGridTool.ui
@@ -422,6 +448,8 @@ SET(qlandkarte_UIS
     IGarminExport.ui
     IHelpDlg.ui
     IDiaryEdit.ui
+    IImageSelect.ui
+
 )
 
 SET(qlandkarte_RCS
@@ -441,6 +469,7 @@ SET (DBUS OFF CACHE BOOL "Enable DBus control.")
 endif (NOT WIN32)
 SET (JNX ON CACHE BOOL "Enable Garmin JNX Support.")
 SET (ALTKEY_MOVES_MAP OFF CACHE BOOL "Move map while pressing ALT key and mousemove.")
+SET (RMAP ON CACHE BOOL "Enable TwoNav RMAP Support")
 
 SET (QL_OPENGL_INCLUDE_DIR "")
 SET (QL_OPENGL_LIBRARIES "")
@@ -514,12 +543,14 @@ IF(DBUS)
     SET(qlandkarte_UIS ${qlandkarte_UIS})
 ENDIF(DBUS)
 
-IF(JNX)
-    add_definitions(-DHAS_JNX)
-    SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CMapJnx.h)
-    SET(qlandkarte_SRCS ${qlandkarte_SRCS}  CMapJnx.cpp)
+
+IF(RMAP)
+    add_definitions(-DHAS_RMAP)
+    SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CMapRmap.h)
+    SET(qlandkarte_SRCS ${qlandkarte_SRCS}  CMapRmap.cpp)
     SET(qlandkarte_UIS ${qlandkarte_UIS})
-ENDIF(JNX)
+ENDIF(RMAP)
+
 
 IF(MIKROKOPTER)
     add_definitions(-DHAS_MIKROKOPTER)
@@ -583,6 +614,7 @@ include_directories(
   ${QT_QTNETWORK_INCLUDE_DIR}
   ${QT_QTDBUS_INCLUDE_DIR}
   ${QT_QTWEBKIT_INCLUDE_DIR}
+  ${QT_QTSCRIPT_INCLUDE_DIR}
   ${QL_OPENGL_INCLUDE_DIR}
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/3rdparty/SerialPort
@@ -607,13 +639,30 @@ set(qlandkarte_ALLINP
 if (APPLE)
   set(MAC_EXTRA_RES
       ${CMAKE_SOURCE_DIR}/MacOSX/${MAC_ICON_FILE}
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-gdb.icns
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-gpx.icns
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-kml.icns
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-loc.icns
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-plt.icns
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-qlb.icns
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-rte.icns
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-tcx.icns
+      ${CMAKE_SOURCE_DIR}/MacOSX/qlandkartegt-wpt.icns
   )
   set_source_files_properties(
     ${MAC_EXTRA_RES} ${qlandkarte_QM_FILES}
   PROPERTIES
     MACOSX_PACKAGE_LOCATION Resources
   )
+  set(MACOSX_BUNDLE_COPYRIGHT
+    "Copyright © 2007-2011 Oliver Eichler (oliver.eichler@gmx.de)"
+  )
   add_executable(${PROGNAME} MACOSX_BUNDLE ${qlandkarte_ALLINP} ${MAC_EXTRA_RES})
+  set_target_properties(${PROGNAME} PROPERTIES
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/MacOSX/Info.plist.in
+        LINK_FLAGS "-framework CoreFoundation"
+  )
+
   add_custom_target(mac-deploy macdeployqt "${MAC_BUNDLE_PATH}"
     COMMAND ${CMAKE_SOURCE_DIR}/MacOSX/map2gcm-libs.sh "${MAC_BUNDLE_PATH}")
 else(APPLE)
@@ -635,8 +684,9 @@ target_link_libraries(
       ${QT_QTMAIN_LIBRARIES}
       ${QT_QTWEBKIT_LIBRARIES}
       ${QT_PHONON_LIBRARIES}
+      ${QT_QTSCRIPT_LIBRARIES}
       ${QT_QTXMLPATTERNS_LIBRARIES}
-      ${QL_OPENGL_LIBRARIES}
+      ${QL_OPENGL_LIBRARIES}      
       ${EXIF_LIBRARIES}
       ${DMTX_LIBRARIES}
       ${GPSD_LIBRARIES}

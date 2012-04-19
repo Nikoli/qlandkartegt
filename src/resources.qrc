@@ -73,7 +73,6 @@
         <file>icons/iconLight16x16.png</file>
         <file>icons/iconZoomArea16x16.png</file>
         <file>icons/iconAddPoint16x16.png</file>
-        <file>icons/iconWMS16x16.png</file>
         <file>icons/iconTime16x16.png</file>
         <file>icons/iconRoute16x16.png</file>
         <file>icons/iconProximity16x16.png</file>
@@ -481,5 +480,49 @@
         <file>icons/iconDiaryDel16x16.png</file>
         <file>icons/iconCheckbox16x16.png</file>
         <file>icons/iconOk10x10.png</file>
+        <file>icons/face-laugh.png</file>
+        <file>icons/face-plain.png</file>
+        <file>icons/iconGraph32x32.png</file>
+        <file>icons/iconNewImage32x32.png</file>
+        <file>pics/roadbook/01.png</file>
+        <file>pics/roadbook/02.png</file>
+        <file>pics/roadbook/03.png</file>
+        <file>pics/roadbook/04.png</file>
+        <file>pics/roadbook/05.png</file>
+        <file>pics/roadbook/06.png</file>
+        <file>pics/roadbook/07.png</file>
+        <file>pics/roadbook/08.png</file>
+        <file>pics/roadbook/09.png</file>
+        <file>pics/roadbook/10.png</file>
+        <file>pics/roadbook/11.png</file>
+        <file>pics/roadbook/12.png</file>
+        <file>pics/roadbook/13.png</file>
+        <file>pics/roadbook/14.png</file>
+        <file>pics/roadbook/15.png</file>
+        <file>pics/roadbook/16.png</file>
+        <file>pics/roadbook/17.png</file>
+        <file>pics/roadbook/18.png</file>
+        <file>pics/roadbook/19.png</file>
+        <file>pics/roadbook/20.png</file>
+        <file>pics/roadbook/21.png</file>
+        <file>pics/roadbook/22.png</file>
+        <file>pics/roadbook/23.png</file>
+        <file>pics/roadbook/25.png</file>
+        <file>pics/roadbook/26.png</file>
+        <file>pics/roadbook/27.png</file>
+        <file>pics/roadbook/28.png</file>
+        <file>icons/iconGrid16x16.png</file>
+        <file>icons/preferences-desktop-font.png</file>
+        <file>icons/preferences-desktop-color.png</file>
+        <file>icons/noMap256x256.png</file>
+        <file>icons/iconTMS22x22.png</file>
+        <file>icons/iconWMS22x22.png</file>
+        <file>icons/iconStream22x22.png</file>
+        <file>icons/iconRaster22x22.png</file>
+        <file>icons/iconQMAP22x22.png</file>
+        <file>icons/iconJNX22x22.png</file>
+        <file>icons/iconVector22x22.png</file>
+        <file>icons/iconTDB22x22.png</file>
+        <file>icons/iconRMAP22x22.png</file>
     </qresource>
 </RCC>
