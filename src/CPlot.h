@@ -21,6 +21,7 @@
 #define CPLOT_H
 
 #include <QWidget>
+#include <QPointer>
 
 #include "CPlotData.h"
 #include "CTrack.h"
@@ -41,6 +42,8 @@ class CPlot : public QWidget
         void setYLabel(const QString& str);
         void setXLabel(const QString& str);
 
+        void setSelTrackPoint(CTrack::pt_t * pt){selTrkPt = pt;}
+
         void newLine(const QPolygonF& line, const QPointF& focus, const QString& label);
         void addLine(const QPolygonF& line, const QString& label);
         void newMarks(const QPolygonF& line);
@@ -50,11 +53,15 @@ class CPlot : public QWidget
         void clear();
 
         double getXValByPixel(int px);
+        double getYValByPixel(int px);
 
         void draw(QPainter& p);
+        void draw(QPainter& p, const QSize& s);
 
     signals:
-        void activePointSignal(double dist);
+        void sigActivePoint(double dist);
+        void sigFocusPoint(double dist);
+        void sigSetWaypoint(double dist);
         void sigClicked();
 
     public slots:
@@ -63,8 +70,10 @@ class CPlot : public QWidget
 
     protected slots:
         void slotSave();
+        void slotAddWpt();
 
     protected:
+        void draw();
         void contextMenuEvent(QContextMenuEvent *event);
         void mousePressEvent(QMouseEvent * e);
         void mouseMoveEvent(QMouseEvent * e);
@@ -100,6 +109,7 @@ class CPlot : public QWidget
         QAction *vZoomAct;
         QAction *resetZoomAct;
         QAction *save;
+        QAction *addWpt;
 
         CPlotData * m_pData;
 
@@ -128,7 +138,7 @@ class CPlot : public QWidget
         QFontMetrics fm;
 
         QPoint startMovePos;
-        int checkClick;
+
 
         double initialYMax;
         double initialYMin;
@@ -136,11 +146,15 @@ class CPlot : public QWidget
         mode_e mode;
         bool showScale;
         bool thinLine;
-
         bool cursorFocus;
+        bool needsRedraw;
+        bool mouseMoveMode;
+        bool checkClick;
 
         QPoint posMouse;
-
+        QPoint posWpt;
+        QImage buffer;
+        CTrack::pt_t * selTrkPt;
     public slots:
         void resetZoom();
 };

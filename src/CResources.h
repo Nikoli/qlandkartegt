@@ -60,6 +60,7 @@ class CResources : public QObject
 #ifdef HAS_GEODB
         bool useGeoDB(){return m_useGeoDB;}
         bool saveGeoDBOnExit(){return m_saveGeoDBOnExit;}
+        quint32 saveGeoDBMinutes(){return m_saveGeoDBMinutes;}
         QDir pathGeoDB(){return m_pathGeoDB;}
 #endif
         bool flipMouseWheel(){return m_flipMouseWheel;}
@@ -67,7 +68,6 @@ class CResources : public QObject
         bool showNorthIndicator(){return m_showNorth;}
         bool showScale(){return m_showScale;}
         bool showToolTip(){return m_showToolTip;}
-        bool showTrackMax(){return m_showTrackMax;}
         bool showZoomLevel(){return m_showZoomLevel;}
         bool playSound(){return m_playSound;}
         bool useAntiAliasing(){return m_useAntiAliasing;}
@@ -75,8 +75,11 @@ class CResources : public QObject
 
         QColor wptTextColor(){return m_WptTextColor;}
 
+        QDir getPathMapCache(){return m_pathMapCache;}
+        int getSizeMapCache(){return m_sizeMapCache;}
+        int getExpireMapCache(){return m_expireMapCache;}
+
         signals:
-        void sigProxyChanged();
         void sigDeviceChanged();
 
     private:
@@ -133,6 +136,7 @@ class CResources : public QObject
 #ifdef HAS_GEODB
         bool m_useGeoDB;
         bool m_saveGeoDBOnExit;
+        quint32 m_saveGeoDBMinutes;
         QDir m_pathGeoDB;
 #endif
 
@@ -141,7 +145,6 @@ class CResources : public QObject
         bool m_showNorth;
         bool m_showScale;
         bool m_showToolTip;
-        bool m_showTrackMax;
         bool m_showZoomLevel;
         bool m_useAntiAliasing;
         bool m_reducePoiIcons;
@@ -150,5 +153,9 @@ class CResources : public QObject
 
         /// unit translator object
         QPointer<IUnit> unit;
+
+        QDir m_pathMapCache;
+        int  m_sizeMapCache;
+        int  m_expireMapCache;
 };
 #endif                           //CRESOURCES_H

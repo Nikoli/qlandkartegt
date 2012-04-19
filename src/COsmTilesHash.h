@@ -1,6 +1,6 @@
 //C-  -*- C++ -*-
 //C- -------------------------------------------------------------------
-//C- Copyright (c) 2009 Marc Feld
+//C- Copyright (c) 2011 Marc Feld
 //C-
 //C- This software is subject to, and may be distributed under, the
 //C- GNU General Public License, either version 2 of the license,
@@ -20,46 +20,45 @@
 #include <QString>
 #include <QRect>
 #include <QPainter>
-#include <QImage>
+#include <QPixmap>
 #include <QHash>
+#include <QQueue>
+#include <QUrl>
+#include <QNetworkRequest>
 
-class QHttp;
+class QNetworkAccessManager;
+class QNetworkReply;
 class CMapOSM;
+class QNetworkDiskCache;
+
 class COsmTilesHash: public QObject
 {
     Q_OBJECT
         public:
-        COsmTilesHash(QString tileUrl);
+        COsmTilesHash(QString tileUrl, QObject * parent);
         virtual ~COsmTilesHash();
         void startNewDrawing( double lon, double lat, int osm_zoom, const QRect& window);
-        static const QString &getCacheFolder(void) { return cacheFolder; };
-        signals:
-        void newImageReady(QImage image, bool lastTileLoaded);
+
+    signals:
+        void newImageReady(const QPixmap& image, bool lastTileLoaded);
     private:
-        QString tileServer;
-        QString tileUrlPart;
-        int osm_zoom;
-        QRect window;
-        QHash<int, QPoint> startPointHash;
-        QHash<int, QString> osmUrlPartHash;
-        QHash<QString,int> osmRunningHash;
+        QUrl m_tileUrl;
+        QString m_tilePath;
+        QNetworkDiskCache * diskCache;
+
+        QQueue<QPair<QNetworkRequest, QPoint > > m_queuedRequests;
+        QHash<QString, QPoint> m_activeRequests;
+        QHash<QString, QPixmap>  m_tileHash;
         int long2tile(double lon, int zoom);
         int lat2tile(double lat, int zoom);
         double tile2long(int x, int zoom);
         double tile2lat(int y, int zoom);
         void getImage(int osm_zoom, int osm_x, int osm_y, QPoint startPoint);
-        QImage image;
-        QHttp *tilesConnection;
-        //         CMapOSM *cmapOSM;
-        QString osmTileBaseUrl;
-        bool requestInProgress;
-        QHash<QString,QImage> tiles;
-        int getid;
-        static QString cacheFolder;
+        QPixmap pixmap;
+        QNetworkAccessManager *m_networkAccessManager;
+
+        void dequeue();
     private slots:
-        // void slotCreate();
-        void slotRequestFinished(int , bool error);
-        void slotSetupLink();
-        // void slotSelectPath();
+        void slotRequestFinished(QNetworkReply*);
 };
 #endif                           /* COSMTILESHASH_H_ */

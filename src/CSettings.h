@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2008 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,16 +16,38 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
+#ifndef CSETTINGS_H
+#define CSETTINGS_H
 
-#ifndef GARMIN_H
-#define GARMIN_H
+#include "CAppOpts.h"
+#include <QtCore>
 
-#include <proj_api.h>
-#ifdef __MINGW32__
-#undef LP
-#endif
+class CSettings : public QObject
+{
 
-#define GARMIN_DEG(x) ((x) < 0x800000 ? (double)(x) * 360.0 / 16777216.0 : (double)((x) - 0x1000000) * 360.0 / 16777216.0)
-#define GARMIN_RAD(x) ((x) < 0x800000 ? (double)(x) * (2*M_PI) / 16777216.0 : (double)((x) - 0x1000000) * (2*M_PI) / 16777216.0)
-typedef quint8 quint24[3];
-#endif                           //GARMIN_H
+    public:
+        CSettings()
+        {
+            if(!qlOpts->configfile.isEmpty())
+            {
+                cfg = new QSettings(qlOpts->configfile, QSettings::IniFormat, this);
+            }
+            else
+            {
+                cfg = new QSettings(this);
+            }
+        }
+        ~CSettings(){}
+
+        QSettings& get(){return *cfg;}
+
+    private:
+        QSettings  * cfg;
+};
+
+#define SETTINGS \
+    CSettings ccfg;\
+    QSettings& cfg = ccfg.get()
+
+#endif //CSETTINGS_H
+

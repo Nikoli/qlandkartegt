@@ -23,7 +23,7 @@
 #include "IOverlay.h"
 #include "GeoMath.h"
 
-#include <projects.h>
+#include <proj_api.h>
 #ifdef __MINGW32__
 #undef LP
 #endif
@@ -31,6 +31,7 @@
 #include <QPointer>
 
 class COverlayDistanceEditWidget;
+class IMap;
 
 /// the one and only edit widget fo rdistance lines
 extern QPointer<COverlayDistanceEditWidget> overlayDistanceEditWidget;
@@ -40,7 +41,7 @@ class COverlayDistance : public IOverlay
     Q_OBJECT;
     public:
 
-        struct pt_t : public XY
+        struct pt_t : public projXY
         {
             int idx;
         };
@@ -63,7 +64,7 @@ class COverlayDistance : public IOverlay
         void mouseReleaseEvent(QMouseEvent * e);
 
         /// get last point of polyline
-        XY getLast(){return points.last();}
+        projXY getLast(){return points.last();}
 
         /// add "Make Track" and "Edit..." to custom menu
         void customMenu(QMenu& menu);
@@ -101,6 +102,7 @@ class COverlayDistance : public IOverlay
 
         void calcDistance();
         void drawArrows(const QPolygon& line, const QRect& viewport, QPainter& p);
+        void drawDistanceInfo(projXY p1, projXY p2, QPainter& p, IMap& map);
 
         /// the polyline as list of points [rad]
         QList<pt_t> points;
@@ -108,6 +110,8 @@ class COverlayDistance : public IOverlay
         QList<int> selectedPoints;
         /// pointer to point of polyline if cursor is closer than 30px
         pt_t * thePoint;
+        pt_t * thePointBefor;
+        pt_t * thePointAfter;
         /// need to restore point if move command is aborted
         pt_t savePoint;
 

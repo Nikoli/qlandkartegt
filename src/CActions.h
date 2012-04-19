@@ -77,6 +77,7 @@ class CActions : public QObject
         void funcMap3DTrackMode();
 
         void funcNewWpt();
+        void funcSelWpt();
         void funcEditWpt();
 #ifdef HAS_POWERDB
         void funcNewPowerNW();
@@ -114,10 +115,8 @@ class CActions : public QObject
         void funcDistance();
         void funcCombineDistOvl();
 
-//        void funcDiary();
         void funcOcm();
         void funcColorPicker();
-        void funcWorldBasemap();
 
         void funcZoomIn();
         void funcZoomOut();

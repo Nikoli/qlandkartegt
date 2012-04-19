@@ -27,12 +27,13 @@
 class CRoute;
 class QDomDocument;
 class QDomElement;
-class QHttp;
+class QNetworkAccessManager;
+class QNetworkReply;
 class QTimer;
 
 class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
 {
-    Q_OBJECT;
+    Q_OBJECT
     public:
         CRouteToolWidget(QTabWidget * parent);
         virtual ~CRouteToolWidget();
@@ -58,9 +59,7 @@ class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
         void slotCalcRoute();
         void slotResetRoute();
 
-        void slotSetupLink();
-        void slotRequestStarted(int );
-        void slotRequestFinished(int , bool error);
+        void slotRequestFinished(QNetworkReply* );
         void slotSelectionChanged();
 
         void slotToOverlay();
@@ -68,12 +67,17 @@ class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
         void slotZoomToFit();
 
         void slotTimeout();
+        void slotServiceChanged(int);
 
 
     private:
         void startOpenRouteService(CRoute& rte);
         void addOpenLSWptList(QDomDocument& xml, QDomElement& WayPointList, CRoute& rte);
         void addOpenLSPos(QDomDocument& xml, QDomElement& Point, CRoute::pt_t& pos);
+
+        void startMapQuest(CRoute& rte);
+        void addMapQuestLocations(QDomDocument& xml, QDomElement& locations, CRoute& rte);
+
 
         bool originator;
 
@@ -83,11 +87,6 @@ class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
             ,eTabHelp = 2
         };
 
-        enum service_e
-        {
-            eOpenRouteService
-        };
-
         static const QString gml_ns;
         static const QString xls_ns;
         static const QString xsi_ns;
@@ -95,13 +94,12 @@ class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
         static const QString xlink_ns;
         static const QString schemaLocation;
 
-        QHttp * http;
-
+        QNetworkAccessManager * m_networkAccessManager;
         QSet<QString> knownLocale;
-
         QTimer * timer;
-
         static sortmode_e sortmode;
+
+        QMap<QNetworkReply*, QString> pendingRequests;
 
 };
 #endif                           //CROUTETOOLWIDGET_H

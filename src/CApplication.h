@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2008 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2011 Michael Klein <michael.klein@puffin.lb.shuttle.de>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,15 +17,29 @@
 
 **********************************************************************************************/
 
-#ifndef GARMIN_H
-#define GARMIN_H
+#ifndef CAPPLICATION_H
+#define CAPPLICATION_H
 
-#include <proj_api.h>
-#ifdef __MINGW32__
-#undef LP
+#include <QApplication>
+#include <QEvent>
+#include <QQueue>
+#include <QString>
+#include <QTimerEvent>
+
+class CApplication : public QApplication
+{
+    Q_OBJECT;
+public:
+    CApplication(int & argc, char **argv): QApplication(argc, argv)
+    {
+    }
+
+protected:
+    bool event(QEvent *);
+    void timerEvent(QTimerEvent *);
+
+private:
+    QQueue<QString> filesToOpen;
+};
+
 #endif
-
-#define GARMIN_DEG(x) ((x) < 0x800000 ? (double)(x) * 360.0 / 16777216.0 : (double)((x) - 0x1000000) * 360.0 / 16777216.0)
-#define GARMIN_RAD(x) ((x) < 0x800000 ? (double)(x) * (2*M_PI) / 16777216.0 : (double)((x) - 0x1000000) * (2*M_PI) / 16777216.0)
-typedef quint8 quint24[3];
-#endif                           //GARMIN_H
