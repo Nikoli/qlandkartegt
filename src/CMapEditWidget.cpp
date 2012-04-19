@@ -18,13 +18,9 @@
 **********************************************************************************************/
 
 #include "CMapEditWidget.h"
-#include "CCreateMapOSM.h"
 #include "CCreateMapQMAP.h"
 #include "CCreateMapGeoTiff.h"
 #include "CCreateMapFineTune.h"
-#ifdef WMS_CLIENT
-#include "CCreateMapWMS.h"
-#endif
 
 #include <QtGui>
 
@@ -52,10 +48,6 @@ CMapEditWidget::CMapEditWidget(QWidget * parent)
 
     comboSource->insertItem(eNone,tr(""));
 
-    //     comboSource->insertItem(eOSM,QIcon(":/icons/iconOSM16x16.png"),tr("Open Street Map"));
-    //     widgetOSM       = new CCreateMapOSM(stackedWidget);
-    //     stackedWidget->insertWidget(eOSM, widgetOSM);
-
     comboSource->insertItem(eQMAP,QIcon(":/icons/iconGlobe16x16.png"),tr("Create map collection from existing geo-referenced files."));
     widgetQMAP      = new CCreateMapQMAP(stackedWidget);
     stackedWidget->insertWidget(eQMAP, widgetQMAP);
@@ -80,11 +72,6 @@ CMapEditWidget::CMapEditWidget(QWidget * parent)
     stackedWidget->insertWidget(eFineTune, widgetFineTune);
 
 
-#ifdef WMS_CLIENT
-    comboSource->insertItem(eWMS,QIcon(":/icons/iconWMS16x16.png"),tr("Create a GDAL WMS definition file."));
-    widgetWMS       = new CCreateMapWMS(stackedWidget);
-    stackedWidget->insertWidget(eWMS, widgetWMS);
-#endif
     connect(comboSource, SIGNAL(activated(int)), stackedWidget, SLOT(setCurrentIndex(int)));
 }
 

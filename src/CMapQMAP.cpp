@@ -32,7 +32,7 @@
 
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>
-#include <projects.h>
+#include <proj_api.h>
 #include <math.h>
 #ifdef __MINGW32__
 #undef LP
@@ -51,6 +51,8 @@ CMapQMAP::CMapQMAP(const QString& key, const QString& fn, CCanvas * parent)
     QDir path = QFileInfo(filename).absolutePath();
     // load map definition
     QSettings mapdef(filename,QSettings::IniFormat);
+    mapdef.setIniCodec(QTextCodec::codecForName("UTF-8"));
+
     int nLevels = mapdef.value("main/levels",0).toInt();
 
     info  = "<h1>" + mapdef.value("description/comment", "").toString() + "</h1>";
@@ -96,7 +98,7 @@ CMapQMAP::CMapQMAP(const QString& key, const QString& fn, CCanvas * parent)
 
     if(!maplevels.isEmpty())
     {
-        XY p1, p2;
+        projXY p1, p2;
         double a1,a2, width, height;
         float u1 = 0, v1 = 0, u2 = 0, v2 = 0;
         GPS_Math_Str_To_Deg(strTopLeft.replace("&#176;",""), u1, v1);
@@ -138,22 +140,14 @@ CMapQMAP::CMapQMAP(const QString& key, const QString& fn, CCanvas * parent)
     topLeft.v = v * DEG_TO_RAD;
     mapdef.endGroup();
 
-    QSettings cfg;
-    exportPath  = cfg.value("path/export",cfg.value("path/maps","./")).toString();
-
     if(parent)
     {
         connect(parent, SIGNAL(sigResize(const QSize&)), this, SLOT(resize(const QSize&)));
         resize(parent->size());
     }
 
-    if(!key.isEmpty())
-    {
-        checkQuadZoom = new QCheckBox(theMainWindow->getCanvas());
-        checkQuadZoom->setText(tr("quadratic zoom"));
-        checkQuadZoom->setChecked(quadraticZoom);
-        theMainWindow->statusBar()->insertPermanentWidget(0,checkQuadZoom);
-    }
+    checkQuadZoom = theMainWindow->getCheckBoxQuadraticZoom();
+    checkQuadZoom->setChecked(quadraticZoom);
     qDebug() << "done";
 }
 
@@ -161,6 +155,7 @@ CMapQMAP::CMapQMAP(const QString& key, const QString& fn, CCanvas * parent)
 CMapQMAP::~CMapQMAP()
 {
     QSettings mapdef(filename,QSettings::IniFormat);
+    mapdef.setIniCodec(QTextCodec::codecForName("UTF-8"));
     mapdef.beginGroup(QString("home"));
 
     mapdef.setValue("zoom",zoomidx < 1 ? 1 : zoomidx);
@@ -171,17 +166,9 @@ CMapQMAP::~CMapQMAP()
     mapdef.setValue("center",pos);
     mapdef.endGroup();
 
-    QSettings cfg;
-    cfg.setValue("path/export",exportPath);
-
     midU = rect.center().x();
     midV = rect.center().y();
     convertPt2Rad(midU, midV);
-
-    if(checkQuadZoom)
-    {
-        delete checkQuadZoom;
-    }
 }
 
 
@@ -245,7 +232,14 @@ void CMapQMAP::draw(QPainter& p)
     }
     else
     {
-        p.drawImage(0,0,buffer);
+        if(isThread())
+        {
+            p.drawImage(0,0,imgBuffer);
+        }
+        else
+        {
+            p.drawPixmap(0,0,pixBuffer);
+        }
     }
 
     // render overlay
@@ -308,7 +302,7 @@ void CMapQMAP::__test()
     }
     printf("+++\n");
 
-    XY p1, p2;
+    projXY p1, p2;
     p1.u = 0;
     p1.v = 0;
     p2.u = c - 1;
@@ -334,10 +328,15 @@ void CMapQMAP::__test()
 
 void CMapQMAP::draw()
 {
-    //     __test();
-
-    buffer.fill(Qt::white);
-    QPainter _p_(&buffer);
+    if(isThread())
+    {
+        imgBuffer.fill(Qt::white);
+    }
+    else
+    {
+        pixBuffer.fill(Qt::white);
+    }
+    QPainter _p_(isThread() ? (QPaintDevice*)&imgBuffer : (QPaintDevice*)&pixBuffer);
 
     foundMap = false;
 
@@ -349,7 +348,7 @@ void CMapQMAP::draw()
     const CMapFile * map = *pMaplevel->begin();
 
     // top left
-    XY pt = topLeft;
+    projXY pt = topLeft;
     pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0);
 
     bottomRight.u = pt.u + size.width() * map->xscale * zoomFactor;
@@ -449,7 +448,7 @@ void CMapQMAP::draw()
 
 /// @todo this has to be removed with GDAL 1.8.0
 #ifdef WIN32
-                            offset = 3 - b;
+                            //offset = 3 - b;
 #endif // WIN32
 
                             if(offset < sizeof(testPix))
@@ -491,7 +490,7 @@ void CMapQMAP::convertPt2M(double& u, double& v)
 
     const CMapFile * map = *pMaplevel->begin();
 
-    XY pt = topLeft;
+    projXY pt = topLeft;
     pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0);
 
     u = pt.u + u * map->xscale * zoomFactor;
@@ -505,11 +504,11 @@ void CMapQMAP::convertM2Pt(double& u, double& v)
 
     const CMapFile * map = *pMaplevel->begin();
 
-    XY pt = topLeft;
+    projXY pt = topLeft;
     pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0);
 
-    u = (u - pt.u) / (map->xscale * zoomFactor);
-    v = (v - pt.v) / (map->yscale * zoomFactor);
+    u = floor((u - pt.u) / (map->xscale * zoomFactor) + 0.5);
+    v = floor((v - pt.v) / (map->yscale * zoomFactor) + 0.5);
 }
 
 void CMapQMAP::convertPt2Pixel(double& u, double& v)
@@ -548,7 +547,7 @@ void CMapQMAP::convertPt2Pixel(double& u, double& v)
 void CMapQMAP::move(const QPoint& old, const QPoint& next)
 {
 
-    XY p2 = topLeft;
+    projXY p2 = topLeft;
     convertRad2Pt(p2.u, p2.v);
 
     // move top left point by difference
@@ -569,7 +568,7 @@ void CMapQMAP::move(const QPoint& old, const QPoint& next)
 
 void CMapQMAP::zoom(bool zoomIn, const QPoint& p0)
 {
-    XY p1;
+    projXY p1;
 
     needsRedraw = true;
 
@@ -605,7 +604,7 @@ void CMapQMAP::zoom(bool zoomIn, const QPoint& p0)
     // convert geo. coordinates back to point
     convertRad2Pt(p1.u, p1.v);
 
-    XY p2 = topLeft;
+    projXY p2 = topLeft;
     convertRad2Pt(p2.u, p2.v);
 
     // move top left point by difference point befor and after zoom
@@ -731,7 +730,7 @@ void CMapQMAP::zoom(double lon1, double lat1, double lon2, double lat2)
                 pMaplevel   = *maplevel;
                 pjsrc       = map->pj;
 
-                zoomidx = pMaplevel->min + z - 1;                
+                zoomidx = pMaplevel->min + z - 1;
                 if(quadraticZoom)
                 {
                     zoomidx = pow(2.0, ceil(log(zoomidx*1.0)/log(2.0)));
@@ -765,7 +764,7 @@ void CMapQMAP::dimensions(double& lon1, double& lat1, double& lon2, double& lat2
 }
 
 
-void CMapQMAP::getArea_n_Scaling(XY& p1, XY& p2, float& my_xscale, float& my_yscale)
+void CMapQMAP::getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float& my_yscale)
 {
     if(pMaplevel.isNull())
     {

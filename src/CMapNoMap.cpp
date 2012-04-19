@@ -18,21 +18,52 @@
 **********************************************************************************************/
 
 #include "CMapNoMap.h"
+#include "CMainWindow.h"
+#include "CDlgNoMapConfig.h"
+#include "CSettings.h"
 
 #include <QtGui>
 
 CMapNoMap::CMapNoMap(CCanvas * parent)
-: IMap(eRaster, "NoMap", parent)
+: IMap(eNoMap, "NoMap", parent)
 , xscale( 1.0)
 , yscale(-1.0)
 , x(0)
 , y(0)
 , zoomFactor(1.0)
+, quadraticZoom(0)
 {
-    pjsrc   = pj_init_plus("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs +towgs84=0,0,0");
-    oSRS.importFromProj4(getProjection());
+    quadraticZoom = theMainWindow->getCheckBoxQuadraticZoom();
+
+    SETTINGS;
+    QString proj = cfg.value("map/nomap/proj", "+proj=merc +a=6378137.0000 +b=6356752.3142 +towgs84=0,0,0,0,0,0,0,0 +units=m  +no_defs").toString();
+    setup(proj, cfg.value("map/nomap/xscale", xscale).toDouble(), cfg.value("map/nomap/yscale", yscale).toDouble());
 }
 
+
+CMapNoMap::~CMapNoMap()
+{
+    SETTINGS;
+    cfg.setValue("map/nomap/proj", getProjection());
+    cfg.setValue("map/nomap/xscale", xscale);
+    cfg.setValue("map/nomap/yscale", yscale);
+
+    if(pjsrc) pj_free(pjsrc);
+}
+
+void CMapNoMap::setup(const QString& proj, double xscale, double yscale)
+{
+    if(pjsrc) pj_free(pjsrc);
+
+    pjsrc   = pj_init_plus(proj.toAscii().data());
+    oSRS.importFromProj4(getProjection());
+    this->xscale = xscale;
+    this->yscale = yscale;
+
+    setAngleNorth();
+
+    emit sigChanged();
+}
 
 void CMapNoMap::convertPt2M(double& u, double& v)
 {
@@ -43,8 +74,8 @@ void CMapNoMap::convertPt2M(double& u, double& v)
 
 void CMapNoMap::convertM2Pt(double& u, double& v)
 {
-    u = (u - x) / (xscale * zoomFactor);
-    v = (v - y) / (yscale * zoomFactor);
+    u = floor((u - x) / (xscale * zoomFactor) + 0.5);
+    v = floor((v - y) / (yscale * zoomFactor) + 0.5);
 }
 
 
@@ -61,22 +92,41 @@ void CMapNoMap::move(const QPoint& old, const QPoint& next)
     x = xx;
     y = yy;
     needsRedraw = true;
-    emit sigChanged();
 
     setAngleNorth();
+
+    emit sigChanged();
 }
 
 
 void CMapNoMap::zoom(bool zoomIn, const QPoint& p0)
 {
-    XY p1;
+    projXY p1;
 
     // convert point to geo. coordinates
     p1.u = p0.x();
     p1.v = p0.y();
     convertPt2Rad(p1.u, p1.v);
 
-    zoomidx += zoomIn ? -1 : 1;
+    if(quadraticZoom->isChecked())
+    {
+
+        if(zoomidx > 1)
+        {
+            zoomidx = pow(2.0, ceil(log(zoomidx*1.0)/log(2.0)));
+            zoomidx = zoomIn ? (zoomidx>>1) : (zoomidx<<1);
+        }
+        else
+        {
+            zoomidx += zoomIn ? -1 : 1;
+        }
+    }
+    else
+    {
+        zoomidx += zoomIn ? -1 : 1;
+    }
+
+
     // sigChanged will be sent at the end of this function
     blockSignals(true);
     zoom(zoomidx);
@@ -140,6 +190,15 @@ void CMapNoMap::zoom(double lon1, double lat1, double lon2, double lat2)
     int z2 = dV / size.height();
 
     zoomFactor = (z1 > z2 ? z1 : z2)  + 1;
+    if(quadraticZoom->isChecked())
+    {
+        zoomFactor = zoomidx = pow(2.0, ceil(log(zoomFactor)/log(2.0)));
+    }
+    else
+    {
+        zoomidx = zoomFactor;
+    }
+
 
     double u_ = lon1 + (lon2 - lon1)/2;
     double v_ = lat1 + (lat2 - lat1)/2;
@@ -159,4 +218,10 @@ void CMapNoMap::dimensions(double& lon1, double& lat1, double& lon2, double& lat
     lon2 =  180 * DEG_TO_RAD;
     lat1 =   90 * DEG_TO_RAD;
     lat2 =  -90 * DEG_TO_RAD;
+}
+
+void CMapNoMap::config()
+{
+    CDlgNoMapConfig dlg(*this);
+    dlg.exec();
 }

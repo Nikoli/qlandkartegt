@@ -32,7 +32,6 @@
 #include "CMainWindow.h"
 #include "CResources.h"
 #include "IDevice.h"
-#include "CDlgCreateWorldBasemap.h"
 #include "CMenus.h"
 #include "CActions.h"
 #ifdef PLOT_3D
@@ -239,6 +238,7 @@ void CMegaMenu::initStyleOption(QStyleOptionMenuItem *option, const QAction *act
     option->tabWidth        = fm.width("MMMM");
     option->maxIconWidth    = 16;
     option->menuRect        = rect();
+
 }
 
 
@@ -272,14 +272,15 @@ void CMegaMenu::paintEvent(QPaintEvent *e)
 
         QStyleOptionMenuItem opt;
         initStyleOption(&opt, act, currentItemIndex == idx);
-
         opt.rect = rectF[idx];
 
         style()->drawControl(QStyle::CE_MenuItem, &opt, &p, this);
 
         ++idx;
         if (idx >= SIZE_OF_MEGAMENU)
+        {
             break;
+        }
     }
 }
 
@@ -291,8 +292,13 @@ void CMegaMenu::resizeEvent(QResizeEvent * e)
     QFontMetrics fm(f);
 
     int w   = e->size().width();
-    int h   = fm.height();
+    int h   = fm.height()+fm.descent()*2;
     yoff    = 0;
+
+    if(h < 16+2)
+    {
+        h = 16+2;
+    }
 
     rectTitle = QRect(0,yoff, w, h);
     for(int i=0; i < SIZE_OF_MEGAMENU; ++i)

@@ -54,8 +54,14 @@
 #ifdef HAS_DBUS
 #include "CDBus.h"
 #endif
+#include "CGridDB.h"
+#include "CDlgSetupGrid.h"
+#include "CSettings.h"
 
 #include <QtGui>
+#ifndef WIN32
+#include <unistd.h>
+#endif
 #ifdef WIN32
 #include <io.h>
 #endif
@@ -71,7 +77,7 @@ CMainWindow::CMainWindow()
 #else
     : modified(false)
 #endif
-
+    , crashed(false)
 {
     theMainWindow = this;
     groupProvidedMenu = 0;
@@ -164,8 +170,7 @@ CMainWindow::CMainWindow()
     actionGroupProvider->addAction(CMenus::WptMenu, "aZoomArea");
     actionGroupProvider->addAction(CMenus::WptMenu, "aCenterMap");
     actionGroupProvider->addAction(CMenus::WptMenu, "aNewWpt");
-    actionGroupProvider->addAction(CMenus::WptMenu, "aEditWpt");
-    actionGroupProvider->addAction(CMenus::WptMenu, "aMoveWpt");
+    actionGroupProvider->addAction(CMenus::WptMenu, "aSelWpt");
 #ifdef HAS_EXIF
     actionGroupProvider->addAction(CMenus::WptMenu, "aImageWpt");
 #endif
@@ -190,7 +195,6 @@ CMainWindow::CMainWindow()
     actionGroupProvider->addAction(CMenus::TrackMenu, "aZoomArea");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aCenterMap");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aCombineTrack");
-    actionGroupProvider->addAction(CMenus::TrackMenu, "aEditTrack");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aCutTrack");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aSelTrack");
     actionGroupProvider->addAction(CMenus::TrackMenu, "aUploadTrack");
@@ -224,10 +228,10 @@ CMainWindow::CMainWindow()
     actionGroupProvider->addAction(CMenus::MainMoreMenu, "aMoveArea");
     actionGroupProvider->addAction(CMenus::MainMoreMenu, "aZoomArea");
     actionGroupProvider->addAction(CMenus::MainMoreMenu, "aCenterMap");
-//    actionGroupProvider->addAction(CMenus::MainMoreMenu, "aDiary");
 #ifdef HAS_DBUS
     actionGroupProvider->addAction(CMenus::MainMoreMenu, "aOcm");
 #endif
+
 
 
     actionGroupProvider->addAction(CMenus::RouteMenu, "aSwitchToMain");
@@ -272,18 +276,26 @@ CMainWindow::CMainWindow()
     leftSplitter->setCollapsible(2, false);
 
     statusCoord = new QLabel(this);
-    statusBar()->insertPermanentWidget(1,statusCoord);
+    statusBar()->addPermanentWidget(statusCoord);
 
-    QSettings cfg;
-    pathData = cfg.value("path/data","./").toString();
+    SETTINGS;
+    crashed     = cfg.value("mainWidget/crashed",false).toBool();
+    cfg.setValue("mainWidget/crashed",true);
 
+    quadraticZoom = new QCheckBox(theMainWindow->getCanvas());
+    quadraticZoom->setText(tr("quadratic zoom"));
+    quadraticZoom->setChecked(cfg.value("maps/quadraticZoom", false).toBool());
+    theMainWindow->statusBar()->insertPermanentWidget(1,quadraticZoom);
+
+    pathData    = cfg.value("path/data","./").toString();
+
+    griddb      = new CGridDB(this);
     mapdb       = new CMapDB(tabbar, this);
     wptdb       = new CWptDB(tabbar, this);
     trackdb     = new CTrackDB(tabbar, this);
     routedb     = new CRouteDB(tabbar, this);
     overlaydb   = new COverlayDB(tabbar, this);
     livelogdb   = new CLiveLogDB(tabbar, this);
-
     diarydb     = new CDiaryDB(canvasTab, this);
     searchdb    = new CSearchDB(tabbar, this);
 #ifdef HAS_POWERDB
@@ -372,7 +384,7 @@ CMainWindow::CMainWindow()
     }
 
     sizes.clear();
-    sizes << 200 << 50 << 50;
+    sizes << 40 << 60;
     rightSplitter->setSizes(sizes);
 
     connect(&CMapDB::self(), SIGNAL(sigChanged()), this, SLOT(slotDataChanged()));
@@ -469,12 +481,16 @@ void CMainWindow::slotReloadArgs()
 
 CMainWindow::~CMainWindow()
 {
-    QSettings cfg;
+
+    SETTINGS;
     cfg.setValue("mainWidget/mainSplitter",mainSplitter->saveState());
     cfg.setValue("mainWidget/leftSplitter",leftSplitter->saveState());
-    cfg.setValue("path/data",pathData);
     cfg.setValue("mainWidget/geometry", geometry());
+    cfg.setValue("mainWidget/crashed",false);
+    cfg.setValue("path/data",pathData);
     cfg.setValue("geodata/mostRecent", mostRecent);
+    cfg.setValue("maps/quadraticZoom", quadraticZoom->isChecked());
+
     canvas = 0;
 }
 
@@ -571,13 +587,6 @@ void CMainWindow::switchState()
 }
 
 
-#if defined(Q_WS_MAC)
-// do not translate on the Mac, so the item is shifted
-#  define tr_nomac(x) (x)
-#else
-#  define tr_nomac(x) tr(x)
-#endif
-
 void CMainWindow::setupMenuBar()
 {
     QMenu * menu;
@@ -607,7 +616,11 @@ void CMainWindow::setupMenuBar()
     //menu->addAction(QIcon(":/icons/iconPrint16x16.png"),tr("Print Diary ..."),this,SLOT(slotPrintPreview()));
     menu->addSeparator();
     menu->addAction(QIcon(":/icons/iconUnknown16x16.png"),tr("Toggle toolview"),this,SLOT(slotToggleToolView()), Qt::CTRL + Qt::Key_T);
-    menu->addAction(QIcon(":/icons/iconExit16x16.png"),tr_nomac("Exit"),this,SLOT(close()));
+#if defined(Q_WS_MAC)
+    menu->addAction(QIcon(":/icons/iconExit16x16.png"),("Exit"),this,SLOT(close()), Qt::CTRL + Qt::Key_Q);
+#else
+    menu->addAction(QIcon(":/icons/iconExit16x16.png"),tr("Exit"),this,SLOT(close()), Qt::CTRL + Qt::Key_Q);
+#endif
     menuBar()->addMenu(menu);
 
     menu = new QMenu(this);
@@ -652,10 +665,13 @@ void CMainWindow::setupMenuBar()
     menu->setTitle(tr("&Overlay"));
     menuBar()->addMenu(menu);
 
+#ifdef HAS_DBUS
+    // note: currently, the More menu holds only one entry if DBus is enabled...
     menu = new QMenu(this);
     actionGroupProvider->addActionsToMenu(menu,CMenus::MenuBarMenu,CMenus::MainMoreMenu);
     menu->setTitle(tr("Mor&e"));
     menuBar()->addMenu(menu);
+#endif
 
     menu = new QMenu(this);
     menu->setTitle(tr("&Setup"));
@@ -667,12 +683,22 @@ void CMainWindow::setupMenuBar()
     menuBar()->addMenu(menu);
 
     menu = new QMenu(this);
-    menu->setTitle(tr_nomac("&Help"));
-    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),tr_nomac("http://FAQ"),this,SLOT(slotFAQ()));
-    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),tr_nomac("http://Help"),this,SLOT(slotHelp()));
-    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),tr_nomac("http://Support"),this,SLOT(slotSupport()));
+#if defined(Q_WS_MAC)
+    menu->setTitle(("&Help"));
+    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),("http://FAQ"),this,SLOT(slotFAQ()));
+    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),("http://Help"),this,SLOT(slotHelp()));
+    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),("http://Support"),this,SLOT(slotSupport()));
     menu->addSeparator();
-    menu->addAction(QIcon(":/icons/iconGlobe16x16.png"),tr_nomac("About &QLandkarte GT"),this,SLOT(slotCopyright()));
+    menu->addAction(QIcon(":/icons/iconGlobe16x16.png"),("About &QLandkarte GT"),this,SLOT(slotCopyright()));
+#else
+    menu->setTitle(tr("&Help"));
+    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),tr("http://FAQ"),this,SLOT(slotFAQ()));
+    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),tr("http://Help"),this,SLOT(slotHelp()));
+    menu->addAction(QIcon(":/icons/iconHelp16x16.png"),tr("http://Support"),this,SLOT(slotSupport()));
+    menu->addSeparator();
+    menu->addAction(QIcon(":/icons/iconGlobe16x16.png"),tr("About &QLandkarte GT"),this,SLOT(slotCopyright()));
+
+#endif
     menuBar()->addMenu(menu);
 }
 
@@ -722,16 +748,16 @@ void CMainWindow::closeEvent(QCloseEvent * e)
 
 void CMainWindow::slotLoadMapSet()
 {
-    QSettings cfg;
+    SETTINGS;
 
     QString filter   = cfg.value("maps/filter","").toString();
     QString filename = QFileDialog::getOpenFileName( 0, tr("Select map...")
         ,CResources::self().pathMaps
-    #ifdef WMS_CLIENT
-        ,"All (*.*);;Map Collection (*.qmap);;Garmin (*.tdb);;WMS (*.xml)"
-    #else
+#ifdef HAS_RMAP
+        ,"All (*.*);;Map Collection (*.qmap);;Garmin (*.tdb);;BirdsEye (*.jnx);;TwoNav (*.rmap)"
+#else
         ,"All (*.*);;Map Collection (*.qmap);;Garmin (*.tdb);;BirdsEye (*.jnx)"
-    #endif
+#endif
         , &filter
         , FILE_DIALOG_FLAGS
         );
@@ -768,7 +794,7 @@ void CMainWindow::slotLoadData()
 {
     QString formats = getGeoDataFormats();
 
-    QSettings cfg;
+    SETTINGS;
     QString filter   = cfg.value("geodata/filter","").toString();
     QStringList filenames = QFileDialog::getOpenFileNames( 0, tr("Select input files")
         ,pathData
@@ -818,7 +844,7 @@ void CMainWindow::slotAddData()
 {
     QString formats = getGeoDataFormats();
 
-    QSettings cfg;
+    SETTINGS;
     int i;
     QString filename;
     QString filter   = cfg.value("geodata/filter","").toString();
@@ -857,6 +883,8 @@ void CMainWindow::loadData(const QString& filename, const QString& filter)
     QString ext = fileInfo.suffix().toUpper();
 
     pathData = fileInfo.absolutePath();
+
+    qDebug() << filter;
 
     try
     {
@@ -911,7 +939,11 @@ void CMainWindow::loadData(const QString& filename, const QString& filter)
             tmpfile.open();
             loadGPXData = false;
 
-            if(ext == "LOC")
+            if(filter.startsWith("TwoNav"))
+            {
+                loadGPXData = convertData("compegps", filename, "gpx", tmpfile.fileName());
+            }
+            else if(ext == "LOC")
             {
                 loadGPXData = convertData("geo", filename, "gpx", tmpfile.fileName());
             }
@@ -971,7 +1003,7 @@ bool CMainWindow::convertData(const QString& inFormat, const QString& inFile, co
 
     if(inFormat == "unicsv")
     {
-        arguments  << "-w" << "-i" << inFormat << "-f" << inFile << "-x" << "transform,wpt=trk" << "-o" << outFormat << "-F" << outFile;
+        arguments /* << "-t" */ << "-w" << "-r" << "-i" << inFormat << "-f" << inFile << "-o" << outFormat << "-F" << outFile;
     }
     else
     {
@@ -996,7 +1028,7 @@ bool CMainWindow::convertData(const QString& inFormat, const QString& inFile, co
 
 bool CMainWindow::maybeSave()
 {
-    QMessageBox::StandardButton ret;    
+    QMessageBox::StandardButton ret;
     ret = QMessageBox::warning(this, tr("Save geo data?"),
         tr("The loaded data has been modified.\n"
         "Do you want to save your changes?"),
@@ -1011,7 +1043,7 @@ bool CMainWindow::maybeSave()
         else
 #if HAS_POWERDB
         {
-            QSettings cfg;
+            SETTINGS;
             QString filter = cfg.value("geodata/filter","").toString();
 
             if ((filter != "QLandkarte DB (*.qdb)") && (CPowerDB::self().hasPowerLines() ||
@@ -1035,10 +1067,10 @@ bool CMainWindow::maybeSave()
             }
             else
             {
-                saveData(wksFile, filter);
-            }
-            return true;
+            saveData(wksFile, filter);
         }
+        return true;
+    }
 #else
         {
             QSettings cfg;
@@ -1058,7 +1090,7 @@ bool CMainWindow::maybeSave()
 
 void CMainWindow::slotSaveData()
 {
-    QSettings cfg;
+    SETTINGS;
 
     QString filter =cfg.value("geodata/filter","").toString();
 
@@ -1082,7 +1114,7 @@ void CMainWindow::slotSaveData()
 
 void CMainWindow::slotExportData()
 {
-    QSettings cfg;
+    SETTINGS;
 
     bool haveGPSBabel = isGPSBabel();
 
@@ -1159,7 +1191,7 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
             {
                 filename += ".gpx";
             }
-            //ext = "GPX";
+            ext = "GPX";
         }
         else if ((ext == "PLT") || (ext == "RTE") || (ext == "WPT") || (filter == "OziExplorer (*.plt *.rte *.wpt)"))
         {
@@ -1187,7 +1219,6 @@ void CMainWindow::saveData(QString& fn, const QString& filter, bool exportFlag)
             }
             ext = "QLB";
         }
-
     }
 
     fileInfo.setFile(filename);
@@ -1340,7 +1371,7 @@ void CMainWindow::slotPrint()
 void CMainWindow::slotSaveImage()
 {
 
-    QSettings cfg;
+    SETTINGS;
     QString pathData = cfg.value("path/data","./").toString();
     QString filter   = cfg.value("canvas/imagetype","Bitmap (*.png)").toString();
 
@@ -1512,6 +1543,8 @@ void CMainWindow::slotDeviceChanged()
     comboDevice->addItem(tr(""),"");
     comboDevice->addItem(tr("QLandkarte M"), "QLandkarteM");
     comboDevice->addItem(resources->m_devType, "Garmin");
+    comboDevice->addItem(tr("Garmin Mass Storage"), "Garmin Mass Storage");
+    comboDevice->addItem(tr("TwoNav"), "TwoNav");
     comboDevice->addItem(tr("NMEA"), "NMEA");
 #ifdef HS_MIKROKOPTER
     comboDevice->addItem(tr("Mikrokopter"), "Mikrokopter");
@@ -1593,7 +1626,6 @@ void CMainWindow::addRecent(const QString& filename)
 
 void CMainWindow::setTempWidget(QWidget * w, const QString& label)
 {
-//    rightSplitter->addWidget(w);
     tmpTabWidget->addTab(w, label);
     tmpTabWidget->show();
     tmpTabWidget->setCurrentWidget(w);
@@ -1663,7 +1695,7 @@ QString CMainWindow::getGeoDataFormats() {
     QString formats;
     if(haveGPSBabel)
     {
-        formats = "All supported files (*.qlb *.gpx *.tcx *.loc *.gdb *.kml *.plt *.rte *.wpt *.tk1);;QLandkarte (*.qlb);;GPS Exchange (*.gpx);;TCX TrainingsCenterExchange (*.tcx);;Geocaching.com - EasyGPS (*.loc);;Mapsource (*.gdb);;Google Earth (*.kml);;Ozi Track (*.plt);;Ozi Route (*.rte);;Ozi Waypoint (*.wpt);;Wintec WBT201/1000 (*.tk1);;Universal CSV (*.csv);;QLandkarte DB(*.qdb)";
+        formats = "All supported files (*.qlb *.gpx *.tcx *.loc *.gdb *.kml *.plt *.rte *.wpt *.tk1);;QLandkarte (*.qlb);;GPS Exchange (*.gpx);;TwoNav (*.trk *.rte *.wpt);;TCX TrainingsCenterExchange (*.tcx);;Geocaching.com - EasyGPS (*.loc);;Mapsource (*.gdb);;Google Earth (*.kml);;Ozi Track (*.plt);;Ozi Route (*.rte);;Ozi Waypoint (*.wpt);;Wintec WBT201/1000 (*.tk1);;Universal CSV (*.csv);;QLandkarte DB(*.qdb)";
     }
     else
     {

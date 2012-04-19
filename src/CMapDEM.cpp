@@ -40,10 +40,14 @@ CMapDEM::CMapDEM(const QString& filename, CCanvas * parent)
 , old_my_yscale(0)
 , old_overlay(IMap::eNone)
 {
+#ifdef WIN32
+    dataset = (GDALDataset*)GDALOpen(filename.toLocal8Bit(),GA_ReadOnly);
+#else
     dataset = (GDALDataset*)GDALOpen(filename.toUtf8(),GA_ReadOnly);
+#endif
     if(dataset == 0)
     {
-        QMessageBox::warning(0, tr("Error..."), 
+        QMessageBox::warning(0, tr("Error..."),
             tr("Failed to load file: %1\n\n").arg(filename).append(tr(CPLGetLastErrorMsg())));
         status = 0;
         return;
@@ -176,7 +180,7 @@ void CMapDEM::dimensions(double& lon1, double& lat1, double& lon2, double& lat2)
 }
 
 
-bool CMapDEM::getOrigRegion(QVector<qint16>& data,XY &topLeft, XY &bottomRight, int& w, int& h)
+bool CMapDEM::getOrigRegion(QVector<qint16>& data,projXY &topLeft, projXY &bottomRight, int& w, int& h)
 {
     //memset(data, 0, sizeof(qint16) * h * w);
     data.fill(0);
@@ -235,7 +239,7 @@ bool CMapDEM::getOrigRegion(QVector<qint16>& data,XY &topLeft, XY &bottomRight, 
 }
 
 
-bool CMapDEM::getRegion(QVector<float>& data, XY topLeft, XY bottomRight, int w, int h)
+bool CMapDEM::getRegion(QVector<float>& data, projXY topLeft, projXY bottomRight, int w, int h)
 {
     //     qDebug() << topLeft.u << topLeft.v << bottomRight.u << bottomRight.v << w << h;
     data.fill(0.0);
@@ -366,7 +370,7 @@ void CMapDEM::draw(QPainter& p)
     if(pjsrc == 0) return;
 
     draw();
-    p.drawImage(0,0, buffer);
+    p.drawPixmap(0,0, pixBuffer);
     //     qDebug() << "--------------------------";
 }
 
@@ -378,15 +382,14 @@ void CMapDEM::draw()
     if(overlay == IMap::eNone)
     {
         old_overlay = overlay;
-        buffer.fill(qRgba(0,0,0,0));
-        //buffer.fill(Qt::transparent);
+        pixBuffer.fill(Qt::transparent);
         return;
     }
 
     // check if old area matches new request
     // kind of a different way to calculate the needRedraw flag
 
-    XY p1, p2;
+    projXY p1, p2;
     float my_xscale, my_yscale;
 
     getArea_n_Scaling_fromBase(p1, p2, my_xscale, my_yscale);
@@ -406,7 +409,7 @@ void CMapDEM::draw()
     old_my_yscale   = my_yscale;
     old_overlay     = overlay;
 
-    buffer.fill(qRgba(0,0,0,0));
+    pixBuffer.fill(Qt::transparent);
 
     if(pjsrc == 0) return;
 
@@ -414,28 +417,38 @@ void CMapDEM::draw()
         Calculate area of DEM data to be read.
     */
 
-    XY _p1 = p1;
-    XY _p2 = p2;
+    projXY _p1 = p1;
+    projXY _p2 = p2;
 
     // 1. convert top left and bottom right point into the projection system used by the DEM data
     pj_transform(pjtar, pjsrc, 1, 0, &_p1.u, &_p1.v, 0);
     pj_transform(pjtar, pjsrc, 1, 0, &_p2.u, &_p2.v, 0);
 
+    // determine intersection rect
+    projXY r1 = { std::max(_p1.u, xref1), std::min(_p1.v, yref1) };
+    projXY r2 = { std::min(_p2.u, xref2), std::max(_p2.v, yref2) };
+
+    if (r1.u > _p2.u || r1.v < _p2.v || r2.u < _p1.u || r2.v > _p1.v)
+    {
+        // no interscetion
+        return;
+    }
+
     // 2. get floating point offset of topleft corner
-    double xoff1_f = (_p1.u - xref1) / xscale;
-    double yoff1_f = (_p1.v - yref1) / yscale;
+    double xoff1_f = (r1.u - xref1) / xscale;
+    double yoff1_f = (r1.v - yref1) / yscale;
 
     // 3. truncate floating point offset into integer offset
-    int xoff1 = xoff1_f;         //qDebug() << "xoff1:" << xoff1 << xoff1_f;
-    int yoff1 = yoff1_f;         //qDebug() << "yoff1:" << yoff1 << yoff1_f;
+    int xoff1 = xoff1_f;
+    int yoff1 = yoff1_f;
 
     // 4. get floating point offset of bottom right corner
-    double xoff2_f = (_p2.u - xref1) / xscale;
-    double yoff2_f = (_p2.v - yref1) / yscale;
+    double xoff2_f = (r2.u - xref1) / xscale;
+    double yoff2_f = (r2.v - yref1) / yscale;
 
     // 5. round up (!) floating point offset into integer offset
-    int xoff2 = ceil(xoff2_f);   //qDebug() << "xoff2:" << xoff2 << xoff2_f;
-    int yoff2 = ceil(yoff2_f);   //qDebug() << "yoff2:" << yoff2 << yoff2_f;
+    int xoff2 = ceil(xoff2_f);
+    int yoff2 = ceil(yoff2_f);
 
     /*
         The defined area into DEM data (xoff1,yoff1,xoff2,yoff2) covers a larger or equal
@@ -447,31 +460,30 @@ void CMapDEM::draw()
 
     /*
         Calculate the width and the height of the area. Extend width until it's a multiple of 4.
-        This will be of advantag as QImage will process 32bit alligned bitmaps much faster.
+        This will be of advantage as QImage will process 32bit aligned bitmaps much faster.
     */
-    int w1 = xoff2 - xoff1; while((w1 & 0x03) != 0) ++w1;
-    int h1 = yoff2 - yoff1;      //qDebug() << "w1:" << w1 << "h1:" << h1;
+    unsigned int w1 = (xoff2 - xoff1 + 3) & ~0x03;
+    unsigned int h1 = (yoff2 - yoff1);
 
     // bail out if this is getting too big
     if(w1 > 10000 || h1 > 10000) return;
 
     // now calculate the actual width and height of the viewport
-    int w2 = w1 * xscale / my_xscale;
-                                 //qDebug() << "w2:" << w2 << "h2:" << h2;
-    int h2 = h1 * yscale / my_yscale;
+    unsigned int w2 = w1 * xscale / my_xscale;
+    unsigned int h2 = h1 * yscale / my_yscale;
 
     // as the first point off the DEM data will not match exactly the given top left corner
     // the bitmap has to be drawn with an offset.
-    int pxx = (xoff1_f - xoff1) * xscale / my_xscale;
-                                 //qDebug() << "pxx:" << pxx << "pxy:" << pxy;
-    int pxy = (yoff1_f - yoff1) * yscale / my_yscale;
+    int pxx = ((xoff1_f - xoff1) * xscale - (r1.u - _p1.u)) / my_xscale;
+    int pxy = ((yoff1_f - yoff1) * yscale - (r1.v - _p1.v)) / my_yscale;
 
     // read 16bit elevation data from GeoTiff
     QVector<qint16> data(w1*h1);
 
     GDALRasterBand * pBand;
     pBand = dataset->GetRasterBand(1);
-    CPLErr err = pBand->RasterIO(GF_Read, xoff1, yoff1, w1, h1, data.data(), w1, h1, GDT_Int16, 0, 0);
+    CPLErr err = pBand->RasterIO(GF_Read, xoff1, yoff1, std::min(w1, xsize_px - xoff1),
+                                 std::min(h1, ysize_px - yoff1), data.data(), w1, h1, GDT_Int16, 0, 0);
     if(err == CE_Failure)
     {
         return;
@@ -494,10 +506,10 @@ void CMapDEM::draw()
     }
 
     // Finally scale the image to viewport size. QT will do the smoothing
-    img = img.scaled(w2,h2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+    //img = img.scaled(w2,h2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
 
-    QPainter p(&buffer);
-    p.drawImage(-pxx, -pxy, img);
+    QPainter p(&pixBuffer);
+    p.drawImage(-pxx, -pxy, img.scaled(w2,h2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation));
 }
 
 

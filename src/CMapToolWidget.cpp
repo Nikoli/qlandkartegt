@@ -25,6 +25,8 @@
 #include "CMapSelectionRaster.h"
 #include "CGarminExport.h"
 #include "CMapSelectionGarmin.h"
+#include "CDlgMapTmsConfig.h"
+#include "CSettings.h"
 
 #include "config.h"
 
@@ -42,10 +44,17 @@ CMapToolWidget::CMapToolWidget(QTabWidget * parent)
     connect(&CMapDB::self(), SIGNAL(sigChanged()), this, SLOT(slotDBChanged()));
 
     contextMenuKnownMaps = new QMenu(this);
+    actReload = contextMenuKnownMaps->addAction(QPixmap(":/icons/iconReload16x16.png"),tr("Reload map..."),this,SLOT(slotReload()));
     actAddDEM = contextMenuKnownMaps->addAction(QPixmap(":/icons/iconDEM16x16.png"),tr("Add DEM..."),this,SLOT(slotAddDEM()));
     actDelDEM = contextMenuKnownMaps->addAction(QPixmap(":/icons/iconNoDEM16x16.png"),tr("Del. DEM..."),this,SLOT(slotDelDEM()));
     actCfgMap = contextMenuKnownMaps->addAction(QPixmap(":/icons/iconInfo16x16.png"),tr("Info/Config"),this,SLOT(slotCfgMap()));
     actDelMap = contextMenuKnownMaps->addAction(QPixmap(":/icons/iconClear16x16.png"),tr("Delete"),this,SLOT(slotDeleteKnownMap()));
+    actAddTMS = contextMenuKnownMaps->addAction(QPixmap(":/icons/iconAdd16x16.png"),tr("Add TMS map..."),this,SLOT(slotAddTmsMap()));;
+
+    connect(treeKnownMapsStream,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenuKnownMaps(const QPoint&)));
+    connect(treeKnownMapsStream,SIGNAL(itemClicked(QTreeWidgetItem*, int)),this,SLOT(slotKnownMapClicked(QTreeWidgetItem*, int)));
+    connect(treeKnownMapsStream,SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),this,SLOT(slotKnownMapDoubleClicked(QTreeWidgetItem*, int)));
+
     connect(treeKnownMapsRaster,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenuKnownMaps(const QPoint&)));
     connect(treeKnownMapsRaster,SIGNAL(itemClicked(QTreeWidgetItem*, int)),this,SLOT(slotKnownMapClicked(QTreeWidgetItem*, int)));
     connect(treeKnownMapsRaster,SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),this,SLOT(slotKnownMapDoubleClicked(QTreeWidgetItem*, int)));
@@ -63,10 +72,12 @@ CMapToolWidget::CMapToolWidget(QTabWidget * parent)
 
     connect(pushExportMap, SIGNAL(clicked()), this, SLOT(slotExportMap()));
 
-    tabWidget->setTabIcon(0, QIcon(":/icons/iconRaster16x16.png"));
-    tabWidget->setTabText(0,tr("Raster"));
-    tabWidget->setTabIcon(1, QIcon(":/icons/iconVector16x16.png"));
-    tabWidget->setTabText(1,tr("Vector"));
+    tabWidget->setTabIcon(eTabStream, QIcon(":/icons/iconStream22x22.png"));
+    tabWidget->setTabText(eTabStream,tr("Stream"));
+    tabWidget->setTabIcon(eTabRaster, QIcon(":/icons/iconRaster22x22.png"));
+    tabWidget->setTabText(eTabRaster,tr("Raster"));
+    tabWidget->setTabIcon(eTabVector, QIcon(":/icons/iconVector22x22.png"));
+    tabWidget->setTabText(eTabVector,tr("Vector"));
 
 }
 
@@ -83,6 +94,7 @@ void CMapToolWidget::slotDBChanged()
     QString key                 = basemap.getKey();
     QTreeWidgetItem * selected  = 0;
 
+    treeKnownMapsStream->clear();
     treeKnownMapsRaster->clear();
     treeKnownMapsVector->clear();
     const QMap<QString,CMapDB::map_t>& knownMaps = CMapDB::self().getKnownMaps();
@@ -95,6 +107,14 @@ void CMapToolWidget::slotDBChanged()
             {
                 item = new QTreeWidgetItem(treeKnownMapsVector);
             }
+            else if(map->type == IMap::eTMS)
+            {
+                item = new QTreeWidgetItem(treeKnownMapsStream);
+            }
+            else if(map->type == IMap::eWMS)
+            {
+                item = new QTreeWidgetItem(treeKnownMapsStream);
+            }
             else
             {
                 item = new QTreeWidgetItem(treeKnownMapsRaster);
@@ -103,7 +123,48 @@ void CMapToolWidget::slotDBChanged()
             item->setText(eName, map->description);
             item->setToolTip(eName, map->description);
             item->setData(eName, Qt::UserRole, map.key());
-            item->setIcon(eType, map->type == IMap::eRaster ? QIcon(":/icons/iconRaster16x16.png") : map->type == IMap::eGarmin ? QIcon(":/icons/iconVector16x16.png") : map->type == IMap::eTile ? QIcon(":/icons/iconTile16x16.png") : QIcon(":/icons/iconUnknown16x16.png"));
+
+            QIcon icon = QIcon(":/icons/iconUnknown16x16.png");
+            if(map->type == IMap::eRaster)
+            {
+                if(map->filename.toLower().endsWith("jnx"))
+                {
+                    icon = QIcon(":/icons/iconJNX22x22.png");
+                    item->setToolTip(eType, tr("BirdsEye/JNX"));
+                }
+                else if(map->filename.toLower().endsWith("rmap"))
+                {
+                    icon = QIcon(":/icons/iconRMAP22x22.png");
+                    item->setToolTip(eType, tr("TwoNav/RMAP"));
+                }
+                else
+                {
+                    icon = QIcon(":/icons/iconQMAP22x22.png");
+                    item->setToolTip(eType, tr("map stack/QMAP"));
+                }
+            }
+            else if(map->type == IMap::eGarmin)
+            {
+                icon = QIcon(":/icons/iconTDB22x22.png");                
+                item->setToolTip(eType, tr("Garmin/TDB/IMG"));
+            }
+            else if(map->type == IMap::eTMS)
+            {
+                icon = QIcon(":/icons/iconTMS22x22.png");
+                item->setToolTip(eType, tr("tile server"));
+            }
+            else if(map->type == IMap::eWMS)
+            {
+                icon = QIcon(":/icons/iconWMS22x22.png");
+                item->setToolTip(eType, tr("map server"));
+            }
+            else if(map->type == IMap::eNoMap)
+            {
+                icon = QIcon(":/icons/iconRaster22x22.png");
+                item->setToolTip(eType, tr("various projections"));
+            }
+
+            item->setIcon(eType, icon);
             item->setData(eType, Qt::UserRole, map->type);
 
             if(map.key() == key)
@@ -111,16 +172,19 @@ void CMapToolWidget::slotDBChanged()
                 selected = item;
                 item->setIcon(eMode, QIcon(QIcon(":/icons/iconOk16x16.png")));
                 item->setData(eMode, Qt::UserRole, eSelected);
+                item->setToolTip(eMode, tr("selected map"));
             }
             else if(basemap.hasOverlayMap(map.key()))
             {
                 item->setIcon(eMode, QIcon(QIcon(":/icons/iconOvlOk16x16.png")));
                 item->setData(eMode, Qt::UserRole, eOverlayActive);
+                item->setToolTip(eMode, tr("use a single click to deactivate map as overlay"));
             }
             else if(map->type == IMap::eGarmin)
             {
                 item->setIcon(eMode, QIcon(QIcon(":/icons/iconOvl16x16.png")));
                 item->setData(eMode, Qt::UserRole, eOverlay);
+                item->setToolTip(eMode, tr("use a single click to activate map as overlay"));
             }
             else
             {
@@ -129,24 +193,41 @@ void CMapToolWidget::slotDBChanged()
             ++map;
         }
     }
+    treeKnownMapsStream->sortItems(eName, Qt::AscendingOrder);
     treeKnownMapsVector->sortItems(eName, Qt::AscendingOrder);
     treeKnownMapsRaster->sortItems(eName, Qt::AscendingOrder);
+
 
     if(selected)
     {
         if(selected->data(eType, Qt::UserRole) == IMap::eGarmin)
         {
             treeKnownMapsVector->setCurrentItem(selected);
-            tabWidget->setCurrentIndex(1);
+            tabWidget->setCurrentIndex(eTabVector);
+        }
+        else if(selected->data(eType, Qt::UserRole) == IMap::eTMS)
+        {
+            treeKnownMapsStream->setCurrentItem(selected);
+            tabWidget->setCurrentIndex(eTabStream);
+        }
+        else if(selected->data(eType, Qt::UserRole) == IMap::eWMS)
+        {
+            treeKnownMapsStream->setCurrentItem(selected);
+            tabWidget->setCurrentIndex(eTabStream);
         }
         else
         {
             treeKnownMapsRaster->setCurrentItem(selected);
-            tabWidget->setCurrentIndex(0);
+            tabWidget->setCurrentIndex(eTabRaster);
         }
     }
 
     // adjust column sizes to fit
+    treeKnownMapsStream->header()->setResizeMode(0,QHeaderView::Interactive);
+    for(int i=0; i < eMaxColumn - 1; ++i)
+    {
+        treeKnownMapsStream->resizeColumnToContents(i);
+    }
     treeKnownMapsVector->header()->setResizeMode(0,QHeaderView::Interactive);
     for(int i=0; i < eMaxColumn - 1; ++i)
     {
@@ -175,6 +256,9 @@ void CMapToolWidget::slotDBChanged()
             ++map;
         }
 
+#if defined(Q_WS_MAC)
+        listSelectedMaps->setCurrentRow(0);
+#endif
         if(selected) listSelectedMaps->setCurrentItem(selected);
         updateExportButton();
     }
@@ -228,12 +312,17 @@ void CMapToolWidget::slotSelectedMapClicked(QListWidgetItem* item)
 void CMapToolWidget::slotContextMenuKnownMaps(const QPoint& pos)
 {
     QTreeWidgetItem * item      = 0;
-    if(sender() == treeKnownMapsRaster)
+    if(sender() == treeKnownMapsStream)
+    {
+        item = treeKnownMapsStream->currentItem();
+        lastTreeWidget = treeKnownMapsStream;
+    }
+    else if(sender() == treeKnownMapsRaster)
     {
         item = treeKnownMapsRaster->currentItem();
         lastTreeWidget = treeKnownMapsRaster;
     }
-    if(sender() == treeKnownMapsVector)
+    else if(sender() == treeKnownMapsVector)
     {
         item = treeKnownMapsVector->currentItem();
         lastTreeWidget = treeKnownMapsVector;
@@ -241,21 +330,17 @@ void CMapToolWidget::slotContextMenuKnownMaps(const QPoint& pos)
 
     if(item)
     {
-        IMap& dem = CMapDB::self().getDEM();
+        IMap& dem       = CMapDB::self().getDEM();
+        QString key     = item->data(eName, Qt::UserRole).toString();
+        bool isBuiltIn  = CMapDB::self().isBuiltIn(key);
+
+        IMap::maptype_e type = CMapDB::self().getMapData(key).type;
 
         if(item->data(eMode, Qt::UserRole).toInt() == eSelected)
         {
             actAddDEM->setEnabled(true);
             actDelDEM->setEnabled(dem.maptype == IMap::eDEM);
-            int mapType = item->data(eType, Qt::UserRole).toInt();
-            if(mapType == IMap::eGarmin || mapType == IMap::eRaster || mapType == IMap::eTile)
-            {
-                actCfgMap->setEnabled(true);
-            }
-            else
-            {
-                actCfgMap->setEnabled(false);
-            }
+            actCfgMap->setEnabled(isBuiltIn && (type != IMap::eNoMap) ? false : true);
         }
         else
         {
@@ -264,8 +349,19 @@ void CMapToolWidget::slotContextMenuKnownMaps(const QPoint& pos)
             actCfgMap->setEnabled(false);
         }
 
+        actDelMap->setEnabled(!isBuiltIn);
+        actAddTMS->setVisible(lastTreeWidget == treeKnownMapsStream);
+
         QPoint p = lastTreeWidget->mapToGlobal(pos);
         contextMenuKnownMaps->exec(p);
+    }
+    else if(lastTreeWidget == treeKnownMapsStream)
+    {
+        actAddDEM->setEnabled(false);
+        actDelDEM->setEnabled(false);
+        actCfgMap->setEnabled(false);
+        actDelMap->setEnabled(false);
+        actAddTMS->setVisible(true);
     }
 }
 
@@ -284,7 +380,6 @@ void CMapToolWidget::slotDeleteKnownMap()
 {
     QStringList keys;
     QTreeWidgetItem * item;
-    //    QTreeWidget * treeWidget = dynamic_cast<QTreeWidget*>(sender());
 
     bool wasSelected = false;
 
@@ -346,10 +441,10 @@ void CMapToolWidget::updateExportButton()
 void CMapToolWidget::slotExportMap()
 {
 
-    QListWidgetItem * item  = listSelectedMaps->currentItem();
+    QListWidgetItem * item = listSelectedMaps->currentItem();
     if(item == 0) return;
 
-    QString key             = item->data(Qt::UserRole).toString();
+    QString key = item->data(Qt::UserRole).toString();
     if(!CMapDB::self().getSelectedMaps().contains(key)) return;
 
     const QMap<QString,IMapSelection*>& selectedMaps = CMapDB::self().getSelectedMaps();
@@ -380,7 +475,7 @@ void CMapToolWidget::slotExportMap()
         CMapQMAPExport dlg((CMapSelectionRaster&)*ms,this);
         dlg.exec();
     }
-    if(ms->type == IMapSelection::eGarmin)
+    if(ms->type == IMapSelection::eVector)
     {
         CGarminExport dlg(this);
         dlg.exportToFile((CMapSelectionGarmin&)*ms);
@@ -390,7 +485,7 @@ void CMapToolWidget::slotExportMap()
 
 void CMapToolWidget::slotAddDEM()
 {
-    QSettings cfg;
+    SETTINGS;
     path = QDir(cfg.value("path/DEM",path.path()).toString());
 
     QString filename = QFileDialog::getOpenFileName(0, tr("Select DEM file..."),path.path(), tr("16bit Srtm Data (*.tif *.tiff *.hgt)"), 0, FILE_DIALOG_FLAGS);
@@ -409,7 +504,7 @@ void CMapToolWidget::slotDelDEM()
     IMap& dem = CMapDB::self().getDEM();
     if(dem.maptype == IMap::eDEM)
     {
-        QSettings cfg;
+        SETTINGS;
         cfg.setValue(QString("map/dem/%1").arg(CMapDB::self().getMap().getKey()), "");
         cfg.setValue(QString("map/dem/%1/ignoreWarning").arg(CMapDB::self().getMap().getKey()), false);
         dem.deleteLater();
@@ -420,4 +515,15 @@ void CMapToolWidget::slotDelDEM()
 void CMapToolWidget::slotCfgMap()
 {
     CMapDB::self().getMap().config();
+}
+
+void CMapToolWidget::slotAddTmsMap()
+{
+    CDlgMapTmsConfig dlg;
+    dlg.exec();
+}
+
+void CMapToolWidget::slotReload()
+{
+    CMapDB::self().reloadMap();
 }

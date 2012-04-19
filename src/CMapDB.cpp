@@ -24,8 +24,12 @@
 #include "CMapRaster.h"
 #include "CMapGeoTiff.h"
 #include "CMapJnx.h"
+#ifdef HAS_RMAP
+#include "CMapRmap.h"
+#endif
+#include "CMapWms.h"
+#include "CMapTms.h"
 #include "CMapDEM.h"
-#include "CMapOSM.h"
 #include "CMainWindow.h"
 #include "CMapEditWidget.h"
 #include "CMapSearchWidget.h"
@@ -39,11 +43,9 @@
 #include "CMapSelectionRaster.h"
 #include "CResources.h"
 #include "IDevice.h"
-#ifdef WMS_CLIENT
-#include "CMapWMS.h"
-#endif
 #include "CQlb.h"
 #include "IMouse.h"
+#include "CSettings.h"
 
 #include <QtGui>
 #include <QtXml/QDomDocument>
@@ -55,34 +57,32 @@ CMapDB * CMapDB::m_self = 0;
 CMapDB::CMapDB(QTabWidget * tb, QObject * parent)
 : IDB(tb,parent)
 {
-    m_self      = this;
-    CMapToolWidget * tw = new CMapToolWidget(tb);
-    toolview    = tw;
+    SETTINGS;
 
+    m_self              = this;
+    CMapToolWidget * tw = new CMapToolWidget(tb);
+    toolview            = tw;
     connect(tw, SIGNAL(sigChanged()), SIGNAL(sigChanged()));
 
     defaultMap = new CMapNoMap(theMainWindow->getCanvas());
-    map_t m;
-    m.description       = tr("--- No map ---");
-    m.key               = "NoMap";
-    m.type              = IMap::eRaster;
-    knownMaps[m.key]    = m;
-
-    m.description       = tr("--- OSM ---");
-    m.key               = "OSMTileServer";
-    m.type              = IMap::eTile;
-    knownMaps[m.key]    = m;
+    connect(defaultMap, SIGNAL(sigChanged()),  theMainWindow->getCanvas(), SLOT(update()));
 
     theMap = defaultMap;
 
-    QSettings cfg;
+    // static maps
+    map_t m;
+    m.description       = tr("--- No map ---");
+    m.key               = "NoMap";
+    m.type              = IMap::eNoMap;
+    knownMaps[m.key]    = m;
+    builtInKeys << m.key;
+
     QString map;
     QStringList maps = cfg.value("maps/knownMaps","").toString().split("|",QString::SkipEmptyParts);
     foreach(map, maps)
     {
         QFileInfo fi(map);
         QString ext     = fi.suffix().toLower();
-        QSettings mapdef(map,QSettings::IniFormat);
         map_t m;
         m.filename      = map;
         if(ext == "tdb")
@@ -101,31 +101,95 @@ CMapDB::CMapDB(QTabWidget * tb, QObject * parent)
             file.close();
             if(m.description.isEmpty()) m.description = fi.fileName();
         }
+        else if(ext == "tms")
+        {
+            QFile file(map);
+            file.open(QIODevice::ReadOnly);
+            QDomDocument dom;
+            dom.setContent(&file, false);
+            m.description = dom.firstChildElement("TMS").firstChildElement("Title").text();
+            file.close();
+            if(m.description.isEmpty()) m.description = fi.fileName();
+        }
+#ifdef HAS_RMAP
+        else if(ext == "rmap")
+        {
+            m.description = fi.baseName();
+        }
+#endif // HAS_RMAP
         else
         {
+            QSettings mapdef(map,QSettings::IniFormat);
+            mapdef.setIniCodec(QTextCodec::codecForName("UTF-8"));
             m.description = mapdef.value("description/comment","").toString();
         }
         if(m.description.isEmpty()) m.description = QFileInfo(map).fileName();
-        m.key           = map;
-        m.type          = ext == "qmap" ? IMap::eRaster : ext == "tdb" ? IMap::eGarmin : IMap::eRaster;
+        m.key            = map;
+        m.type           = ext == "qmap" ? IMap::eRaster : ext == "tdb" ? IMap::eGarmin : ext == "xml" ? IMap::eWMS : ext == "tms" ? IMap::eTMS : IMap::eRaster;
         knownMaps[m.key] = m;
     }
 
+    // add streaming maps
+    {
+        map_t m;
+
+        m.description   = "OpenStreetMap";
+        m.filename      = "http://tile.openstreetmap.org/%1/%2/%3.png";
+        m.type          = IMap::eTMS;
+        m.key           = QString::number(qHash(m.filename));
+        m.copyright     = "Open Street Map, Creative Commons Attribution-ShareAlike 2.0 license";
+        knownMaps[m.key] = m;
+        builtInKeys << m.key;
+
+        m.description   = "OpenCycleMap";
+        m.filename      = "http://b.tile.opencyclemap.org/cycle/%1/%2/%3.png";
+        m.type          = IMap::eTMS;
+        m.key           = QString::number(qHash(m.filename));
+        m.copyright     = "Open Street Map, Creative Commons Attribution-ShareAlike 2.0 license";
+        knownMaps[m.key] = m;
+        builtInKeys << m.key;
+
+        QStringList keys = cfg.value("tms/knownMaps").toString().split("|",QString::SkipEmptyParts);
+        foreach(const QString& key, keys)
+        {
+            cfg.beginGroup(QString("tms/maps/%1").arg(key));
+            m.description   = cfg.value("name", "").toString();
+            m.filename      = cfg.value("url", "").toString();
+            m.copyright     = cfg.value("copyright", "").toString();
+            m.key           = QString::number(qHash(m.filename));
+            m.type          = IMap::eTMS;
+            if(!m.description.isEmpty() && !m.filename.isEmpty())
+            {
+                knownMaps[m.key] = m;
+            }
+            cfg.endGroup();
+        }
+    }
+
+
+    if(theMainWindow->didCrash())
+    {
+        int res = QMessageBox::warning(0,tr("Crash detected...."), tr("QLandkarte GT was terminated with a crash. This is really bad. A common reason for that is a bad map. Do you really want to load the last map?"), QMessageBox::Yes|QMessageBox::No, QMessageBox::Yes);
+        if(res == QMessageBox::No)
+        {
+            cfg.setValue("maps/visibleMaps","");
+            emit sigChanged();
+            return;
+        }
+    }
+
     maps = cfg.value("maps/visibleMaps","").toString().split("|",QString::SkipEmptyParts);
+    cfg.setValue("maps/visibleMaps","");
+    cfg.sync();
+
     foreach(map, maps)
     {
         openMap(map, false, *theMainWindow->getCanvas());
-        //         QFileInfo fi(map);
-        //         QString ext = fi.suffix();
-        //         if(ext == "qmap") {
-        //             theMap = new CMapQMAP(map,theMainWindow->getCanvas());
-        //         }
-        //         else{
-        //             theMap = new CMapRaster(map,theMainWindow->getCanvas());
-        //         }
-        //TODO: has to be removed for several layers
         break;
     }
+    cfg.setValue("maps/visibleMaps",maps.join("|"));
+
+
     emit sigChanged();
 
 }
@@ -133,14 +197,35 @@ CMapDB::CMapDB(QTabWidget * tb, QObject * parent)
 
 CMapDB::~CMapDB()
 {
-    QSettings cfg;
+    SETTINGS;
     QString maps;
     map_t map;
+    QString mapsTMS;
+
+    cfg.remove("tms/maps");
+
     foreach(map,knownMaps)
     {
-        maps += map.filename + "|";
+        if(builtInKeys.contains(map.key))
+        {
+            continue;
+        }
+        if(map.filename.startsWith("http") || map.filename.startsWith("file")|| map.filename.startsWith("script"))
+        {
+            mapsTMS += map.key + "|";
+            cfg.beginGroup(QString("tms/maps/%1").arg(map.key));
+            cfg.setValue("name", map.description);
+            cfg.setValue("url", map.filename);
+            cfg.setValue("copyright", map.copyright);
+            cfg.endGroup();
+        }
+        else
+        {
+            maps += map.filename + "|";
+        }
     }
     cfg.setValue("maps/knownMaps",maps);
+    cfg.setValue("tms/knownMaps",mapsTMS);
 
     GDALDestroyDriverManager();
 }
@@ -174,10 +259,12 @@ IMap& CMapDB::getDEM()
 
 void CMapDB::closeVisibleMaps()
 {
-    if(!theMap.isNull() && theMap != defaultMap) delete theMap;
-    if(!demMap.isNull()) delete demMap;
-
+    IMap * map = theMap;
     theMap = defaultMap;
+
+    if(map && map != defaultMap) delete map;
+
+    if(!demMap.isNull()) demMap->deleteLater();
 
     IMouse::resetPos1();
 }
@@ -190,16 +277,19 @@ void CMapDB::openMap(const QString& filename, bool asRaster, CCanvas& canvas)
 
     closeVisibleMaps();
 
-    QSettings cfg;
+    SETTINGS;
 
     map_t map;
     QFileInfo fi(filename);
+    if(!fi.exists() && !filename.startsWith("http") && !filename.startsWith("file") && !filename.startsWith("script")) return;
+
     QString ext = fi.suffix().toLower();
     if(ext == "qmap")
     {
 
         // create map descritor
         QSettings mapdef(filename,QSettings::IniFormat);
+        mapdef.setIniCodec(QTextCodec::codecForName("UTF-8"));
         map.filename    = filename;
         map.description = mapdef.value("description/comment","").toString();
         if(map.description.isEmpty()) map.description = fi.fileName();
@@ -213,7 +303,6 @@ void CMapDB::openMap(const QString& filename, bool asRaster, CCanvas& canvas)
         knownMaps[map.key] = map;
 
         // store current map filename for next session
-        QSettings cfg;
         cfg.setValue("maps/visibleMaps",theMap->getFilename());
 
     }
@@ -239,7 +328,6 @@ void CMapDB::openMap(const QString& filename, bool asRaster, CCanvas& canvas)
         cfg.setValue(map.filename, map.description);
         cfg.endGroup();
     }
-#ifdef HAS_JNX
     else if(ext == "jnx")
     {
 
@@ -263,40 +351,70 @@ void CMapDB::openMap(const QString& filename, bool asRaster, CCanvas& canvas)
         cfg.setValue(map.filename, map.description);
         cfg.endGroup();
     }
-#endif // HAS_JNX
-#ifdef WMS_CLIENT
-    else if(ext == "xml" )
+#ifdef HAS_RMAP
+    else if(ext == "rmap")
     {
+
+        CMapRmap * maprmap;
+
         map.filename    = filename;
         map.key         = filename;
         map.type        = IMap::eRaster;
 
-        QFile file(filename);
-        file.open(QIODevice::ReadOnly);
-        QDomDocument dom;
-        dom.setContent(&file, false);
-        map.description = dom.firstChildElement("GDAL_WMS").firstChildElement("Service").firstChildElement("Title").text();
-        file.close();
+        theMap = maprmap = new CMapRmap(map.key, filename, &canvas);
 
+        map.description = maprmap->getName();
         if(map.description.isEmpty()) map.description = fi.fileName();
-        theMap = new CMapWMS(map.key,filename,theMainWindow->getCanvas());
 
         // add map to known maps
         knownMaps[map.key] = map;
 
         // store current map filename for next session
-        QSettings cfg;
-        cfg.setValue("maps/visibleMaps",theMap->getFilename());
+        cfg.setValue("maps/visibleMaps",filename);
     }
 #endif
-    else if(filename == "OSMTileServer")
+    else if(ext == "xml")
     {
-        theMap = new CMapOSM(theMainWindow->getCanvas());
+        CMapWms * mapwms;
 
+        map.filename    = filename;
+        map.key         = filename;
+        map.type        = IMap::eWMS;
+
+        theMap = mapwms = new CMapWms(map.key, filename, &canvas);
+
+        map.description = mapwms->getName();
+        if(map.description.isEmpty()) map.description = fi.fileName();
+
+        // add map to known maps
+        knownMaps[map.key] = map;
         // store current map filename for next session
-        QSettings cfg;
+        cfg.setValue("maps/visibleMaps",filename);
+    }
+    else if(ext == "tms")
+    {
+        CMapTms * maptms;
+
+        map.filename    = filename;
+        map.key         = filename;
+        map.type        = IMap::eTMS;
+
+        theMap = maptms = new CMapTms(map.key, &canvas);
+        map.description = maptms->getName();
+        if(map.description.isEmpty()) map.description = fi.fileName();
+
+        // add map to known maps
+        knownMaps[map.key] = map;
+        // store current map filename for next session
         cfg.setValue("maps/visibleMaps",filename);
 
+    }
+    else if(filename.startsWith("http") || filename.startsWith("file") ||  filename.startsWith("script"))
+    {
+        theMap = new CMapTms(QString::number(qHash(filename)), theMainWindow->getCanvas());
+
+        // store current map filename for next session
+        cfg.setValue("maps/visibleMaps",filename);
     }
     else
     {
@@ -308,7 +426,7 @@ void CMapDB::openMap(const QString& filename, bool asRaster, CCanvas& canvas)
         {
             theMap = new CMapGeoTiff(filename,&canvas);
             // store current map filename for next session
-            QSettings cfg;
+            SETTINGS;
             cfg.setValue("maps/visibleMaps",theMap->getFilename());
         }
     }
@@ -317,11 +435,6 @@ void CMapDB::openMap(const QString& filename, bool asRaster, CCanvas& canvas)
 
     QString fileDEM = cfg.value(QString("map/dem/%1").arg(theMap->getKey()),"").toString();
     if(!fileDEM.isEmpty()) openDEM(fileDEM);
-
-#ifdef PLOT_3D_NEW
-//    CMap3D * map3D = new CMap3D(theMap, theMainWindow->getCanvas());
-//    theMainWindow->getCanvasTab()->addTab(map3D, tr("Map 3D..."));
-#endif
 
     emit sigChanged();
 
@@ -358,28 +471,33 @@ void CMapDB::openMap(const QString& key)
     {
         theMap = new CMapTDB(key,filename,theMainWindow->getCanvas());
     }
-#ifdef HAS_JNX
     else if(ext == "jnx")
     {
         theMap = new CMapJnx(key,filename,theMainWindow->getCanvas());
     }
-#endif // HAS_JNX
-#ifdef WMS_CLIENT
-    else if(ext == "xml" )
+#ifdef HAS_RMAP
+    else if(ext == "rmap")
     {
-        theMap = new CMapWMS(key,filename,theMainWindow->getCanvas());
+        theMap = new CMapRmap(key,filename,theMainWindow->getCanvas());
     }
 #endif
-    else if(key == "OSMTileServer")
+    else if(ext == "xml")
     {
-        theMap = new CMapOSM(theMainWindow->getCanvas());
-        filename = key;
+        theMap = new CMapWms(key,filename,theMainWindow->getCanvas());
+    }
+    else if(ext == "tms")
+    {
+        theMap = new CMapTms(key, theMainWindow->getCanvas());
+    }
+    else if(filename.startsWith("http") || filename.startsWith("file") || filename.startsWith("script"))
+    {
+        theMap = new CMapTms(key, theMainWindow->getCanvas());
     }
 
     connect(theMap, SIGNAL(sigChanged()), theMainWindow->getCanvas(), SLOT(update()));
 
     // store current map filename for next session
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("maps/visibleMaps",filename);
 
     QString fileDEM = cfg.value(QString("map/dem/%1").arg(theMap->getKey()),"").toString();
@@ -394,11 +512,6 @@ void CMapDB::openMap(const QString& key)
         theMap->convertRad2Pt(midU, midV);
         theMap->move(QPoint(midU, midV), theMainWindow->getCanvas()->rect().center());
     }
-
-#ifdef PLOT_3D_NEW
-//    CMap3D * map3D = new CMap3D(theMap, theMainWindow->getCanvas());
-//    theMainWindow->getCanvasTab()->addTab(map3D, tr("Map 3D..."));
-#endif
 
     emit sigChanged();
     QApplication::restoreOverrideCursor();
@@ -434,11 +547,11 @@ IMap * CMapDB::createMap(const QString& key)
 
 void CMapDB::openDEM(const QString& filename)
 {
-    QSettings cfg;
+    SETTINGS;
 
     if(!demMap.isNull())
     {
-        delete demMap;
+        demMap->deleteLater();
     }
 
     try
@@ -448,7 +561,7 @@ void CMapDB::openDEM(const QString& filename)
         if (dem->loaded())
             demMap = dem, theMap->registerDEM(*dem);
         else
-            delete dem;
+            dem->deleteLater();
     }
     catch(const QString& msg)
     {
@@ -469,7 +582,7 @@ void CMapDB::openDEM(const QString& filename)
 
 void CMapDB::closeMap()
 {
-    QSettings cfg;
+    SETTINGS;
     cfg.setValue("maps/visibleMaps",theMap->getFilename());
     closeVisibleMaps();
 }
@@ -481,9 +594,14 @@ void CMapDB::delKnownMap(const QStringList& keys)
     foreach(key, keys)
     {
         map_t& map = knownMaps[key];
-        if(map.type == IMap::eGarmin)
+        IMap::maptype_e type = map.type;
+        QString filename = map.filename;
+
+        knownMaps.remove(key);
+
+        if(type == IMap::eGarmin)
         {
-            QSettings cfg;
+            SETTINGS;
             cfg.beginGroup("garmin/maps");
             cfg.beginGroup("alias");
             QString name = cfg.value(key,key).toString();
@@ -492,7 +610,30 @@ void CMapDB::delKnownMap(const QStringList& keys)
             cfg.endGroup();
             cfg.sync();
         }
-        knownMaps.remove(key);
+        else if(type == IMap::eTMS)
+        {
+            SETTINGS;
+            cfg.remove(QString("tms/maps/%1").arg(key));
+            cfg.sync();
+        }
+        else if(type == IMap::eWMS)
+        {
+            SETTINGS;
+            cfg.beginGroup("wms/maps");
+            cfg.remove(key);
+            cfg.endGroup();
+            cfg.sync();
+        }
+        else if(QFileInfo(filename).completeSuffix() == "rmap")
+        {
+            SETTINGS;
+            cfg.beginGroup("rmap/maps");
+            cfg.remove(key);
+            cfg.endGroup();
+            cfg.sync();
+        }
+
+
     }
 
     emit sigChanged();
@@ -543,7 +684,9 @@ void CMapDB::saveGPX(CGpx& gpx, const QStringList& keys)
 
 QDataStream& CMapDB::operator<<(QDataStream& s)
 {
+
     qint32 type;
+    qint32 subtype = IMapSelection::eNo;
     quint32 timestamp;
     QString key;
     QString mapkey;
@@ -604,6 +747,7 @@ QDataStream& CMapDB::operator<<(QDataStream& s)
                 s1 >> lat1;             ///< top left latitude [rad]
                 s1 >> lon2;             ///< bottom right longitude [rad]
                 s1 >> lat2;             ///< bottom right latitude [rad]
+                s1 >> subtype;
                 break;
             }
 
@@ -612,7 +756,12 @@ QDataStream& CMapDB::operator<<(QDataStream& s)
                 QDataStream s1(&entry->data, QIODevice::ReadOnly);
                 s1.setVersion(QDataStream::Qt_4_5);
 
-                CMapSelectionRaster * ms = new CMapSelectionRaster(this);
+                if(subtype == IMapSelection::eNo)
+                {
+                    subtype = IMapSelection::eGDAL;
+                }
+
+                CMapSelectionRaster * ms = new CMapSelectionRaster((IMapSelection::subtype_e)subtype, this);
                 ms->setKey(key);
                 ms->mapkey = mapkey;
                 ms->setTimestamp(timestamp);
@@ -689,7 +838,7 @@ QDataStream& CMapDB::operator<<(QDataStream& s)
                 foreach(key, selectedMaps.keys())
                 {
                     IMapSelection * mapSel = selectedMaps[key];
-                    if(mapSel->type == IMapSelection::eGarmin)
+                    if(mapSel->type == IMapSelection::eVector)
                     {
                         delete selectedMaps.take(key);
                     }
@@ -831,9 +980,23 @@ void CMapDB::select(const QRect& rect, const QMap< QPair<int,int>, bool>& selTil
         return;
     }
 
-    if(theMap->maptype == IMap::eRaster || theMap->maptype == IMap::eTile)
+    if(theMap->maptype == IMap::eRaster || theMap->maptype == IMap::eWMS || theMap->maptype == IMap::eTMS)
     {
-        CMapSelectionRaster * ms = new CMapSelectionRaster(this);
+        CMapSelectionRaster * ms;
+        if(theMap->maptype == IMap::eRaster)
+        {
+            ms = new CMapSelectionRaster(IMapSelection::eGDAL, this);
+        }
+        else if(theMap->maptype == IMap::eWMS)
+        {
+            ms = new CMapSelectionRaster(IMapSelection::eWMS, this);
+        }
+        else if(theMap->maptype == IMap::eTMS)
+        {
+            ms = new CMapSelectionRaster(IMapSelection::eTMS, this);
+        }
+
+
         ms->mapkey       = mapkey;
         ms->selTiles     = selTiles;
         ms->setName(knownMaps[mapkey].description);
@@ -869,7 +1032,7 @@ void CMapDB::select(const QRect& rect, const QMap< QPair<int,int>, bool>& selTil
         IMapSelection * mapSel;
         foreach(mapSel, selectedMaps)
         {
-            if(mapSel->type == IMapSelection::eGarmin)
+            if(mapSel->type == IMapSelection::eVector)
             {
                 ms     = mapSel;
                 isEdit = true;
@@ -901,6 +1064,10 @@ void CMapDB::select(const QRect& rect, const QMap< QPair<int,int>, bool>& selTil
         }
         emit sigChanged();
     }
+    else
+    {
+        QMessageBox::critical(0,tr("Error..."), tr("This map does not support this feature."), QMessageBox::Abort,QMessageBox::Abort);
+    }
 }
 
 
@@ -908,7 +1075,7 @@ IMapSelection * CMapDB::getSelectedMap(double lon, double lat)
 {
     IMap& map = getMap();
 
-    if(map.maptype != IMap::eRaster)
+    if(map.maptype != IMap::eRaster && map.maptype != IMap::eWMS && map.maptype != IMap::eTMS)
     {
         return 0;
     }
@@ -946,4 +1113,48 @@ IMapSelection * CMapDB::getMapSelectionByKey(const QString& key)
     }
 
     return 0;
+}
+
+const CMapDB::map_t& CMapDB::getMapData(const QString& key)
+{
+    if(knownMaps.contains(key))
+    {
+        return knownMaps[key];
+    }
+    return emptyMap;
+}
+
+void CMapDB::setMapData(const map_t& map)
+{
+    map_t m = map;
+    if(m.type == IMap::eTMS)
+    {
+        m.key = QString::number(qHash(m.filename));
+    }
+
+    knownMaps[m.key] = m;
+
+    emit sigChanged();
+}
+
+void CMapDB::reloadMap()
+{
+    QString key;
+    double  lon = 0;
+    double  lat = 0;
+    {
+        IMap& map  = getMap();
+        map.convertPt2Rad(lon, lat);
+        key = map.getKey();
+        closeVisibleMaps();
+        emitSigChanged();
+    }
+    qApp->processEvents();
+    {
+        openMap(key);
+        IMap& map  = getMap();
+        map.convertRad2Pt(lon, lat);
+        map.move(QPoint(lon, lat), QPoint(0,0));
+        emitSigChanged();
+    }
 }

@@ -33,6 +33,8 @@
 #endif
 #include "GeoMath.h"
 #include "CTrackToolWidget.h"
+#include "CGridDB.h"
+#include "CDlgCropMap.h"
 
 #include <QtGui>
 #include "CUndoStackView.h"
@@ -186,7 +188,6 @@ void CMouseMoveMap::keyReleaseEvent(QKeyEvent * e)
 
 void CMouseMoveMap::draw(QPainter& p)
 {
-    qDebug() << "CMouseMoveMap::draw()";
     drawPos1(p);
     drawSelWpt(p);
     drawSelTrkPt(p);
@@ -197,6 +198,8 @@ void CMouseMoveMap::draw(QPainter& p)
 
 void CMouseMoveMap::contextMenu(QMenu& menu)
 {
+    menu.addAction(QPixmap(":/icons/iconReload16x16.png"),tr("Reload Map"),this,SLOT(slotReloadMap()));
+    menu.addSeparator();
     if(!selWpt.isNull())
     {
         menu.addSeparator();
@@ -250,19 +253,38 @@ void CMouseMoveMap::contextMenu(QMenu& menu)
         menu.addAction(QPixmap(":/icons/iconGoogleMaps16x16.png"),tr("Open Pos. with Google Maps"),this,SLOT(slotOpenGoogleMaps())); //TODO: Google Maps right click
         menu.addAction(QPixmap(":/icons/iconClipboard16x16.png"),tr("Copy Pos. Trackpoint"),this,SLOT(slotCopyPositionTrack()));
         menu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit Track ..."),this,SLOT(slotEditTrack()));
+        menu.addAction(QPixmap(":/icons/iconEditCut16x16.png"),tr("Split Track ..."),this,SLOT(slotSplitTrack()));
     }
     menu.addSeparator();
 
+    bool isLonLat   = false;
+    double u        = mousePos.x();
+    double v        = mousePos.y();
+    CGridDB::self().convertPt2Pos(u, v, isLonLat);
+    if(isLonLat)
+    {
+        QString str;
+        u *= RAD_TO_DEG;
+        v *= RAD_TO_DEG;
+        GPS_Math_Deg_To_Str(u, v, str);
+        QString posMeter = tr("Grid: %1").arg(str);
+        menu.addAction(QIcon(":/icons/iconClipboard16x16.png"), posMeter, this, SLOT(slotCopyPosGrid()));
+    }
+    else
+    {
+        QString posMeter = tr("Grid: N %1m E %2m").arg(u, 0,'f',0).arg(v,0,'f',0);
+        menu.addAction(QIcon(":/icons/iconClipboard16x16.png"), posMeter, this, SLOT(slotCopyPosGrid()));
+    }
 
 
     IMap& map = CMapDB::self().getMap();
-    double u = mousePos.x();
-    double v = mousePos.y();
+    u = mousePos.x();
+    v = mousePos.y();
 
     map.convertPt2M(u,v);
     if(!map.isLonLat())
-    {        
-        QString posMeter = tr("N %1m E %2m").arg(u, 0,'f',0).arg(v,0,'f',0);
+    {
+        QString posMeter = tr("Map: N %1m E %2m").arg(u, 0,'f',0).arg(v,0,'f',0);
         menu.addAction(QIcon(":/icons/iconClipboard16x16.png"), posMeter, this, SLOT(slotCopyPosMeter()));
     }
 
@@ -286,16 +308,19 @@ void CMouseMoveMap::contextMenu(QMenu& menu)
         QString posPixel = tr("Pixel %1x%2 (%3)").arg(u, 0,'f',0).arg(v,0,'f',0).arg(fn);
         menu.addAction(QIcon(":/icons/iconClipboard16x16.png"), posPixel, this, SLOT(slotCopyPosPixel()));
 
+        menu.addSeparator();
+        menu.addAction(QIcon(":/icons/wpt/flag_pin_red15x15.png"), tr("Crop: set pos. 1"), this, SLOT(slotSetPos1()));
+
         if(pos1Pixel.x() >= 0 && pos1Pixel.y() >= 0)
         {
             double u1 = pos1Pixel.x();
             double v1 = pos1Pixel.y();
 
-            QString posPixelSize = tr("Pos1 -> Pos %1x%2 w:%3 h:%4").arg(u1, 0,'f',0).arg(v1,0,'f',0).arg(u - u1,0,'f',0).arg(v - v1, 0,'f',0);
+            QString posPixelSize = tr("Crop map: %1x%2 w:%3 h:%4").arg(u1, 0,'f',0).arg(v1,0,'f',0).arg(u - u1,0,'f',0).arg(v - v1, 0,'f',0);
             menu.addAction(QIcon(":/icons/iconClipboard16x16.png"), posPixelSize, this, SLOT(slotCopyPosPixelSize()));
         }
 
-        menu.addAction(QIcon(":/icons/wpt/flag_pin_red15x15.png"), tr("Set as Pos1"), this, SLOT(slotSetPos1()));
+
 
     }
 
@@ -317,6 +342,28 @@ void CMouseMoveMap::slotCopyPosDegree()
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(position);
 
+}
+
+void CMouseMoveMap::slotCopyPosGrid()
+{
+    QString position;
+    bool isLonLat   = false;
+    double u        = mousePos.x();
+    double v        = mousePos.y();
+    CGridDB::self().convertPt2Pos(u, v, isLonLat);
+    if(isLonLat)
+    {
+        u *= RAD_TO_DEG;
+        v *= RAD_TO_DEG;
+        GPS_Math_Deg_To_Str(u, v, position);
+    }
+    else
+    {
+        position = tr("N %1m E %2m").arg(u, 0,'f',0).arg(v,0,'f',0);
+    }
+
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(position);
 }
 
 void CMouseMoveMap::slotCopyPosMeter()
@@ -356,11 +403,12 @@ void CMouseMoveMap::slotCopyPosPixelSize()
     double u2 = mousePos.x();
     double v2 = mousePos.y();
 
-    map.convertPt2Pixel(u2,v2);
-    QString position = QString("%1 %2 %3 %4").arg(u1, 0,'f',0).arg(v1,0,'f',0).arg(u2 - u1, 0,'f',0).arg(v2 - v1,0,'f',0);
+    QString filename  = map.getFilename(mousePos.x(), mousePos.y());
 
-    QClipboard *clipboard = QApplication::clipboard();
-    clipboard->setText(position);
+    map.convertPt2Pixel(u2,v2);
+
+    CDlgCropMap dlg(filename, u1, v1, u2 - u1, v2 - v1);
+    dlg.exec();
 
 }
 
@@ -463,7 +511,8 @@ void CMouseMoveMap::slotAddWpt()
     double v = mousePos.y();
     map.convertPt2Rad(u,v);
     float ele = dem.getElevation(u,v);
-    CWptDB::self().newWpt(u, v, ele,"");
+
+    CWptDB::self().newWpt(u, v, ele,CWptDB::self().getNewWptName());
 
 }
 
@@ -495,6 +544,14 @@ void CMouseMoveMap::slotEditTrack()
     }
 }
 
+void CMouseMoveMap::slotSplitTrack()
+{
+    if(selTrkPt)
+    {
+        CTrackDB::self().splitTrack(selTrkPt->idx);
+    }
+}
+
 void CMouseMoveMap::slotOpenGoogleMaps()	//TODO: Open Google Maps
 {
     QString position;
@@ -508,3 +565,7 @@ void CMouseMoveMap::slotOpenGoogleMaps()	//TODO: Open Google Maps
     QDesktopServices::openUrl(QUrl("http://maps.google.com/maps?t=h&z=18&om=1&q="+position+"("+time+")", QUrl::TolerantMode));
 }
 
+void CMouseMoveMap::slotReloadMap()
+{
+    CMapDB::self().reloadMap();
+}

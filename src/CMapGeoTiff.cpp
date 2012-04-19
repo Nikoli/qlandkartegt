@@ -47,7 +47,11 @@ CMapGeoTiff::CMapGeoTiff(const QString& fn, CCanvas * parent)
 {
     filename = fn;
 
+#ifdef WIN32
+    dataset = (GDALDataset*)GDALOpen(filename.toLocal8Bit(),GA_ReadOnly);
+#else
     dataset = (GDALDataset*)GDALOpen(filename.toUtf8(),GA_ReadOnly);
+#endif
     if(dataset == 0)
     {
         QMessageBox::warning(0, tr("Error..."), tr("Failed to load file: %1").arg(filename));
@@ -154,12 +158,7 @@ CMapGeoTiff::CMapGeoTiff(const QString& fn, CCanvas * parent)
 
     zoomidx = 1;
 
-    quadraticZoom = new QCheckBox(theMainWindow->getCanvas());
-    quadraticZoom->setText(tr("quadratic zoom"));
-    theMainWindow->statusBar()->insertPermanentWidget(0,quadraticZoom);
-
-    QSettings cfg;
-    quadraticZoom->setChecked(cfg.value("maps/quadraticZoom", false).toBool());
+    quadraticZoom = theMainWindow->getCheckBoxQuadraticZoom();
 }
 
 
@@ -167,13 +166,6 @@ CMapGeoTiff::~CMapGeoTiff()
 {
     if(pjsrc) pj_free(pjsrc);
     if(dataset) delete dataset;
-
-    if(quadraticZoom)
-    {
-        QSettings cfg;
-        cfg.setValue("maps/quadraticZoom", quadraticZoom->isChecked());
-        delete quadraticZoom;
-    }
 }
 
 
@@ -190,7 +182,7 @@ void CMapGeoTiff::draw(QPainter& p)
     draw();
 
 
-    p.drawImage(0,0,buffer);
+    p.drawPixmap(0,0,pixBuffer);
 
     // render overlay
     if(!ovlMap.isNull() && !doFastDraw)
@@ -235,8 +227,8 @@ void CMapGeoTiff::draw()
 {
     if(pjsrc == 0) return IMap::draw();
 
-    buffer.fill(Qt::white);
-    QPainter _p_(&buffer);
+    pixBuffer.fill(Qt::white);
+    QPainter _p_(&pixBuffer);
 
     QRectF viewport  = QRectF(x, y, size.width() * xscale * zoomFactor,  size.height() * yscale * zoomFactor);
     QRectF maparea   = QRectF(QPointF(xref1, yref1), QPointF(xref2, yref2));
@@ -315,7 +307,7 @@ void CMapGeoTiff::draw()
                         for (offset = 0; offset < sizeof(testPix) && *(((quint8 *)&testPix) + offset) != pbandColour; offset++);
 /// @todo this has to be removed with GDAL 1.8.0
 #ifdef WIN32
-                        offset = 3 - b;
+                        //offset = 3 - b;
 #endif // WIN32
                         if(offset < sizeof(testPix))
                         {
@@ -403,7 +395,7 @@ void CMapGeoTiff::move(const QPoint& old, const QPoint& next)
 
 void CMapGeoTiff::zoom(bool zoomIn, const QPoint& p0)
 {
-    XY p1;
+    projXY p1;
     if(pjsrc == 0) return;
 
     // convert point to geo. coordinates
@@ -565,7 +557,7 @@ GDALDataset * CMapGeoTiff::getDataset()
     return dataset;
 }
 
-void CMapGeoTiff::getArea_n_Scaling(XY& p1, XY& p2, float& my_xscale, float& my_yscale)
+void CMapGeoTiff::getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float& my_yscale)
 {
     p1.u = 0;
     p1.v = 0;

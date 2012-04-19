@@ -22,14 +22,14 @@
 
 
 #include <QtGui>
-#include <projects.h>
+#include <proj_api.h>
 #ifdef __MINGW32__
 #undef LP
 #endif
 
 
 CMapSelectionGarmin::CMapSelectionGarmin(QObject * parent)
-: IMapSelection(eGarmin, parent)
+: IMapSelection(eVector, eGarmin, parent)
 , tilecnt(0)
 {
     iconPixmap = QPixmap(":/icons/iconMap16x16.png");

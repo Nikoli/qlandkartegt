@@ -21,6 +21,8 @@
 #include "CResources.h"
 #include "CDlgMapJNXConfig.h"
 #include "GeoMath.h"
+#include "CMainWindow.h"
+#include "CSettings.h"
 #include <QtGui>
 
 #define MAX_IDX_ZOOM 26
@@ -133,7 +135,7 @@ CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
     info += QString("<tr><td>%1</td><td>%2</td></tr>").arg(tr("Bottom/Right")).arg(strBottomRight.replace("\260","&#176;"));
 
     {
-        XY p1, p2;
+        projXY p1, p2;
         double a1,a2, width, height;
         float u1 = 0, v1 = 0, u2 = 0, v2 = 0;
         GPS_Math_Str_To_Deg(strTopLeft.replace("&#176;",""), u1, v1);
@@ -253,7 +255,7 @@ CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
 
     pj_transform(pjtar, pjsrc,1,0,&x,&y,0);
 
-    QSettings cfg;
+    SETTINGS;
     cfg.beginGroup("birdseye/maps");
     cfg.beginGroup(name);
     zoomidx = cfg.value("zoomidx",23).toInt();
@@ -265,13 +267,16 @@ CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
     zoom(zoomidx);
 
     setAngleNorth();
+
+    theMainWindow->getCheckBoxQuadraticZoom()->hide();
 }
 
 CMapJnx::~CMapJnx()
 {
+    qDebug() << "CMapJnx::~CMapJnx()";
     if(pjsrc) pj_free(pjsrc);
 
-    QSettings cfg;
+    SETTINGS;
     cfg.beginGroup("birdseye/maps");
     cfg.beginGroup(name);
     cfg.setValue("zoomidx",zoomidx);
@@ -279,6 +284,8 @@ CMapJnx::~CMapJnx()
     cfg.setValue("y",y);
     cfg.endGroup();
     cfg.endGroup();
+
+    theMainWindow->getCheckBoxQuadraticZoom()->show();
 
 }
 
@@ -290,13 +297,13 @@ void CMapJnx::convertPt2M(double& u, double& v)
 
 void CMapJnx::convertM2Pt(double& u, double& v)
 {
-    u = (u - x) / (xscale * zoomFactor);
-    v = (v - y) / (yscale * zoomFactor);
+    u = floor((u - x) / (xscale * zoomFactor) + 0.5);
+    v = floor((v - y) / (yscale * zoomFactor) + 0.5);
 }
 
 void CMapJnx::move(const QPoint& old, const QPoint& next)
 {
-    XY p2;
+    projXY p2;
     p2.u = x;
     p2.v = y;
     convertM2Pt(p2.u, p2.v);
@@ -318,7 +325,7 @@ void CMapJnx::move(const QPoint& old, const QPoint& next)
 
 void CMapJnx::zoom(bool zoomIn, const QPoint& p0)
 {
-    XY p1;
+    projXY p1;
 
     needsRedraw = true;
 
@@ -335,7 +342,7 @@ void CMapJnx::zoom(bool zoomIn, const QPoint& p0)
     // convert geo. coordinates back to point
     IMap::convertRad2Pt(p1.u, p1.v);
 
-    XY p2;
+    projXY p2;
     p2.u = x;
     p2.v = y;
     convertM2Pt(p2.u, p2.v);
@@ -431,7 +438,7 @@ void CMapJnx::draw(QPainter& p)
     }
 
 
-    p.drawImage(0,0,buffer);
+    p.drawPixmap(0,0,pixBuffer);
 
     if(!ovlMap.isNull() && !doFastDraw)
     {
@@ -441,7 +448,7 @@ void CMapJnx::draw(QPainter& p)
     needsRedraw = false;
 }
 
-void CMapJnx::getArea_n_Scaling(XY& p1, XY& p2, float& my_xscale, float& my_yscale)
+void CMapJnx::getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float& my_yscale)
 {
 
     p1.u = x;
@@ -488,8 +495,8 @@ void CMapJnx::draw()
 {
     if(pjsrc == 0) return IMap::draw();
 
-    buffer.fill(Qt::white);
-    QPainter p(&buffer);
+    pixBuffer.fill(Qt::white);
+    QPainter p(&pixBuffer);
 
     p.setBrush(Qt::NoBrush);
 
@@ -542,10 +549,10 @@ void CMapJnx::draw()
 
     QByteArray data(1024*1024*4,0);
     //(char) typecast needed to avoid MSVC compiler warning
-    //in MSVC, char is a signed type. 
+    //in MSVC, char is a signed type.
     //Maybe the QByteArray declaration should be fixed ;-)
-    data[0] = (char) 0xFF; 
-    data[1] = (char) 0xD8; 
+    data[0] = (char) 0xFF;
+    data[1] = (char) 0xD8;
     char * pData = data.data() + 2;
 
     QImage image;
@@ -591,11 +598,16 @@ void CMapJnx::draw()
             r.setTop(v2);
             r.setBottom(v1);
 
+            if(!r.isValid() || r.width() > 3000 || r.height() > 3000)
+            {
+                continue;
+            }
+
             file.seek(tile.offset);
             file.read(pData, tile.size);
             image.loadFromData(data);
 
-            p.drawImage(r, image.scaled(r.size().toSize(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+            p.drawImage(r.toRect(), image.scaled(r.size().toSize(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
         }
     }
     qDebug() << m_px/cnt << "m/px";

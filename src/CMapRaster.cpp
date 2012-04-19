@@ -32,8 +32,11 @@ CMapRaster::CMapRaster(const QString& fn, CCanvas * parent)
 , rasterBandCount(0)
 {
     filename = fn;
-
+#ifdef WIN32
+    dataset = (GDALDataset*)GDALOpen(filename.toLocal8Bit(),GA_ReadOnly);
+#else
     dataset = (GDALDataset*)GDALOpen(filename.toUtf8(),GA_ReadOnly);
+#endif
     if(dataset == 0)
     {
         QMessageBox::warning(0, tr("Error..."), tr("Failed to load file: %1").arg(filename));
@@ -204,7 +207,7 @@ void CMapRaster::draw(QPainter& p)
 
     draw();
 
-    p.drawImage(0,0,buffer);
+    p.drawPixmap(0,0,pixBuffer);
 
     QString str;
     if(zoomfactor < 1.0)
@@ -234,8 +237,8 @@ void CMapRaster::draw()
 {
     if(!dataset) return;
 
-    buffer.fill(Qt::white);
-    QPainter _p_(&buffer);
+    pixBuffer.fill(Qt::white);
+    QPainter _p_(&pixBuffer);
 
     QRectF viewport(x, y, size.width() * zoomfactor,  size.height() *  zoomfactor);
     QRectF intersect = viewport.intersected(maparea);

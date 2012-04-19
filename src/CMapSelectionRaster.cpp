@@ -19,7 +19,7 @@
 #include "CMapSelectionRaster.h"
 
 #include <QtGui>
-#include <projects.h>
+#include <proj_api.h>
 #ifdef __MINGW32__
 #undef LP
 #endif
@@ -28,8 +28,8 @@
 #include "IMap.h"
 
 
-CMapSelectionRaster::CMapSelectionRaster(QObject * parent)
-: IMapSelection(eRaster, parent)
+CMapSelectionRaster::CMapSelectionRaster(subtype_e subtype, QObject * parent)
+: IMapSelection(eRaster, subtype, parent)
 {
     type = eRaster;
 
@@ -65,6 +65,7 @@ QDataStream& CMapSelectionRaster::operator>>(QDataStream& s)
     s1 << lat1;             ///< top left latitude [rad]
     s1 << lon2;             ///< bottom right longitude [rad]
     s1 << lat2;             ///< bottom right latitude [rad]
+    s1 << subtype;
 
     entries << entryBase;
     //---------------------------------------
@@ -204,8 +205,8 @@ QString CMapSelectionRaster::getDescription()
     GPS_Math_Deg_To_Str(lon1 * RAD_TO_DEG, lat1 * RAD_TO_DEG, pos1);
     GPS_Math_Deg_To_Str(lon2 * RAD_TO_DEG, lat2 * RAD_TO_DEG, pos2);
 
-    double a1, a2, d1, d2;
-    XY p1, p2;
+    double a1, a2;
+    projXY p1, p2;
 
     p1.u = lon1;
     p1.v = lat1;
@@ -213,7 +214,7 @@ QString CMapSelectionRaster::getDescription()
     p2.u = lon2;
     p2.v = lat1;
 
-    d1 = distance(p1, p2, a1, a2) / 1000.0;
+    distance(p1, p2, a1, a2) / 1000.0;
 
 
     p1.u = lon1;
@@ -222,7 +223,7 @@ QString CMapSelectionRaster::getDescription()
     p2.u = lon1;
     p2.v = lat2;
 
-    d2 = distance(p1, p2, a1, a2) / 1000.0;
+    distance(p1, p2, a1, a2) / 1000.0;
 
     int tileCount = 0, i;
     foreach(i, selTiles)
