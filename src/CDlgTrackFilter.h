@@ -51,6 +51,7 @@ class CDlgTrackFilter : public QDialog, private Ui::IDlgTrackFilter
         void slotSpinAzimuthDelta(int i);
         void slotSpinTimedelta(int i);
         void slotComboMeterFeet(const QString &text);
+        void slotCheckMedian();
 
         void slotRadioSplitChunks();
         void slotRadioSplitPoints();

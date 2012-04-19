@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2007 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,35 +16,30 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-#ifndef CDLGCONFIG_H
-#define CDLGCONFIG_H
+#ifndef CDISKCACHEZIP_H
+#define CDISKCACHEZIP_H
 
-#include <QDialog>
-#include "ui_IDlgConfig.h"
+#include "IDiskCache.h"
+#include <QDir>
+#include <QHash>
+#include <QImage>
 
-/// dialog to configure global parameters of QLandkarte
-class CDlgConfig : public QDialog, private Ui::IDlgConfig
+class QTimer;
+
+class CDiskCacheZip : public IDiskCache
 {
-    Q_OBJECT
+    Q_OBJECT;
     public:
-        CDlgConfig(QWidget * parent);
-        virtual ~CDlgConfig();
+#ifdef STANDALONE
+        CDiskCacheZip(const QString &path, QObject *parent);
+#else
+        CDiskCacheZip(QObject *parent);
+#endif                       //STANDALONE
+        virtual ~CDiskCacheZip();
 
-    public slots:
-        void exec();
-        void accept();
-
-    private slots:
-        void slotCurrentDeviceChanged(int index);
-        void slotSelectFont();
-        void slotSelectWptTextColor();
-        void slotSetupGarminIcons();
-        void slotSelectPathGeoDB();
-        void slotSelectPathMapCache();
-
-    private:
-        void fillTypeCombo();
-        void fillCharsetCombo();
+        virtual void store(const QString& key, QImage& img);
+        virtual void restore(const QString& key, QImage& img);
+        virtual bool contains(const QString& key);
 
 };
-#endif                           //CDLGCONFIG_H
+#endif                           //CDISKCACHEZIP_H

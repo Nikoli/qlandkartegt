@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2007 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,35 +16,29 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-#ifndef CDLGCONFIG_H
-#define CDLGCONFIG_H
+
+#ifndef CDLGSETUPGRID_H
+#define CDLGSETUPGRID_H
 
 #include <QDialog>
-#include "ui_IDlgConfig.h"
 
-/// dialog to configure global parameters of QLandkarte
-class CDlgConfig : public QDialog, private Ui::IDlgConfig
+#include "ui_IDlgSetupGrid.h"
+
+class CDlgSetupGrid : public QDialog, private Ui::IDlgSetupGrid
 {
-    Q_OBJECT
+    Q_OBJECT;
     public:
-        CDlgConfig(QWidget * parent);
-        virtual ~CDlgConfig();
-
+        CDlgSetupGrid(QWidget * parent);
+        virtual ~CDlgSetupGrid();
     public slots:
-        void exec();
         void accept();
 
     private slots:
-        void slotCurrentDeviceChanged(int index);
-        void slotSelectFont();
-        void slotSelectWptTextColor();
-        void slotSetupGarminIcons();
-        void slotSelectPathGeoDB();
-        void slotSelectPathMapCache();
-
-    private:
-        void fillTypeCombo();
-        void fillCharsetCombo();
-
+        void slotProjWizard();
+        void slotSelectGridColor();
+        void slotRestoreDefault();
+        void slotProjFromMap();
 };
-#endif                           //CDLGCONFIG_H
+
+#endif //CDLGSETUPGRID_H
+

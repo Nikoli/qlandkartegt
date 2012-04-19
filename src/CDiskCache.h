@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2007 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,35 +16,44 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-#ifndef CDLGCONFIG_H
-#define CDLGCONFIG_H
 
-#include <QDialog>
-#include "ui_IDlgConfig.h"
+#ifndef CDISKCACHE_H
+#define CDISKCACHE_H
 
-/// dialog to configure global parameters of QLandkarte
-class CDlgConfig : public QDialog, private Ui::IDlgConfig
+#include "IDiskCache.h"
+#include <QDir>
+#include <QHash>
+#include <QImage>
+
+class QTimer;
+
+class CDiskCache : public IDiskCache
 {
-    Q_OBJECT
+    Q_OBJECT;
     public:
-        CDlgConfig(QWidget * parent);
-        virtual ~CDlgConfig();
+#ifdef STANDALONE
+        CDiskCache(const QString &path, QObject *parent);
+#else
+        CDiskCache(bool overlay, QObject *parent);
+#endif                       //STANDALONE
+        virtual ~CDiskCache();
 
-    public slots:
-        void exec();
-        void accept();
+        virtual void store(const QString& key, QImage& img);
+        virtual void restore(const QString& key, QImage& img);
+        virtual bool contains(const QString& key);
 
     private slots:
-        void slotCurrentDeviceChanged(int index);
-        void slotSelectFont();
-        void slotSelectWptTextColor();
-        void slotSetupGarminIcons();
-        void slotSelectPathGeoDB();
-        void slotSelectPathMapCache();
-
+        void slotCleanup();
     private:
-        void fillTypeCombo();
-        void fillCharsetCombo();
+        QDir dir;
 
+        /// hash table to cache images als files on disc
+        QHash<QString, QString> table;
+        /// hash table to cache loaded images in memory
+        QHash<QString, QImage>  cache;
+
+        QTimer * timer;
+
+        QImage dummy;
 };
-#endif                           //CDLGCONFIG_H
+#endif                           //CDISKCACHE_H

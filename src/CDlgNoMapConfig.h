@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2007 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,35 +16,33 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-#ifndef CDLGCONFIG_H
-#define CDLGCONFIG_H
+
+
+#ifndef CDLGNOMAPCONFIG_H
+#define CDLGNOMAPCONFIG_H
 
 #include <QDialog>
-#include "ui_IDlgConfig.h"
+#include "ui_IDlgNoMapConfig.h"
 
-/// dialog to configure global parameters of QLandkarte
-class CDlgConfig : public QDialog, private Ui::IDlgConfig
+class CMapNoMap;
+
+class CDlgNoMapConfig : public QDialog, private Ui::IDlgNoMapConfig
 {
     Q_OBJECT
     public:
-        CDlgConfig(QWidget * parent);
-        virtual ~CDlgConfig();
+        CDlgNoMapConfig(CMapNoMap& map);
+        virtual ~CDlgNoMapConfig();
 
     public slots:
-        void exec();
         void accept();
 
     private slots:
-        void slotCurrentDeviceChanged(int index);
-        void slotSelectFont();
-        void slotSelectWptTextColor();
-        void slotSetupGarminIcons();
-        void slotSelectPathGeoDB();
-        void slotSelectPathMapCache();
+        void slotRestoreDefault();
+        void slotProjWizard();
 
     private:
-        void fillTypeCombo();
-        void fillCharsetCombo();
-
+        CMapNoMap& map;
 };
-#endif                           //CDLGCONFIG_H
+
+#endif //CDLGNOMAPCONFIG_H
+
