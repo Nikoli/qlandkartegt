@@ -38,6 +38,7 @@ class CPowerToolWidget : public QWidget, private Ui::IPowerToolWidget
         virtual ~CPowerToolWidget();
 
         const QString getFirstSelectedNetwork();
+        const bool checkLoop(const QString& wpt_key, const QString &nw_key, const QString& fromLine, const QString& key) const;
 
     protected:
         void keyPressEvent(QKeyEvent * e);

@@ -627,11 +627,9 @@ const QString CPowerDB::getElectricInfo(const QString& key) const {
     result = (data.consumers == 1 ? tr("%1 consumer") : tr("%1 consumers")).arg(data.consumers) +
             (data.load > 0.01 ? tr(" plus %1W load").arg(data.load,0,'f',0) : "") +
             "\n" + tr("%1V voltage").arg(data.voltage,0,'f',0) +
-            tr(", %1Ohm resistance").arg(data.resistance,0,'f',0) +
-            "\n" + tr("%1W total load").arg(data.totalload,0,'f',0) +
-            tr(", %1Ohm total resistance").arg(data.totalresistance,0,'f',0);
-    // Debugging
-    //result += tr("\nPower factor %1").arg(data.powerfactor);
+            //tr(", %1Ohm resistance").arg(data.resistance,0,'f',0) +
+            /*"\n"*/ ", " + tr("%1W total load").arg(data.totalload,0,'f',0); //+
+            //tr(", %1Ohm total resistance").arg(data.totalresistance,0,'f',0);
     return result;
 }
 
@@ -842,6 +840,13 @@ CPowerLine* CPowerDB::newPowerLine(const QString& first, const QString& second)
     query.bindValue(":current", l->getCurrent());
     query.bindValue(":voltage_drop", l->getDrop());
     QUERY_EXEC(return l);
+    
+    if (getToolWidget()->checkLoop(l->keyFirst, nw_key, l->getKey(), l->keySecond))
+    {
+        QMessageBox::warning(0, tr("Closed loop"), tr("Distribution networks with closed loops are not allowed"), 
+            QMessageBox::Abort, QMessageBox::Abort);
+        delPowerLine(l->getKey()); 
+    }
     
     emit sigChanged();
     emit sigModified();
@@ -1322,7 +1327,7 @@ void CPowerDB::drawLine(const QLine& qline, const QRect& extViewport, QPainter& 
 
 void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 {
-    qDebug() << "CPowerDB::draw()";
+    //qDebug() << "CPowerDB::draw()";
     //QPoint focus(-1,-1);
     //QVector<QPoint> selected;
 
@@ -1394,7 +1399,7 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 
     // if there are highlighted lines, draw them
     QList< CPowerLine* >::iterator hlit         = highlighted.begin();
-    if (hlit != highlighted.end()) qDebug() << "Drawing highlighted lines";
+    //if (hlit != highlighted.end()) qDebug() << "Drawing highlighted lines";
     
     while (hlit != highlighted.end())
     {        

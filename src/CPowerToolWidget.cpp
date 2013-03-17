@@ -473,11 +473,37 @@ const QStringList getOriginatingPowerLines(const QString& wpt_key, const QString
         if (key != fromLine)
         {
             result << key;
-            //qDebug() << query.value(0).toString() << ", ";
+            qDebug() << query.value(0).toString() << ", ";
         }
     }
 
     return result;
+}
+
+const bool CPowerToolWidget::checkLoop(const QString& wpt_key, const QString &nw_key, const QString& fromLine,
+                      const QString& key) const
+{
+    if (wpt_key == key)
+        return true; // Loop detected
+        
+    QStringList lines = getOriginatingPowerLines(wpt_key, nw_key, fromLine);
+    QString line_key;
+
+    foreach (line_key, lines)
+    {
+        CPowerLine * l = CPowerDB::self().getPowerLineByKey(line_key);
+
+        if (l->keyFirst == wpt_key)
+        {
+            if (checkLoop(l->keySecond, nw_key, line_key, key))
+                return true;
+         } else {
+            if (checkLoop(l->keyFirst, nw_key, line_key, key))
+                return true;
+        }
+    }
+
+    return false;
 }
 
 void setPF(const QString& wpt_key, const QString& nw_key, const QString& fromLine, const double pf)

@@ -1,1 +1,1 @@
-/home/jan/freizeit/qlandkartegt-pn-1.0.0/src/locale/qlandkartegt_de.ts
+qlandkartegt_de.ts
