@@ -123,9 +123,6 @@ Section "QLandkarte GT PN" QLandkarteGT-PN
     File Files\imageformats\qjpeg4.dll
     File Files\imageformats\qmng4.dll
     File Files\imageformats\qsvg4.dll
-    File Files\imageformats\qtiff4.dll
-    File Files\imageformats\qico4.dll
-    File Files\imageformats\qtga4.dll
 
   SetOutPath "$INSTDIR\sqldrivers\"
     File Files\sqldrivers\qsqlite4.dll
@@ -139,7 +136,6 @@ Section "QLandkarte GT PN" QLandkarteGT-PN
   ;BEGIN additional Files    
   SetOutPath $INSTDIR
     File Files\3rdparty.txt
-    File Files\libexif-12.dll
     File /nonfatal Files\libexif-12.dll
   ;END additional Files    
     
@@ -148,12 +144,7 @@ Section "QLandkarte GT PN" QLandkarteGT-PN
   
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-SectionEnd
-LangString DESC_QLandkarteGT ${LANG_ENGLISH} "View GeoTiff and Garmin Maps. Visualize and analyze GPX files and much more!"
-LangString DESC_QLandkarteGT ${LANG_GERMAN}  "Landkarten im GeoTiff und Garmin Format betrachten. GPX Dateien visualisieren und analysieren und vieles mehr!"
 
-
-Section "StartMenue" StartMenue
   ;create batch file for a GDAL shell
   fileOpen $0 "$INSTDIR\gdal.bat" w
   fileWrite $0 "cd /D $\"$INSTDIR\gdal\apps$\"$\r$\n" 
@@ -186,7 +177,6 @@ LangString DESC_QLandkarteGT-PN ${LANG_GERMAN}  "Landkarten im GeoTiff und Garmi
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
    !insertmacro MUI_DESCRIPTION_TEXT ${QLandkarteGT-PN} $(DESC_QLandkarteGT-PN)
-   !insertmacro MUI_DESCRIPTION_TEXT ${StartMenue} $(DESC_StartMenue)
    !insertmacro MUI_DESCRIPTION_TEXT ${MSVC} $(DESC_MSVC)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 

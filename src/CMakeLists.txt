@@ -139,6 +139,7 @@ set(qlandkarte_SRCS
     CDlgDelWpt.cpp
     CDlgConvertToTrack.cpp
     CDlgEditRoute.cpp
+    CDlgLoadOnlineMap.cpp
     CDlgMapTDBConfig.cpp
     CDlgMapQMAPConfig.cpp
     CDlgMapJNXConfig.cpp
@@ -154,6 +155,7 @@ set(qlandkarte_SRCS
     CDlgSetupGrid.cpp
     CDlgCropMap.cpp
     CDlgParentWpt.cpp
+    CDlgDeviceExportPath.cpp
     CQlb.cpp
     CGpx.cpp
     IDevice.cpp
@@ -297,6 +299,7 @@ set(qlandkarte_HDRS
     CSearchToolWidget.h
     CDlgConfig.h
     CDlgEditWpt.h
+    CDlgLoadOnlineMap.h
     CDlgWptIcon.h
     CDlgEditMapLevel.h
     CDlgCombineTracks.h
@@ -321,6 +324,7 @@ set(qlandkarte_HDRS
     CDlgSetupGrid.h
     CDlgCropMap.h
     CDlgParentWpt.h
+    CDlgDeviceExportPath.h
     CQlb.h
     CGpx.h
     IDevice.h
@@ -422,6 +426,7 @@ SET(qlandkarte_UIS
     IDlgDelWpt.ui
     IDlgConvertToTrack.ui
     IDlgEditRoute.ui
+    IDlgLoadOnlineMap.ui
     IDlgMapTDBConfig.ui
     IDlgMapQMAPConfig.ui
     IDlgMapJNXConfig.ui
@@ -437,7 +442,7 @@ SET(qlandkarte_UIS
     IDlgSetupGrid.ui
     IDlgCropMap.ui
     IDlgParentWpt.ui
-    IDlgDeviceTwoNavPath.ui
+    IDlgDeviceExportPath.ui
     ICreateMapQMAP.ui
     ICreateMapGeoTiff.ui
     ICreateMapGridTool.ui
@@ -471,7 +476,6 @@ SET (DBUS ON CACHE BOOL "Enable DBus control.")
 else (NOT WIN32)
 SET (DBUS OFF CACHE BOOL "Enable DBus control.")
 endif (NOT WIN32)
-SET (JNX ON CACHE BOOL "Enable Garmin JNX Support.")
 SET (ALTKEY_MOVES_MAP OFF CACHE BOOL "Move map while pressing ALT key and mousemove.")
 SET (RMAP ON CACHE BOOL "Enable TwoNav RMAP Support")
 
@@ -521,12 +525,6 @@ else(EXIF_FOUND)
     set(DMTX_LIBRARIES "")
 ENDIF(DMTX_FOUND)
 
-IF(GEO_DB)
-    add_definitions(-DHAS_GEODB -DDB_VERSION=8)
-    SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CGeoDB.h CDlgSelGeoDBFolder.h CDlgEditFolder.h)
-    SET(qlandkarte_SRCS ${qlandkarte_SRCS}  CGeoDB.cpp CDlgSelGeoDBFolder.cpp CDlgEditFolder.cpp)
-    SET(qlandkarte_UIS ${qlandkarte_UIS} IGeoToolWidget.ui IDlgSelGeoDBFolder.ui IDlgEditFolder.ui)
-ENDIF(GEO_DB)
     
 IF (POWER_DB)
     add_definitions(-DHAS_POWERDB -DPOWERDB_VERSION=1)
@@ -539,6 +537,11 @@ IF (POWER_DB)
     SET(qlandkarte_UIS ${qlandkarte_UIS} IDlgEditElectricWpt.ui IPowerToolWidget.ui IDlgEditPowerLine.ui
         IDlgEditPowerNW.ui ITextBox.ui)
 ENDIF (POWER_DB)
+
+add_definitions(-DDB_VERSION=8)
+SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CGeoDB.h CDlgSelGeoDBFolder.h CDlgEditFolder.h)
+SET(qlandkarte_SRCS ${qlandkarte_SRCS}  CGeoDB.cpp CDlgSelGeoDBFolder.cpp CDlgEditFolder.cpp)
+SET(qlandkarte_UIS ${qlandkarte_UIS} IGeoToolWidget.ui IDlgSelGeoDBFolder.ui IDlgEditFolder.ui)
 
 IF(DBUS)
     add_definitions(-DHAS_DBUS)
@@ -626,6 +629,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/3rdparty/QZip
   ${CMAKE_SOURCE_DIR}/3rdparty/QTextHtmlExporter
   ${CMAKE_SOURCE_DIR}/3rdparty/getopt
+  ${CMAKE_SOURCE_DIR}/3rdparty/qtsoap
   ${EXIF_INCLUDE_DIRS}
   ${DMTX_INCLUDE_DIRS}
   ${GPSD_INCLUDE_DIRS}
@@ -699,6 +703,7 @@ target_link_libraries(
       qzip
       qtexthtmlexporter
       getopt
+      qtsoap
   )
 
 install(

@@ -39,14 +39,13 @@
 #include "CMenus.h"
 #include "IDevice.h"
 #include "CDlgScreenshot.h"
+#include "CDlgLoadOnlineMap.h"
 #include "CUndoStack.h"
 #include "WptIcons.h"
 #include "CAppOpts.h"
 #include "CMap3D.h"
 #include "CDlgExport.h"
-#ifdef HAS_GEODB
 #include "CGeoDB.h"
-#endif
 #ifdef HAS_POWERDB
 #include "CPowerDB.h"
 //#include "CPower.h"
@@ -57,6 +56,7 @@
 #include "CGridDB.h"
 #include "CDlgSetupGrid.h"
 #include "CSettings.h"
+#include "version.h"
 
 #include <QtGui>
 #ifndef WIN32
@@ -71,12 +71,8 @@
 CMainWindow * theMainWindow = 0;
 
 CMainWindow::CMainWindow()
-#ifdef HAS_GEODB
     : geodb(0)
     , modified(false)
-#else
-    : modified(false)
-#endif
     , crashed(false)
 {
     theMainWindow = this;
@@ -301,12 +297,11 @@ CMainWindow::CMainWindow()
 #ifdef HAS_POWERDB
     powerdb   = new CPowerDB(tabbar, this);
 #endif
-#ifdef HAS_GEODB
+
     if(resources->useGeoDB())
     {
         geodb       = new CGeoDB(tabbar, this);
     }
-#endif
 
     connect(searchdb, SIGNAL(sigChanged()), canvas, SLOT(update()));
     connect(wptdb, SIGNAL(sigChanged()), canvas, SLOT(update()));
@@ -331,7 +326,6 @@ CMainWindow::CMainWindow()
 #endif
 
 
-#ifdef HAS_GEODB
     if(geodb)
     {
         geodb->gainFocus();
@@ -340,9 +334,6 @@ CMainWindow::CMainWindow()
     {
         searchdb->gainFocus();
     }
-#else
-    searchdb->gainFocus();
-#endif
 
     // restore last session position and size of mainWidget
     {
@@ -447,6 +438,7 @@ CMainWindow::CMainWindow()
     connect(&CTrackDB::self(), SIGNAL(sigHighlightTrack(CTrack *)), canvas, SLOT(slotHighlightTrack(CTrack*)));
     connect(&CTrackDB::self(), SIGNAL(sigChanged()), canvas, SLOT(slotTrackChanged()));
     // TODO: What about CPowerDB??
+    connect(&soapHttp, SIGNAL(responseReady(const QtSoapMessage &)),this, SLOT(slotGetResponse(const QtSoapMessage &)));
 }
 
 
@@ -603,6 +595,7 @@ void CMainWindow::setupMenuBar()
     menu = new QMenu(this);
     menu->setTitle(tr("&File"));
     menu->addAction(QIcon(":/icons/iconOpenMap16x16.png"),tr("Load Map"),this,SLOT(slotLoadMapSet()));
+    menu->addAction(QIcon(":/icons/iconOpenMap16x16.png"),tr("Load Online Map"),this,SLOT(slotLoadOnlineMapSet()));
     menu->addSeparator();
     menu->addAction(QIcon(":/icons/iconFileLoad16x16.png"),tr("Load Geo Data"),this,SLOT(slotLoadData()), Qt::CTRL + Qt::Key_L);
     menu->addAction(QIcon(":/icons/iconFileSave16x16.png"),tr("Save Geo Data"),this,SLOT(slotSaveData()), Qt::CTRL + Qt::Key_S);
@@ -696,6 +689,7 @@ void CMainWindow::setupMenuBar()
     menu->addAction(QIcon(":/icons/iconHelp16x16.png"),tr("http://Help"),this,SLOT(slotHelp()));
     menu->addAction(QIcon(":/icons/iconHelp16x16.png"),tr("http://Support"),this,SLOT(slotSupport()));
     menu->addSeparator();
+    slotUpdate();
     menu->addAction(QIcon(":/icons/iconGlobe16x16.png"),tr("About &QLandkarte GT"),this,SLOT(slotCopyright()));
 
 #endif
@@ -717,7 +711,6 @@ void CMainWindow::closeEvent(QCloseEvent * e)
         return;
     }
 
-#ifdef HAS_GEODB
     if(!(CResources::self().useGeoDB() && CResources::self().saveGeoDBOnExit()))
     {
         if (maybeSave())
@@ -733,16 +726,6 @@ void CMainWindow::closeEvent(QCloseEvent * e)
     {
         e->accept();
     }
-#else
-    if (maybeSave())
-    {
-        e->accept();
-    }
-    else
-    {
-        e->ignore();
-    }
-#endif
 }
 
 
@@ -767,6 +750,19 @@ void CMainWindow::slotLoadMapSet()
     CMapDB::self().openMap(filename, false, *canvas);
 
     cfg.setValue("maps/filter",filter);
+}
+
+void CMainWindow::slotLoadOnlineMapSet()
+{
+    CDlgLoadOnlineMap dlg;
+    dlg.exec();
+
+    QString filename = dlg.selectedfile;
+
+    if(filename.isEmpty()) return;
+
+    CResources::self().pathMaps = QFileInfo(filename).absolutePath();
+    CMapDB::self().openMap(filename, false, *canvas);
 }
 
 
@@ -1663,6 +1659,39 @@ void CMainWindow::slotHelp()
 void CMainWindow::slotSupport()
 {
     QDesktopServices::openUrl(QUrl("http://www.qlandkarte.org/index.php?option=com_content&view=article&id=17&Itemid=19"));
+}
+
+void CMainWindow::slotDownload()
+{
+    QDesktopServices::openUrl(QUrl("http://www.qlandkarte.org/index.php?option=com_content&view=article&id=17&Itemid=19"));
+}
+
+void CMainWindow::slotUpdate()
+{
+    QtSoapMessage request;
+    request.setMethod(QtSoapQName("getlastversion", "urn:qlandkartegt"));
+    request.addMethodArgument("changelog", "", "0");
+    soapHttp.setHost("www.qlandkarte.org");
+    soapHttp.submitRequest(request, "/webservice/qlandkartegt.php");
+}
+
+void CMainWindow::slotGetResponse(const QtSoapMessage &message)
+{
+    if (message.isFault())
+    {
+        qDebug("Error: %s", qPrintable(message.faultString().toString()));
+    }
+    else
+    {
+        //qDebug("message : %s",qPrintable(message.toXmlString(1)));
+        QString res = message.returnValue().toString();
+        res = res.simplified();
+        if (!res.isEmpty() && res != VER_STR)
+        {
+            statusBar()->showMessage(tr("New QLandkarte GT %1 available").arg(res),0);
+            qDebug("Version is: %s", res.toLatin1().constData());
+        }
+    }
 }
 
 void CMainWindow::slotToggleToolView()

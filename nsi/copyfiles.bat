@@ -34,9 +34,6 @@ copy %QLGTI_QT_PATH%\plugins\imageformats\qgif4.dll
 copy %QLGTI_QT_PATH%\plugins\imageformats\qjpeg4.dll
 copy %QLGTI_QT_PATH%\plugins\imageformats\qmng4.dll
 copy %QLGTI_QT_PATH%\plugins\imageformats\qsvg4.dll
-copy %QLGTI_QT_PATH%\plugins\imageformats\qtiff4.dll
-copy %QLGTI_QT_PATH%\plugins\imageformats\qico4.dll
-copy %QLGTI_QT_PATH%\plugins\imageformats\qtga4.dll
 cd ..
 mkdir sqldrivers
 cd sqldrivers
@@ -67,11 +64,11 @@ copy %QLGTI_VCREDIST_PATH%\vcredist_x86.exe
 rem section 2.4) Copy libexif Files
 copy %QLGTI_LIBEXIF_PATH%\libexif-12.dll
 rem section 2.5) Copy QLandkarte GT Files
-copy ..\..\build\bin\Release\qlandkartegt.exe
-copy ..\..\build\bin\Release\map2gcm.exe
-copy ..\..\build\bin\Release\map2rmap.exe
-copy ..\..\build\bin\Release\cache2gtiff.exe
-copy ..\..\build\src\*.qm
+copy %QLGTI_BUILD_PATH%\bin\Release\qlandkartegt-pn.exe
+copy %QLGTI_BUILD_PATH%\bin\Release\map2gcm.exe
+copy %QLGTI_BUILD_PATH%\bin\Release\map2rmap.exe
+copy %QLGTI_BUILD_PATH%\bin\Release\cache2gtiff.exe
+copy %QLGTI_BUILD_PATH%\src\*.qm
 copy ..\..\src\icons\GlobeWin.ico
 copy ..\*.ico
 rem section 2.6) 3rd party SW description

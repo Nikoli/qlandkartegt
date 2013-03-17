@@ -219,5 +219,8 @@ class CCanvas : public QWidget
 
         QTimer * timerFadingMessage;
         QString fadingMessage;
+
+        // work around possible Qt/OS X bug
+        bool contextMenuActive;
 };
 #endif                           //CCANVAS_H

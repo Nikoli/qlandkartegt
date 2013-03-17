@@ -28,52 +28,10 @@
 #include "GeoMath.h"
 #include "CResources.h"
 #include "CTrack.h"
+#include "CDlgDeviceExportPath.h"
 
 #include <QtGui>
 
-CDlgDeviceTwoNavPath::CDlgDeviceTwoNavPath(const QString& what, QDir &dir, QString& subdir, QWidget * parent)
-    : QDialog(parent)
-    , subdir(subdir)
-{
-    setupUi(this);
-
-    labelHead->setText(tr("Where should I place all %1?").arg(what));
-
-    QStringList dirs = dir.entryList(QStringList("*"), QDir::AllDirs|QDir::NoDotAndDotDot);
-
-    foreach(const QString& d, dirs)
-    {
-        QListWidgetItem * item = new QListWidgetItem(listWidget);
-        item->setText(d);
-        item->setIcon(QIcon(":/icons/iconFolderBlue16x16.png"));
-    }
-
-    lineEdit->setText(QString("Data_%1").arg(QDateTime::currentDateTime().toUTC().toString("yyyy-MM-dd")));
-    lineEdit->setFocus();
-    lineEdit->selectAll();
-
-    connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(slotItemClicked(QListWidgetItem*)));
-    connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(slotReturnPressed()));
-}
-
-CDlgDeviceTwoNavPath::~CDlgDeviceTwoNavPath()
-{
-
-}
-
-void CDlgDeviceTwoNavPath::slotItemClicked(QListWidgetItem*item)
-{
-    if(item == 0) return;
-
-    subdir = item->text();
-    QDialog::accept();
-}
-
-void CDlgDeviceTwoNavPath::slotReturnPressed()
-{
-    subdir = lineEdit->text();
-    QDialog::accept();
-}
 
 
 struct twonav_icon_t
@@ -210,7 +168,7 @@ void CDeviceTwoNav::createDayPath(const QString& what)
     QString subdir;
     dir.cd(pathData);
 
-    CDlgDeviceTwoNavPath dlg(what, dir, subdir, 0);
+    CDlgDeviceExportPath dlg(what, dir, subdir, 0);
     dlg.exec();
 
     pathDay = dir.absoluteFilePath(subdir);
@@ -313,6 +271,7 @@ void CDeviceTwoNav::downloadWpts(QList<CWpt*>& wpts)
 
     dir.cd(pathData);
     subdirs = dir.entryList(QDir::Dirs|QDir::NoDotAndDotDot);
+    subdirs << pathData;
 
     foreach(const QString& subdir, subdirs)
     {
@@ -341,7 +300,37 @@ void CDeviceTwoNav::downloadWpts(QList<CWpt*>& wpts)
 
 void CDeviceTwoNav::uploadTracks(const QList<CTrack*>& trks)
 {
-    QMessageBox::information(0,tr("Error..."), tr("TwoNav: Upload tracks is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
+//    QMessageBox::information(0,tr("Error..."), tr("TwoNav: Upload tracks is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
+
+    QDir dir;
+    if(!aquire(dir))
+    {
+        return;
+    }
+
+    createDayPath(tr("tracks"));
+    dir.cd(pathDay);
+
+    for(int i = 0; i < trks.count(); i++)
+    {
+        CTrack& trk     = *trks[i];
+        QString name    = trk.getName();
+        name            = name.replace(" ","_");
+
+        QFile file(dir.absoluteFilePath(name + ".trk"));
+        file.open(QIODevice::WriteOnly);
+        QTextStream out(&file);
+        out.setCodec(QTextCodec::codecForName("UTF-8"));
+        out << "B  UTF-8" << endl;
+        out << "G  WGS 84" << endl;
+        out << "U  1" << endl;
+
+        writeTrkData(out, trk, dir);
+
+        file.close();
+    }
+    dir.cd(pathRoot);
+    theMainWindow->getCanvas()->setFadingMessage(tr("Upload tracks finished!"));
 }
 
 void CDeviceTwoNav::downloadTracks(QList<CTrack*>& trks)
@@ -357,6 +346,7 @@ void CDeviceTwoNav::downloadTracks(QList<CTrack*>& trks)
 
     dir.cd(pathData);
     subdirs = dir.entryList(QDir::Dirs|QDir::NoDotAndDotDot);
+    subdirs << pathData;
 
     foreach(const QString& subdir, subdirs)
     {
@@ -420,6 +410,156 @@ struct wpt_t
 
 };
 
+QDateTime readCompeTime(QString str, bool isTrack)
+{
+    QDateTime timestamp;
+    QRegExp re("([0-9]{2})-([A-Za-z]{3})-.*");
+
+    if(re.exactMatch(str))
+    {
+        QString monthNum;
+        QString monthStr = re.cap(2);
+
+        if(monthStr.toUpper() == "JAN")
+        {
+            monthNum = "01";
+        }
+        else if(monthStr.toUpper() == "FEB")
+        {
+            monthNum = "02";
+        }
+        else if(monthStr.toUpper() == "MAR")
+        {
+            monthNum = "03";
+        }
+        else if(monthStr.toUpper() == "APR")
+        {
+            monthNum = "04";
+        }
+        else if(monthStr.toUpper() == "MAY")
+        {
+            monthNum = "05";
+        }
+        else if(monthStr.toUpper() == "JUN")
+        {
+            monthNum = "06";
+        }
+        else if(monthStr.toUpper() == "JUL")
+        {
+            monthNum = "07";
+        }
+        else if(monthStr.toUpper() == "AUG")
+        {
+            monthNum = "08";
+        }
+        else if(monthStr.toUpper() == "SEP")
+        {
+            monthNum = "09";
+        }
+        else if(monthStr.toUpper() == "OCT")
+        {
+            monthNum = "10";
+        }
+        else if(monthStr.toUpper() == "NOV")
+        {
+            monthNum = "11";
+        }
+        else if(monthStr.toUpper() == "DEC")
+        {
+            monthNum = "12";
+        }
+
+        str.replace(monthStr, monthNum);
+
+        if(isTrack)
+        {
+            timestamp = QDateTime::fromString(str, "dd-MM-yy hh:mm:ss.zzz");
+            timestamp = timestamp.addYears(100);
+        }
+        else
+        {
+            timestamp = QDateTime::fromString(str, "dd-MM-yyyy hh:mm:ss");
+        }
+
+    }
+
+
+    timestamp.setTimeSpec(Qt::UTC);
+    return timestamp;
+}
+
+QStringList writeCompeTime( const QDateTime& t, bool isTrack)
+{
+    QStringList result;
+    QString dateFormat;
+    QString monthStr;
+
+    QDateTime timestamp = t.toTimeSpec(Qt::UTC);
+
+    switch(timestamp.date().month())
+    {
+    case 1:
+        monthStr = "Jan";
+        break;
+    case 2:
+        monthStr = "Feb";
+        break;
+    case 3:
+        monthStr = "Mar";
+        break;
+    case 4:
+        monthStr = "Apr";
+        break;
+    case 5:
+        monthStr = "May";
+        break;
+    case 6:
+        monthStr = "Jun";
+        break;
+    case 7:
+        monthStr = "Jul";
+        break;
+    case 8:
+        monthStr = "Aug";
+        break;
+    case 9:
+        monthStr = "Sep";
+        break;
+    case 10:
+        monthStr = "Oct";
+        break;
+    case 11:
+        monthStr = "Nov";
+        break;
+    case 12:
+        monthStr = "Dec";
+        break;
+    }
+
+
+    if(isTrack)
+    {
+        dateFormat = QString("dd-'%1'-yy").arg(monthStr);
+    }
+    else
+    {
+        dateFormat = QString("dd-'%1'-yyyy").arg(monthStr);
+    }
+
+    result << timestamp.toString(dateFormat);
+
+    if(isTrack)
+    {
+        result << timestamp.toString("hh:mm:ss.000");
+    }
+    else
+    {
+        result << timestamp.toString("hh:mm:ss");
+    }
+
+    return result;
+}
+
 
 void CDeviceTwoNav::readWptFile(QDir& dir, const QString& filename, QList<CWpt*>& wpts)
 {
@@ -473,11 +613,10 @@ void CDeviceTwoNav::readWptFile(QDir& dir, const QString& filename, QList<CWpt*>
             tmpwpt = wpt_t();
             QStringList values = line.split(' ', QString::SkipEmptyParts);
 
-            tmpwpt.name    = values[1];
+            tmpwpt.name = values[1];
             GPS_Math_Str_To_Deg(values[3].replace("\272","") + " " + values[4].replace("\272",""), tmpwpt.lon, tmpwpt.lat);
-            tmpwpt.time    = QDateTime::fromString(values[5] + " " + values[6], "dd-MMM-yyyy hh:mm:ss");
-            tmpwpt.time.setTimeSpec(Qt::UTC);
-            tmpwpt.ele     = values[7].toFloat();
+            tmpwpt.time = readCompeTime(values[5] + " " + values[6], false);
+            tmpwpt.ele  = values[7].toFloat();
 
             if(values.size() > 7)
             {
@@ -573,6 +712,7 @@ void CDeviceTwoNav::readWptFile(QDir& dir, const QString& filename, QList<CWpt*>
 
             break;
         }
+
         }
     }
 
@@ -593,17 +733,145 @@ QString CDeviceTwoNav::makeUniqueName(const QString name, QDir& dir)
     return tmp;
 }
 
+void CDeviceTwoNav::writeTrkData(QTextStream& out, CTrack& trk, QDir& dir)
+{
+    QString name    = trk.getName();
+    name    = name.replace(" ","_");
+
+    QList<CTrack::wpt_t> wpts;
+    trk.scaleWpt2Track(wpts);
+    QList<CTrack::wpt_t>::iterator wpt = wpts.begin();
+    while(wpt != wpts.end())
+    {
+        if(wpt->d > WPT_TO_TRACK_DIST)
+        {
+            wpt = wpts.erase(wpt);
+            continue;
+        }
+        ++wpt;
+    }
+
+
+    QColor color = trk.getColor();
+
+    QStringList list;
+    list << "C";
+    list << QString::number(color.red());
+    list << QString::number(color.green());
+    list << QString::number(color.blue());
+    list << "5"; // ???
+    list << "1";    // ???
+    out << list.join(" ") << endl;
+
+    out << "s " << name << endl;
+    out << "k " << trk.getKey() << endl;
+
+    QList<CTrack::pt_t>& trkpts = trk.getTrackPoints();
+    foreach(const CTrack::pt_t& trkpt, trkpts)
+    {
+        list.clear();
+
+        list << "T";
+        list << "A";
+        list << (trkpt.lat > 0 ? QString("%1\272N") : QString("%1\272S")).arg(trkpt.lat,0,'f');
+        list << (trkpt.lon > 0 ? QString("%1\272E") : QString("%1\272W")).arg(trkpt.lon,0,'f');
+        list << writeCompeTime(QDateTime::fromTime_t(trkpt.timestamp), true);
+        list << "s";
+        list << QString("%1").arg(trkpt.ele == WPT_NOFLOAT ? 0 : trkpt.ele,0,'f');
+        list << "0.000000";
+        list << "0.000000";
+        list << "0.000000";
+        list << "0";
+        list << "-1000.000000";
+        list << "-1.000000";
+        list << "-1";
+        list << "-1.000000";
+        list << "-1";
+        list << "-1";
+        list << "-1";
+        list << "-1.000000";
+
+        out << list.join(" ") << endl;
+
+        foreach(const CTrack::wpt_t& wpt, wpts)
+        {
+            if(wpt.trkpt == trkpt)
+            {
+                QString comment = wpt.wpt->getComment();
+                IItem::removeHtml(comment);
+                if(comment.isEmpty())
+                {
+                    comment = wpt.wpt->getDescription();
+                    IItem::removeHtml(comment);
+                    if(comment.isEmpty())
+                    {
+                        comment = wpt.wpt->getName();
+                        IItem::removeHtml(comment);
+                    }
+                }
+                comment = comment.replace("\n","%0A%0D");
+                comment = comment.replace(",","%2C");
+
+                QString iconName    = wpt.wpt->getIconString();
+                QPixmap icon        = wpt.wpt->getIcon();
+                icon                = icon.scaledToWidth(15, Qt::SmoothTransformation);
+                iconName            = iconQlGt2TwoNav(iconName);
+                iconName            = iconName.replace(" ", "_");
+
+                icon.save(dir.absoluteFilePath(iconName + ".png"));
+
+                list.clear();
+                list << (iconName + ".png");
+                list << "1";
+                list << "3";
+                list << "0";
+                list << comment;
+                out << "a " << list.join(",") << endl;
+
+                foreach(const CWpt::image_t& img, wpt.wpt->images)
+                {
+                    QString fn = img.info;
+                    if(fn.isEmpty())
+                    {
+                        fn = QString("picture.png");
+                    }
+
+                    QFileInfo fi(fn);
+
+                    if(!(fi.completeSuffix() == "png"))
+                    {
+                        fn = fi.baseName() + ".png";
+                    }
+
+                    fn = makeUniqueName(fn, dir);
+                    img.pixmap.save(dir.absoluteFilePath(fn));
+
+                    list.clear();
+                    list << fn;
+                    list << "1";
+                    list << "8";
+                    list << "0";
+                    out << "a " << list.join(",") << endl;
+                }
+                break;
+            }
+        }
+    }
+
+}
+
 void CDeviceTwoNav::writeWaypointData(QTextStream& out, CWpt * wpt, QDir& dir)
 {
     QString name    = wpt->getName();
     name    = name.replace(" ","_");
 
     QString comment = wpt->getComment();
+    IItem::removeHtml(comment);
     if(comment.isEmpty())
     {
         comment = wpt->getDescription();
+        IItem::removeHtml(comment);
     }
-    IItem::removeHtml(comment);
     comment = comment.replace("\n","%0A%0D");
 
     QStringList list;
@@ -612,8 +880,7 @@ void CDeviceTwoNav::writeWaypointData(QTextStream& out, CWpt * wpt, QDir& dir)
     list << "A";
     list << (wpt->lat > 0 ? QString("%1\272N") : QString("%1\272S")).arg(wpt->lat,0,'f');
     list << (wpt->lon > 0 ? QString("%1\272E") : QString("%1\272W")).arg(wpt->lon,0,'f');
-    list << QDateTime::fromTime_t(wpt->timestamp).toString("dd-MMM-yyyy");
-    list << QDateTime::fromTime_t(wpt->timestamp).toString("hh:mm:ss");
+    list << writeCompeTime(QDateTime::fromTime_t(wpt->timestamp), false);
     list << QString("%1").arg(wpt->ele == WPT_NOFLOAT ? 0 : wpt->ele,0,'f');
 
     out << list.join(" ") << " ";
@@ -640,11 +907,14 @@ void CDeviceTwoNav::writeWaypointData(QTextStream& out, CWpt * wpt, QDir& dir)
         QString fn = img.info;
         if(fn.isEmpty())
         {
-            fn = QString("picture.jpg");
+            fn = QString("picture.png");
         }
-        if(!fn.endsWith("jpg"))
+
+        QFileInfo fi(fn);
+
+        if(!(fi.completeSuffix() == "png"))
         {
-            fn += ".jpg";
+            fn = fi.baseName() + ".png";
         }
 
         fn = makeUniqueName(fn, dir);
@@ -712,9 +982,8 @@ void CDeviceTwoNav::readTrkFile(QDir &dir, const QString &filename, QList<CTrack
             QStringList values = line.split(' ', QString::SkipEmptyParts);
 
             GPS_Math_Str_To_Deg(values[2].replace("\272","") + " " + values[3].replace("\272",""), pt.lon, pt.lat);
-            QDateTime time = QDateTime::fromString(values[4] + " " + values[5], "dd-MMM-yy hh:mm:ss.zzz");
-            time.setTimeSpec(Qt::UTC);
-            time = time.addYears(100);
+
+            QDateTime time = readCompeTime(values[4] + " " + values[5], true);
             pt.timestamp        = time.toTime_t();
             pt.timestamp_msec   = time.time().msec();
             pt.ele = values[7].toFloat();
@@ -727,8 +996,19 @@ void CDeviceTwoNav::readTrkFile(QDir &dir, const QString &filename, QList<CTrack
             *track << pt;
             break;
         }
-
-
+        case 's':
+        {
+            QString name  = line.mid(1).simplified();
+            name = name.replace("_", " ");
+            track->setName(name);
+            break;
+        }
+        case 'k':
+        {
+            QString name  = line.mid(1).simplified();
+            track->setKey(name);
+            break;
+        }
         }
     }
 

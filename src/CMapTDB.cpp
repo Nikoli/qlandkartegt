@@ -1524,42 +1524,48 @@ bool CMapTDB::processPrimaryMapData()
     quint8 fewest_map_bits = 0xFF;
 
     /* Put here so the submap check doesn't do the basemap again. */
-    QMap<QString,CGarminTile::subfile_desc_t>::const_iterator basemap_subfile;
+    QMap<QString,CGarminTile::subfile_desc_t>::const_iterator basemap_subfile = subfiles.end();
 
     /* Find best candidate for basemap. */
     while (subfile != subfiles.end())
     {
-        QVector<CGarminTile::maplevel_t>::const_iterator maplevel = subfile->maplevels.begin();
-        /* Skip any upper levels that contain no real data. */
-        while (!maplevel->inherited)
+        if (subfile->parts.contains("TRE"))
         {
-            ++maplevel;
-        }
-        /* Check for the least detailed map. */
-        if (maplevel->bits < fewest_map_bits)
-        {
-            fewest_map_bits = maplevel->bits;
-            basemap_subfile = subfile;
+            QVector<CGarminTile::maplevel_t>::const_iterator maplevel = subfile->maplevels.begin();
+            /* Skip any upper levels that contain no real data. */
+            while (!maplevel->inherited)
+            {
+                ++maplevel;
+            }
+            /* Check for the least detailed map. */
+            if (maplevel->bits < fewest_map_bits)
+            {
+                fewest_map_bits = maplevel->bits;
+                basemap_subfile = subfile;
+            }
         }
         ++subfile;
     }
 
     /* Add all basemap levels to the list. */
-    quint8 largestBitsBasemap = 0;
-    QVector<CGarminTile::maplevel_t>::const_iterator maplevel = basemap_subfile->maplevels.begin();
-    while(maplevel != basemap_subfile->maplevels.end())
+    quint8 largestBitsBasemap = 0;    
+    if(basemap_subfile != subfiles.end())
     {
-        if (!maplevel->inherited)
+        QVector<CGarminTile::maplevel_t>::const_iterator maplevel = basemap_subfile->maplevels.begin();
+        while(maplevel != basemap_subfile->maplevels.end())
         {
-            map_level_t ml;
-            ml.bits  = maplevel->bits;
-            ml.level = maplevel->level;
-            ml.useBaseMap = true;
-            maplevels << ml;
+            if (!maplevel->inherited)
+            {
+                map_level_t ml;
+                ml.bits  = maplevel->bits;
+                ml.level = maplevel->level;
+                ml.useBaseMap = true;
+                maplevels << ml;
 
-            if(ml.bits > largestBitsBasemap) largestBitsBasemap = ml.bits;
+                if(ml.bits > largestBitsBasemap) largestBitsBasemap = ml.bits;
+            }
+            ++maplevel;
         }
-        ++maplevel;
     }
 
     if(!tiles.isEmpty())
