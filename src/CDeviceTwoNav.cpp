@@ -24,10 +24,57 @@
 #include "CSettings.h"
 #include "CGpx.h"
 #include "CWptDB.h"
+#include "CTrackDB.h"
 #include "GeoMath.h"
 #include "CResources.h"
+#include "CTrack.h"
 
 #include <QtGui>
+
+CDlgDeviceTwoNavPath::CDlgDeviceTwoNavPath(const QString& what, QDir &dir, QString& subdir, QWidget * parent)
+    : QDialog(parent)
+    , subdir(subdir)
+{
+    setupUi(this);
+
+    labelHead->setText(tr("Where should I place all %1?").arg(what));
+
+    QStringList dirs = dir.entryList(QStringList("*"), QDir::AllDirs|QDir::NoDotAndDotDot);
+
+    foreach(const QString& d, dirs)
+    {
+        QListWidgetItem * item = new QListWidgetItem(listWidget);
+        item->setText(d);
+        item->setIcon(QIcon(":/icons/iconFolderBlue16x16.png"));
+    }
+
+    lineEdit->setText(QString("Data_%1").arg(QDateTime::currentDateTime().toUTC().toString("yyyy-MM-dd")));
+    lineEdit->setFocus();
+    lineEdit->selectAll();
+
+    connect(listWidget, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(slotItemClicked(QListWidgetItem*)));
+    connect(lineEdit, SIGNAL(returnPressed()), this, SLOT(slotReturnPressed()));
+}
+
+CDlgDeviceTwoNavPath::~CDlgDeviceTwoNavPath()
+{
+
+}
+
+void CDlgDeviceTwoNavPath::slotItemClicked(QListWidgetItem*item)
+{
+    if(item == 0) return;
+
+    subdir = item->text();
+    QDialog::accept();
+}
+
+void CDlgDeviceTwoNavPath::slotReturnPressed()
+{
+    subdir = lineEdit->text();
+    QDialog::accept();
+}
+
 
 struct twonav_icon_t
 {
@@ -156,23 +203,27 @@ bool CDeviceTwoNav::aquire(QDir& dir)
     return true;
 }
 
-void CDeviceTwoNav::createDayPath()
+void CDeviceTwoNav::createDayPath(const QString& what)
 {
+
     QDir dir;
+    QString subdir;
     dir.cd(pathData);
 
-    pathDay = dir.absoluteFilePath(QString("Data_%1").arg(QDateTime::currentDateTime().toUTC().toString("yyyy-MM-dd")));
+    CDlgDeviceTwoNavPath dlg(what, dir, subdir, 0);
+    dlg.exec();
+
+    pathDay = dir.absoluteFilePath(subdir);
     if(!dir.exists(pathDay))
     {
         dir.mkpath(pathDay);
     }
 }
 
+
 void CDeviceTwoNav::uploadWpts(const QList<CWpt*>& wpts)
 {
 //    QMessageBox::information(0,tr("Error..."), tr("TwoNav: Upload wapoints is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
-
-    int pixcnt = 0;
 
     QDir dir;
     if(!aquire(dir))
@@ -180,79 +231,51 @@ void CDeviceTwoNav::uploadWpts(const QList<CWpt*>& wpts)
         return;
     }
 
-    createDayPath();
+    createDayPath(tr("waypoints"));
     dir.cd(pathDay);
 
-    QFile file(dir.absoluteFilePath("Waypoints.wpt"));
-    file.open(QIODevice::WriteOnly);
-    QTextStream out(&file);
-    out.setCodec(QTextCodec::codecForName("UTF-8"));
-    out << "B  UTF-8" << endl;
-    out << "G  WGS 84" << endl;
-    out << "U  1" << endl;
-    foreach(CWpt * wpt, wpts)
+    // export normal waypoints.
     {
-        if(wpt->sticky) continue;
-
-        QString name    = wpt->getName();
-        name    = name.replace(" ","_");
-
-        QString comment = wpt->getComment();
-        if(comment.isEmpty())
+        QFile file(dir.absoluteFilePath("MyWaypoints.wpt"));
+        file.open(QIODevice::WriteOnly);
+        QTextStream out(&file);
+        out.setCodec(QTextCodec::codecForName("UTF-8"));
+        out << "B  UTF-8" << endl;
+        out << "G  WGS 84" << endl;
+        out << "U  1" << endl;
+        foreach(CWpt * wpt, wpts)
         {
-            comment = wpt->getDescription();
+            // do not export sticky waypoints
+            if(wpt->sticky) continue;
+            // geocaches are exported in a separate file
+            if(wpt->isGeoCache()) continue;
+            // waypoints attached to another waypoint are handled with the parent waypoint
+            if(!wpt->getParentWpt().isEmpty()) continue;
+
+            writeWaypointData(out, wpt, dir);
         }
-        IItem::removeHtml(comment);
-        comment = comment.replace("\n","%0A%0D");
-
-        QStringList list;
-        list << "W";
-        list << name.replace(" ", "_");
-        list << "A";
-        list << (wpt->lat > 0 ? QString("%1\272N") : QString("%1\272S")).arg(wpt->lat,0,'f');
-        list << (wpt->lon > 0 ? QString("%1\272E") : QString("%1\272W")).arg(wpt->lon,0,'f');
-        list << QDateTime::fromTime_t(wpt->timestamp).toString("dd-MMM-yyyy");
-        list << QDateTime::fromTime_t(wpt->timestamp).toString("hh:mm:ss");
-        list << QString("%1").arg(wpt->ele == WPT_NOFLOAT ? 0 : wpt->ele,0,'f');
-
-        out << list.join(" ") << " ";
-        out << comment << endl;
-
-        list.clear();
-        list << iconQlGt2TwoNav(wpt->getIconString());
-        list << "0"; //test position
-        list << "-1.0";
-        list << "0";
-        list << QString("%1").arg(CResources::self().wptTextColor().value());
-        list << "1";
-        list << "37"; // 1 Name 2 Beschreibung 4 Symbol 8 Höhe 16 URL 32 Radius
-        list << wpt->link;
-        list << QString("%1").arg(wpt->prx == WPT_NOFLOAT ? 0 : wpt->prx,0,'f');
-        list << wpt->getKey();
-
-        out << "w ";
-        out << list.join(",");
-        out << endl;
-
-        foreach(const CWpt::image_t& img, wpt->images)
+        file.close();
+    }
+    // export geocaches.
+    {
+        QFile file(dir.absoluteFilePath("GeoCaches.wpt"));
+        file.open(QIODevice::WriteOnly);
+        QTextStream out(&file);
+        out.setCodec(QTextCodec::codecForName("UTF-8"));
+        out << "B  UTF-8" << endl;
+        out << "G  WGS 84" << endl;
+        out << "U  1" << endl;
+        foreach(CWpt * wpt, wpts)
         {
-            QString fn = img.info;
-            if(fn.isEmpty())
-            {
-                fn = QString("pix%1.jpg").arg(pixcnt++);
-            }
-            if(!fn.endsWith("jpg"))
-            {
-                fn += ".jpg";
-            }
+            // do not export sticky waypoints
+            if(wpt->sticky) continue;
+            // only accept geocaches
+            if(!wpt->isGeoCache()) continue;
 
-            img.pixmap.save(dir.absoluteFilePath(fn));
+            // write basic data
+            writeWaypointData(out, wpt, dir);
 
-            out << "a " << ".\\" << fn << endl;
-        }
-
-        if(wpt->isGeoCache())
-        {
+            // write geocache data
             QDomDocument doc;
             QDomElement gpxCache = doc.createElement("groundspeak:cache");
             wpt->saveTwoNavExt(gpxCache, true);
@@ -262,11 +285,16 @@ void CDeviceTwoNav::uploadWpts(const QList<CWpt*>& wpts)
             out << doc.toString();
             out << "ee" << endl;
 
+            foreach(CWpt * wpt2, wpts)
+            {
+                if(wpt2->getParentWpt() == wpt->getName())
+                {
+                    writeWaypointData(out, wpt2, dir);
+                }
+            }
         }
-
+        file.close();
     }
-
-    file.close();
     dir.cd(pathRoot);
     theMainWindow->getCanvas()->setFadingMessage(tr("Upload waypoints finished!"));
 }
@@ -318,7 +346,41 @@ void CDeviceTwoNav::uploadTracks(const QList<CTrack*>& trks)
 
 void CDeviceTwoNav::downloadTracks(QList<CTrack*>& trks)
 {
-    QMessageBox::information(0,tr("Error..."), tr("TwoNav: Download tracks is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
+//    QMessageBox::information(0,tr("Error..."), tr("TwoNav: Download tracks is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
+    QStringList files;
+    QStringList subdirs;
+    QDir dir;
+    if(!aquire(dir))
+    {
+        return;
+    }
+
+    dir.cd(pathData);
+    subdirs = dir.entryList(QDir::Dirs|QDir::NoDotAndDotDot);
+
+    foreach(const QString& subdir, subdirs)
+    {
+        dir.cd(subdir);
+
+        files = dir.entryList(QStringList("*gpx"));
+        foreach(const QString& filename, files)
+        {
+            CGpx gpx(this, CGpx::eCleanExport);
+            gpx.load(dir.absoluteFilePath(filename));
+            CTrackDB::self().loadGPX(gpx);
+        }
+
+        files = dir.entryList(QStringList("*trk"));
+        foreach(const QString& filename, files)
+        {
+            readTrkFile(dir,filename, trks);
+        }
+
+        dir.cdUp();
+    }
+
+    dir.cd(pathRoot);
+    theMainWindow->getCanvas()->setFadingMessage(tr("Download tracks finished!"));
 }
 
 void CDeviceTwoNav::uploadRoutes(const QList<CRoute*>& rtes)
@@ -366,6 +428,7 @@ void CDeviceTwoNav::readWptFile(QDir& dir, const QString& filename, QList<CWpt*>
     QFile file(dir.absoluteFilePath(filename));
     file.open(QIODevice::ReadOnly);
     QTextStream in(&file);
+    in.setCodec(QTextCodec::codecForName("UTF-8"));
 
     while(!line.isEmpty())
     {
@@ -513,4 +576,162 @@ void CDeviceTwoNav::readWptFile(QDir& dir, const QString& filename, QList<CWpt*>
         }
     }
 
+}
+
+QString CDeviceTwoNav::makeUniqueName(const QString name, QDir& dir)
+{
+    int cnt = 0;
+
+    QFileInfo fi(name);
+    QString tmp(name);
+
+    while(dir.exists(tmp))
+    {
+        tmp = QString("%1_%2.%3").arg(fi.baseName()).arg(cnt++).arg(fi.completeSuffix());
+    }
+
+    return tmp;
+}
+
+void CDeviceTwoNav::writeWaypointData(QTextStream& out, CWpt * wpt, QDir& dir)
+{
+    QString name    = wpt->getName();
+    name    = name.replace(" ","_");
+
+    QString comment = wpt->getComment();
+    if(comment.isEmpty())
+    {
+        comment = wpt->getDescription();
+    }
+    IItem::removeHtml(comment);
+    comment = comment.replace("\n","%0A%0D");
+
+    QStringList list;
+    list << "W";
+    list << name.replace(" ", "_");
+    list << "A";
+    list << (wpt->lat > 0 ? QString("%1\272N") : QString("%1\272S")).arg(wpt->lat,0,'f');
+    list << (wpt->lon > 0 ? QString("%1\272E") : QString("%1\272W")).arg(wpt->lon,0,'f');
+    list << QDateTime::fromTime_t(wpt->timestamp).toString("dd-MMM-yyyy");
+    list << QDateTime::fromTime_t(wpt->timestamp).toString("hh:mm:ss");
+    list << QString("%1").arg(wpt->ele == WPT_NOFLOAT ? 0 : wpt->ele,0,'f');
+
+    out << list.join(" ") << " ";
+    out << comment << endl;
+
+    list.clear();
+    list << iconQlGt2TwoNav(wpt->getIconString());
+    list << "0"; //test position
+    list << "-1.0";
+    list << "0";
+    list << QString("%1").arg(CResources::self().wptTextColor().value());
+    list << "1";
+    list << "37"; // 1 Name 2 Beschreibung 4 Symbol 8 Höhe 16 URL 32 Radius
+    list << "";//wpt->link;
+    list << QString("%1").arg(wpt->prx == WPT_NOFLOAT ? 0 : wpt->prx,0,'f');
+    list << wpt->getKey();
+
+    out << "w ";
+    out << list.join(",");
+    out << endl;
+
+    foreach(const CWpt::image_t& img, wpt->images)
+    {
+        QString fn = img.info;
+        if(fn.isEmpty())
+        {
+            fn = QString("picture.jpg");
+        }
+        if(!fn.endsWith("jpg"))
+        {
+            fn += ".jpg";
+        }
+
+        fn = makeUniqueName(fn, dir);
+        img.pixmap.save(dir.absoluteFilePath(fn));
+        out << "a " << ".\\" << fn << endl;
+    }
+}
+
+
+void CDeviceTwoNav::readTrkFile(QDir &dir, const QString &filename, QList<CTrack *> &trks)
+{
+    QString line("start");
+    QFile file(dir.absoluteFilePath(filename));
+    file.open(QIODevice::ReadOnly);
+    QTextStream in(&file);
+    in.setCodec(QTextCodec::codecForName("UTF-8"));
+
+    CTrack * track = new CTrack(&CTrackDB::self());
+
+    while(!line.isEmpty())
+    {
+        line = in.readLine();
+        switch(line[0].toAscii())
+        {
+        case 'B':
+        {
+            QString name        = line.mid(1).simplified();
+            QTextCodec * codec  = QTextCodec::codecForName(name.toAscii());
+            if(codec)
+            {
+                in.setCodec(codec);
+            }
+            break;
+        }
+        case 'G':
+        {
+            QString name  = line.mid(1).simplified();
+            if(name != "WGS 84")
+            {
+                QMessageBox::information(0,tr("Error..."), tr("Only support lon/lat WGS 84 format."),QMessageBox::Abort,QMessageBox::Abort);
+                return;
+            }
+            break;
+        }
+        case 'U':
+        {
+            QString name  = line.mid(1).simplified();
+            if(name != "1")
+            {
+                QMessageBox::information(0,tr("Error..."), tr("Only support lon/lat WGS 84 format."),QMessageBox::Abort,QMessageBox::Abort);
+                return;
+            }
+            break;
+        }
+        case 'C':
+        {
+            QStringList values = line.split(' ', QString::SkipEmptyParts);
+            QColor c(values[1].toInt(),values[2].toInt(),values[3].toInt());
+            track->setColor(c);
+            break;
+        }
+        case 'T':
+        {
+            CTrack::pt_t pt;
+            QStringList values = line.split(' ', QString::SkipEmptyParts);
+
+            GPS_Math_Str_To_Deg(values[2].replace("\272","") + " " + values[3].replace("\272",""), pt.lon, pt.lat);
+            QDateTime time = QDateTime::fromString(values[4] + " " + values[5], "dd-MMM-yy hh:mm:ss.zzz");
+            time.setTimeSpec(Qt::UTC);
+            time = time.addYears(100);
+            pt.timestamp        = time.toTime_t();
+            pt.timestamp_msec   = time.time().msec();
+            pt.ele = values[7].toFloat();
+
+
+            pt._lon = pt.lon;
+            pt._lat = pt.lat;
+            pt._ele = pt.ele;
+
+            *track << pt;
+            break;
+        }
+
+
+        }
+    }
+
+    track->rebuild(true);
+    trks << track;
 }

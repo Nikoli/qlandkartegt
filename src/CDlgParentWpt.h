@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2008 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,22 +16,26 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
+#ifndef CDLGPARENTWPT_H
+#define CDLGPARENTWPT_H
 
-#ifndef CMOUSEOVERLAY_H
-#define CMOUSEOVERLAY_H
+#include <QDialog>
 
-#include "IMouse.h"
+#include "ui_IDlgParentWpt.h"
 
-class CMouseOverlay : public IMouse
+class CDlgParentWpt : public QDialog, private Ui::IDlgParentWpt
 {
     Q_OBJECT;
     public:
-        CMouseOverlay(CCanvas * canvas);
-        virtual ~CMouseOverlay();
+        CDlgParentWpt(QString& name, QWidget * parent);
+        virtual ~CDlgParentWpt();
 
-        void keyPressEvent(QKeyEvent * e);
-        void mouseMoveEvent(QMouseEvent * e);
-        void mousePressEvent(QMouseEvent * e);
-        void mouseReleaseEvent(QMouseEvent * e);
+    private slots:
+        void slotItemClicked(QListWidgetItem * item);
+
+    private:
+        QString& name;
 };
-#endif                           //CMOUSEOVERLAY_H
+
+#endif //CDLGPARENTWPT_H
+

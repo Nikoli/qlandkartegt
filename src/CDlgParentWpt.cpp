@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2008 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,21 +17,43 @@
 
 **********************************************************************************************/
 
-#ifndef CMOUSEOVERLAY_H
-#define CMOUSEOVERLAY_H
 
-#include "IMouse.h"
+#include "CDlgParentWpt.h"
+#include "CWptDB.h"
+#include "CWpt.h"
 
-class CMouseOverlay : public IMouse
+#include <QtGui>
+
+CDlgParentWpt::CDlgParentWpt(QString &name, QWidget *parent)
+: QDialog(parent)
+, name(name)
 {
-    Q_OBJECT;
-    public:
-        CMouseOverlay(CCanvas * canvas);
-        virtual ~CMouseOverlay();
+    setupUi(this);
 
-        void keyPressEvent(QKeyEvent * e);
-        void mouseMoveEvent(QMouseEvent * e);
-        void mousePressEvent(QMouseEvent * e);
-        void mouseReleaseEvent(QMouseEvent * e);
-};
-#endif                           //CMOUSEOVERLAY_H
+    const QMap<QString,CWpt*>& wpts = CWptDB::self().getWpts();
+    foreach(const CWpt* wpt, wpts)
+    {
+        if(!wpt->isGeoCache()) continue;
+
+        QListWidgetItem * item = new QListWidgetItem(listParentWpt);
+        item->setText(wpt->getName());
+        item->setIcon(wpt->getIcon());
+
+    }
+
+    connect(listParentWpt, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(slotItemClicked(QListWidgetItem*)));
+}
+
+CDlgParentWpt::~CDlgParentWpt()
+{
+
+}
+
+void CDlgParentWpt::slotItemClicked(QListWidgetItem * item)
+{
+    if(item)
+    {
+        name = item->text();
+        accept();
+    }
+}

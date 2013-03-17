@@ -20,8 +20,28 @@
 #define CDEVICETWONAV_H
 
 #include "IDevice.h"
+#include "ui_IDlgDeviceTwoNavPath.h"
+
+#include <QDialog>
 
 class CWpt;
+class CTrack;
+
+class CDlgDeviceTwoNavPath : public QDialog, private Ui::IDlgDeviceTwoNavPath
+{
+    Q_OBJECT;
+    public:
+        CDlgDeviceTwoNavPath(const QString &what, QDir &dir, QString &subdir, QWidget *parent);
+        ~CDlgDeviceTwoNavPath();
+
+    private slots:
+        void slotItemClicked(QListWidgetItem*item);
+        void slotReturnPressed();
+
+    private:
+        QString& subdir;
+};
+
 
 class CDeviceTwoNav : public IDevice
 {
@@ -44,9 +64,14 @@ class CDeviceTwoNav : public IDevice
         void downloadScreenshot(QImage& image);
 
     private:
+        QString makeUniqueName(const QString name, QDir& dir);
         bool aquire(QDir& dir);
-        void createDayPath();
-        void readWptFile(QDir &dir, const QString &filename, QList<CWpt *> &wpts);
+        void createDayPath(const QString &what);
+
+        void readWptFile(QDir &dir, const QString &filename, QList<CWpt *> &wpts);        
+        void writeWaypointData(QTextStream& out, CWpt * wpt, QDir &dir);
+
+        void readTrkFile(QDir &dir, const QString &filename, QList<CTrack *> &trks);
 
         QString iconTwoNav2QlGt(const QString& sym);
         QString iconQlGt2TwoNav(const QString& sym);
