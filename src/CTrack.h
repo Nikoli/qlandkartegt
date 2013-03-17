@@ -194,12 +194,12 @@ class CTrack : public IItem
         unsigned getColorIdx() const {return colorIdx;}
 
         /// set the highlight flag
-        void setHighlight(bool yes) {highlight = yes;}
+        void setHighlight(bool yes);
         /// get the value of the highlight flag
         bool isHighlighted() const {return highlight;}
 
         /// append point to track
-        CTrack& operator<<(pt_t& pt);
+        CTrack& operator<<(const pt_t& pt);
         /// rebuild secondary track data from primary
         void rebuild(bool reindex);
         /// get list of track points
@@ -225,7 +225,8 @@ class CTrack : public IItem
         /// get the descend in [m]
         double getDescend() const {return totalDescend;}
         /// get information string for a particular trackpoint
-        QString getTrkPtInfo(pt_t& trkpt);
+        QString getTrkPtInfo1(pt_t& trkpt);
+        QString getTrkPtInfo2(pt_t& trkpt);
         /// get the bounding rectangular that fits the track
         QRectF getBoundingRectF();
         /// sort trackpoints by timestamp
@@ -244,8 +245,8 @@ class CTrack : public IItem
         void hide(bool ok);
         bool isHidden() const {return m_hide;}
 
-        void replaceElevationByRemote();
-        void replaceElevationByLocal();
+        void replaceElevationByRemote(bool replaceOrignalData);
+        void replaceElevationByLocal(bool replaceOrignalData);
 
         /// get a summary of item's data to display on screen or in the toolview
         QString getInfo();
@@ -253,15 +254,15 @@ class CTrack : public IItem
         void setIcon(const QString& str);
 
         void setTimestamp(quint32 ts){timestamp = ts;}
-        void scaleWpt2Track(QList<wpt_t>& wpts);
         float getStartElevation();
         float getEndElevation();
 
         Qt::CheckState getDoScaleWpt2Track(){return (Qt::CheckState)doScaleWpt2Track;}
         void setDoScaleWpt2Track(Qt::CheckState state);
+        const QList<wpt_t>& getStageWaypoints(){return waypoints;}
 
         /// smooth profile with a median filter
-        void medianFilter(QProgressDialog& progress);
+        void medianFilter(quint32 len, QProgressDialog &progress);
 
         /// reset all smoothed and purged data to it's original state
         void reset();
@@ -271,9 +272,13 @@ class CTrack : public IItem
         signals:
         void sigChanged();
 
+    public slots:
+        void slotScaleWpt2Track();
+
     private slots:
         void slotRequestStarted(int );
         void slotRequestFinished(int , bool error);
+
 
 
     private:
@@ -334,6 +339,10 @@ class CTrack : public IItem
         quint32 visiblePointCount;
 
         quint32 cntMedianFilterApplied;
+
+        QList<wpt_t> waypoints;
+
+        bool replaceOrigData;
 
 };
 

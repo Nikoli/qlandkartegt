@@ -541,6 +541,11 @@ bool trackpointLessThan(const CTrack::pt_t &p1, const CTrack::pt_t &p2)
     return p1.timestamp < p2.timestamp;
 }
 
+static bool qSortWptLessDistance(CTrack::wpt_t& p1, CTrack::wpt_t& p2)
+{
+    return p1.trkpt.distance < p2.trkpt.distance;
+}
+
 
 CTrack::CTrack(QObject * parent)
 : IItem(parent)
@@ -556,6 +561,7 @@ CTrack::CTrack(QObject * parent)
 , geonames(0)
 , visiblePointCount(0)
 , cntMedianFilterApplied(0)
+, replaceOrigData(true)
 {
     ref = 1;
 
@@ -565,6 +571,8 @@ CTrack::CTrack(QObject * parent)
     geonames->setHost("ws.geonames.org");
     connect(geonames,SIGNAL(requestStarted(int)),this,SLOT(slotRequestStarted(int)));
     connect(geonames,SIGNAL(requestFinished(int,bool)),this,SLOT(slotRequestFinished(int,bool)));
+
+    connect(&CWptDB::self(), SIGNAL(sigChanged()), this, SLOT(slotScaleWpt2Track()));
 }
 
 
@@ -573,24 +581,38 @@ CTrack::~CTrack()
 
 }
 
-void CTrack::replaceElevationByLocal()
+void CTrack::setHighlight(bool yes)
 {
-    qDebug() << "CTrack::replaceElevationByLocal()";
+    highlight = yes;
+    if(yes)
+    {
+        slotScaleWpt2Track();
+    }
+}
+
+void CTrack::replaceElevationByLocal(bool replaceOrignalData)
+{
+//    qDebug() << "CTrack::replaceElevationByLocal()";
     IMap& map       = CMapDB::self().getDEM();
     const int size = track.size();
     for(int i = 0; i<size; i++)
     {
         track[i].ele    = map.getElevation(track[i].lon * DEG_TO_RAD, track[i].lat * DEG_TO_RAD);
-        track[i]._ele   = track[i].ele;
+        if(replaceOrignalData)
+        {
+            track[i]._ele   = track[i].ele;
+        }
     }
     rebuild(false);
     emit sigChanged();
 }
 
-void CTrack::replaceElevationByRemote()
+void CTrack::replaceElevationByRemote(bool replaceOrignalData)
 {
     SETTINGS;
     QString username = cfg.value("geonames/username","demo").toString();
+
+    replaceOrigData = replaceOrignalData;
 
     int idx = 0, id;
     const int size = track.size();
@@ -632,13 +654,13 @@ void CTrack::slotRequestFinished(int id, bool error)
 
     if(error)
     {
-        qDebug() << geonames->errorString();
+//        qDebug() << geonames->errorString();
         return;
     }
 
     QString asw = geonames->readAll().simplified();
 
-    qDebug() << asw;
+//    qDebug() << asw;
 
     if(asw.isEmpty())
     {
@@ -656,7 +678,10 @@ void CTrack::slotRequestFinished(int id, bool error)
             if(idx < track.size())
             {
                 track[idx].ele    = val.toDouble();
-                track[idx]._ele   = val.toDouble();
+                if(replaceOrigData)
+                {
+                    track[idx]._ele   = track[idx].ele;
+                }
                 idx++;
             }
         }
@@ -737,7 +762,7 @@ void CTrack::setColor(unsigned i)
 
 
 
-CTrack& CTrack::operator<<(pt_t& pt)
+CTrack& CTrack::operator<<(const pt_t& pt)
 {
     track.push_back(pt);
     track.last().idx     = track.size() - 1;
@@ -775,7 +800,6 @@ void CTrack::hide(bool ok)
 
 void CTrack::rebuild(bool reindex)
 {
-
     double slope    = 0;
     IMap& dem = CMapDB::self().getDEM();
     quint32 t1 = 0, t2 = 0;
@@ -1130,16 +1154,23 @@ void CTrack::setIcon(const QString& str)
 }
 
 
-QString CTrack::getTrkPtInfo(pt_t& trkpt)
+QString CTrack::getTrkPtInfo1(pt_t& trkpt)
 {
     QString str, val, unit;
 
+    // timestamp
     if(trkpt.timestamp != 0x00000000 && trkpt.timestamp != 0xFFFFFFFF)
     {
         QDateTime time = QDateTime::fromTime_t(trkpt.timestamp);
         time.setTimeSpec(Qt::LocalTime);
         str = time.toString();
 
+    }
+
+
+    // time to start and time to end
+    if(trkpt.timestamp != 0x00000000 && trkpt.timestamp != 0xFFFFFFFF)
+    {
         quint32 total = getTotalTime();
         if(total)
         {
@@ -1163,19 +1194,21 @@ QString CTrack::getTrkPtInfo(pt_t& trkpt)
 
     }
 
+    // distance to start and distance to end
     if(str.count()) str += "\n";
     IUnit::self().meter2distance(trkpt.distance, val, unit);
     str += tr("%5 %4 %1%2 (%3%)").arg(val).arg(unit).arg(trkpt.distance * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A4)).arg(QChar(0x2690));
     IUnit::self().meter2distance(getTotalDistance() - trkpt.distance, val, unit);
     str += tr(" | (%3%) %1%2 %4 %5").arg(val).arg(unit).arg((getTotalDistance() - trkpt.distance) * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A6)).arg(QChar(0x2691));
 
+
+    // elevation of point
     if(trkpt.ele != WPT_NOFLOAT)
     {
         if(str.count()) str += "\n";
         IUnit::self().meter2elevation(trkpt.ele, val, unit);
         str += tr("elevation: %1 %2").arg(val).arg(unit);
     }
-
 
 
     //-----------------------------------------------------------------------------------------------------------
@@ -1198,6 +1231,78 @@ QString CTrack::getTrkPtInfo(pt_t& trkpt)
     }
 #endif
 
+    return str;
+}
+
+QString CTrack::getTrkPtInfo2(pt_t& trkpt)
+{
+    QString str, val, unit;
+
+    if(CResources::self().showTrackProfileEleInfo())
+    {
+        // distance ascend descend in current stage
+        QString lastName = tr("Start");/* = QChar(0x2690);*/
+        double lastDist  = 0;
+        double lastAsc   = 0;
+        double lastDesc  = 0;
+
+        QString nextName = tr("End");/* = QChar(0x2691);*/
+        double nextDist  = getTotalDistance();
+        double nextAsc   = getAscend();
+        double nextDesc  = getDescend();
+
+        foreach(const wpt_t& wpt, waypoints)
+        {
+            if(trkpt.distance < wpt.trkpt.distance)
+            {
+                nextDist = wpt.trkpt.distance;
+                nextAsc  = wpt.trkpt.ascend;
+                nextDesc = wpt.trkpt.descend;
+                nextName = wpt.wpt->getName();
+                break;
+            }
+
+            lastDist = wpt.trkpt.distance;
+            lastAsc  = wpt.trkpt.ascend;
+            lastDesc = wpt.trkpt.descend;
+            lastName = wpt.wpt->getName();
+        }
+
+        if(!waypoints.isEmpty())
+        {
+            double delta, ascend, descend;
+
+            if(!lastName.isEmpty())
+            {
+                delta    = trkpt.distance - lastDist;
+                ascend   = trkpt.ascend   - lastAsc;
+                descend  = trkpt.descend  - lastDesc;
+
+                str += lastName + ":";
+                IUnit::self().meter2distance(delta, val, unit);
+                str += tr(" %3 %1 %2").arg(val).arg(unit).arg(QChar(0x21A4));
+                IUnit::self().meter2elevation(ascend, val, unit);
+                str += tr(" %3 %1 %2").arg(val).arg(unit).arg(QChar(0x2197));
+                IUnit::self().meter2elevation(descend, val, unit);
+                str += tr(" %3 %1 %2 ").arg(val).arg(unit).arg(QChar(0x2198));
+            }
+
+            if(!nextName.isEmpty())
+            {
+                delta    = nextDist - trkpt.distance;
+                ascend   = nextAsc - trkpt.ascend;
+                descend  = nextDesc - trkpt.descend;
+
+                IUnit::self().meter2elevation(ascend, val, unit);
+                str += tr("| %3 %1 %2").arg(val).arg(unit).arg(QChar(0x2197));
+                IUnit::self().meter2elevation(descend, val, unit);
+                str += tr(" %3 %1 %2").arg(val).arg(unit).arg(QChar(0x2198));
+                IUnit::self().meter2distance(delta, val, unit);
+                str += tr(" %1 %2").arg(val).arg(unit);
+                str += tr(" %1 :%2").arg(QChar(0x21A6)).arg(nextName);
+            }
+        }
+    }
 
     return str;
 }
@@ -1209,17 +1314,22 @@ void CTrack::setDoScaleWpt2Track(Qt::CheckState state)
     CTrackDB::self().emitSigChanged();
 }
 
-void CTrack::scaleWpt2Track(QList<wpt_t>& wpts)
+void CTrack::slotScaleWpt2Track()
 {
     CWptDB& wptdb = CWptDB::self();
-    if(wptdb.count() == 0 ) return;
+
+    waypoints.clear();
+    if(wptdb.count() == 0 )
+    {
+        CTrackDB::self().emitSigChanged();
+        return ;
+    }
+
     IMap& map = CMapDB::self().getMap();
-
-    wpts.clear();
-
     if(doScaleWpt2Track == Qt::Unchecked)
     {
-        return;
+        CTrackDB::self().emitSigChanged();
+        return ;
     }
 
     if(doScaleWpt2Track == Qt::PartiallyChecked	)
@@ -1240,7 +1350,7 @@ void CTrack::scaleWpt2Track(QList<wpt_t>& wpts)
                 doScaleWpt2Track = Qt::Unchecked;
                 CTrackDB::self().emitSigModified();
                 CTrackDB::self().emitSigChanged();
-                return;
+                return ;
             }
             else
             {
@@ -1262,7 +1372,7 @@ void CTrack::scaleWpt2Track(QList<wpt_t>& wpts)
 
         map.convertRad2M(wpt.x, wpt.y);
 
-        wpts << wpt;
+        waypoints << wpt;
 
         ++w;
     }
@@ -1281,8 +1391,8 @@ void CTrack::scaleWpt2Track(QList<wpt_t>& wpts)
         double y = trkpt->lat * DEG_TO_RAD;
         map.convertRad2M(x, y);
 
-        QList<wpt_t>::iterator wpt = wpts.begin();
-        while(wpt != wpts.end())
+        QList<wpt_t>::iterator wpt = waypoints.begin();
+        while(wpt != waypoints.end())
         {
             double d = (x - wpt->x) * (x - wpt->x) + (y - wpt->y) * (y - wpt->y);
             if(d < wpt->d)
@@ -1295,15 +1405,30 @@ void CTrack::scaleWpt2Track(QList<wpt_t>& wpts)
         ++trkpt;
     }
 
+    QList<CTrack::wpt_t>::iterator wpt = waypoints.begin();
+    while(wpt != waypoints.end())
+    {
+        if(wpt->d > WPT_TO_TRACK_DIST)
+        {
+            wpt = waypoints.erase(wpt);
+            continue;
+        }
+        ++wpt;
+    }
+
+    qSort(waypoints.begin(), waypoints.end(), qSortWptLessDistance);
+    CTrackDB::self().emitSigChanged();
+
     QApplication::restoreOverrideCursor();
+    return ;
 }
 
-void CTrack::medianFilter(QProgressDialog& progress)
+void CTrack::medianFilter(quint32 len, QProgressDialog& progress)
 {
-    qint32 len = 5 + (cntMedianFilterApplied<<1);
+    cntMedianFilterApplied = (len - 5) >> 1;
 
     QList<float> window;
-    for(int i = 0; i<len; i++)
+    for(quint32 i = 0; i<len; i++)
     {
         window << 0.0;
     }
@@ -1329,7 +1454,7 @@ void CTrack::medianFilter(QProgressDialog& progress)
     for(int i = (len>>1); i < (ele.size()-(len>>1)); i++)
     {
         // apply median filter over all trackpoints
-        for(int n = 0; n < len; n++)
+        for(quint32 n = 0; n < len; n++)
         {
             window[n] = ele[i - (len>>1) + n];
         }
@@ -1345,7 +1470,6 @@ void CTrack::medianFilter(QProgressDialog& progress)
         }
     }
 
-    cntMedianFilterApplied++;
 }
 
 void CTrack::reset()
@@ -1365,6 +1489,7 @@ void CTrack::reset()
     cntMedianFilterApplied = 0;
 
     rebuild(true);
+    slotScaleWpt2Track();
 }
 
 QDataStream& operator >>(QDataStream& s, CFlags& flag)

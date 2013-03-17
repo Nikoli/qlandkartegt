@@ -52,6 +52,8 @@ CPlot::CPlot(CPlotData::axis_type_e type, mode_e mode, QWidget * parent)
 , posMouse(-1,-1)
 , posWpt(-1,-1)
 , selTrkPt(0)
+, idxHighlight1(0)
+, idxHighlight2(0)
 {
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding);
@@ -64,6 +66,8 @@ CPlot::CPlot(CPlotData::axis_type_e type, mode_e mode, QWidget * parent)
 
     m_pData = new CPlotData(type, this);
     createActions();
+
+    connect(&CTrackDB::self(), SIGNAL(sigPointOfFocus(int)), this, SLOT(slotPointOfFocus(int)));
 }
 
 
@@ -284,6 +288,7 @@ void CPlot::setSizeIconArea()
 }
 
 
+
 /*
   x = a <br>
   y = widget height - xlabel height <br>
@@ -360,6 +365,7 @@ void CPlot::draw(QPainter& p)
 
     p.drawImage(0,0,buffer);
 
+    // draw track information for point under mouse
     int x = posMouse.x();
     if(x != -1)
     {
@@ -368,19 +374,19 @@ void CPlot::draw(QPainter& p)
         p.drawLine(x, rectGraphArea.top(), x, rectGraphArea.bottom());
 
         CTrack * track = CTrackDB::self().highlightedTrack();
-        if(selTrkPt && track)
+        if(selTrkPt && track && (mode != eIcon))
         {
-            QString str = track->getTrkPtInfo(*selTrkPt);
-
+            QString str;
             double y = getYValByPixel(x);
             y = m_pData->y().val2pt(y);
             y = bottom - y;
 
+            // highlight track point
             p.setPen(CCanvas::penBorderBlue);
             p.setBrush(CCanvas::brushBackWhite);
             p.drawEllipse(QRect(x - 5,  y - 5, 11, 11));
 
-
+            str = track->getTrkPtInfo1(*selTrkPt);
             if(!str.isEmpty())
             {
                 QFont           f = CResources::self().getMapFont();
@@ -419,6 +425,21 @@ void CPlot::draw(QPainter& p)
                 p.setFont(CResources::self().getMapFont());
                 p.setPen(Qt::darkBlue);
                 p.drawText(r1, Qt::AlignLeft|Qt::AlignTop|Qt::TextWordWrap,str);
+            }
+
+            str = track->getTrkPtInfo2(*selTrkPt);
+            if(!str.isEmpty())
+            {
+                QFont           f = CResources::self().getMapFont();
+                QFontMetrics    fm(f);
+                QRect           r1 = fm.boundingRect(QRect(0,0,1,1), Qt::AlignLeft|Qt::AlignTop, str);
+
+                r1.moveTopLeft(QPoint(left, rectX1Label.bottom()));
+
+                qDebug() << r1;
+
+                CCanvas::drawText(str, p, r1.center());
+
             }
         }
     }
@@ -764,6 +785,38 @@ void CPlot::drawData(QPainter& p)
         ++line;
     }
 
+    if((idxHighlight1 >= 0) && (idxHighlight2 >= 0) && mode != eIcon)
+    {
+        QPolygonF background;
+        QPolygonF line              = lines[0].points.mid(idxHighlight1, idxHighlight2 - idxHighlight1);
+        QPolygonF::iterator point   = line.begin();
+
+        ptx = left   + xaxis.val2pt( point->x() );
+        pty = bottom - yaxis.val2pt( point->y() );
+
+        background << QPointF(ptx,bottom);
+
+        while(point != line.end())
+        {
+            ptx = left   + xaxis.val2pt( point->x() );
+            pty = bottom - yaxis.val2pt( point->y() );
+
+            if(ptx >= left && ptx <= right)
+            {
+                background << QPointF(ptx,pty);
+            }
+            ++point;
+        }
+
+        background << QPointF(ptx,bottom);
+
+        p.save();
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(255,0,0,150));
+        p.drawPolygon(background);
+        p.restore();
+    }
+
     {
         QPolygonF& marks                = m_pData->marks.points;
         QPolygonF::const_iterator point = marks.begin();
@@ -1060,7 +1113,15 @@ void CPlot::mouseMoveEvent(QMouseEvent * e)
 
         posMouse = e->pos();
 
-        emit sigFocusPoint(x);
+        selTrkPt = 0;
+        if(m_pData->axisType == CPlotData::eLinear)
+        {
+            CTrackDB::self().setPointOfFocusByDist(x);
+        }
+        else
+        {
+            CTrackDB::self().setPointOfFocusByTime((quint32)x);
+        }
     }
     update();
 }
@@ -1085,10 +1146,11 @@ void CPlot::mouseReleaseEvent(QMouseEvent * e)
             emit sigActivePoint(dist);
 
             update();
-        }          
+        }
     }
     else
     {
+        CTrackDB::self().setPointOfFocusByIdx(-1);
         emit sigClicked();
     }
 
@@ -1115,6 +1177,8 @@ void CPlot::leaveEvent(QEvent * event)
     cursorFocus = false;
     needsRedraw = true;
     posMouse    = QPoint(-1, -1);
+
+    CTrackDB::self().setPointOfFocusByIdx(-1);
     QApplication::restoreOverrideCursor();
 
     update();
@@ -1136,11 +1200,84 @@ void CPlot::slotTrkPt(CTrack::pt_t * pt)
     }
     else
     {
-        int x       = m_pData->x().val2pt(pt->distance);
-        int y       = m_pData->y().val2pt(pt->altitude);
-        posMouse    = QPoint(x + left, y);
+        if(m_pData->axisType == CPlotData::eLinear)
+        {
+            int x       = m_pData->x().val2pt(pt->distance);
+            int y       = m_pData->y().val2pt(pt->altitude);
+            posMouse    = QPoint(x + left, y);
+        }
+        else
+        {
+            int x       = m_pData->x().val2pt(pt->timestamp);
+            int y       = m_pData->y().val2pt(pt->distance);
+            posMouse    = QPoint(x + left, y);
+        }
     }
     needsRedraw = true;
     update();
 }
 
+void CPlot::slotPointOfFocus(const int idx)
+{
+    selTrkPt = 0;
+
+    CTrack * track = CTrackDB::self().highlightedTrack();
+    if(track == 0)
+    {
+        return;
+    }
+
+    QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
+    if(idx < trkpts.size())
+    {
+        if(idx < 0)
+        {
+            slotTrkPt(0);
+        }
+        else
+        {
+            selTrkPt = &trkpts[idx];
+            slotTrkPt(selTrkPt);
+        }
+
+    }
+}
+
+void CPlot::slotHighlightSection(double x1, double x2)
+{
+    int idx = 0;
+
+    idxHighlight1 = -1;
+    idxHighlight2 = -1;
+
+    if(m_pData && m_pData->lines.isEmpty())
+    {
+        return;
+    }
+
+    if(x1 == WPT_NOFLOAT || x2 == WPT_NOFLOAT)
+    {
+        needsRedraw = true;
+        update();
+        return;
+    }
+
+    QPolygonF& line = m_pData->lines[0].points;
+    foreach(const QPointF& point, line)
+    {
+        if(idxHighlight1 < 0 && x1 <= point.x())
+        {
+            idxHighlight1 = idx;
+        }
+
+        if(idxHighlight2 < 0 && x2 <= point.x())
+        {
+            idxHighlight2 = idx;
+        }
+
+        idx++;
+    }
+
+    needsRedraw = true;
+    update();
+}

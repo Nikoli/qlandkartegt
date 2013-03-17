@@ -32,7 +32,6 @@
 #include "COverlayTextBox.h"
 #include "COverlayDistance.h"
 #include "CDiary.h"
-#include "CTextEditWidget.h"
 #include "CDiaryDB.h"
 #include "CDlgSelGeoDBFolder.h"
 #include "CResources.h"
@@ -3330,6 +3329,13 @@ void CGeoDB::slotShowDiary()
 void CGeoDB::slotDelDiary()
 {
     CGeoDBInternalEditLock lock(this);
+
+    QMessageBox::StandardButton res = QMessageBox::question(this, tr("Delete diary..."), tr("Do you really want to delete the diary?"), QMessageBox::Yes|QMessageBox::No, QMessageBox::Yes);
+
+    if(res == QMessageBox::No)
+    {
+        return;
+    }
 
     QTreeWidgetItem * parent = treeDatabase->currentItem();
     if(parent == 0)

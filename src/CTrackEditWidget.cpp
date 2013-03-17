@@ -35,10 +35,9 @@
 #include "IUnit.h"
 #include "CMenus.h"
 #include "CActions.h"
-#include "CDlgTrackFilter.h"
 #include "CWptDB.h"
 #include "CSettings.h"
-
+#include "CPlot.h"
 
 #include <QtGui>
 
@@ -130,15 +129,6 @@ CTrackEditWidget::CTrackEditWidget(QWidget * parent)
     traineeGraph->setIcon(QIcon(":/icons/package_favorite.png"));
     connect(traineeGraph, SIGNAL(clicked()), this, SLOT(slotToggleTrainee()));
 
-    toolFilter->setIcon(QIcon(":/icons/iconFilter16x16.png"));
-    connect(toolFilter, SIGNAL(clicked()), this, SLOT(slotFilter()));
-
-    toolReset->setIcon(QIcon(":/icons/editundo.png"));
-    connect(toolReset, SIGNAL(clicked()), this, SLOT(slotReset()));
-
-    toolDelete->setIcon(QIcon(":/icons/iconDelete16x16.png"));
-    connect(toolDelete, SIGNAL(clicked()), this, SLOT(slotDelete()));
-
     QPixmap icon(16,8);
     for(int i=0; i < 17; ++i)
     {
@@ -183,19 +173,25 @@ CTrackEditWidget::CTrackEditWidget(QWidget * parent)
     contextMenu = new QMenu(this);
     contextMenu->addAction(actions->getAction("aTrackPurgeSelection"));
     actSplit    = contextMenu->addAction(QPixmap(":/icons/iconEditCut16x16.png"),tr("Split"),this,SLOT(slotSplit()));
-    connect(treePoints,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenu(const QPoint&)));
 
+    connect(treePoints,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenu(const QPoint&)));
     connect(comboColor, SIGNAL(currentIndexChanged(int)), this, SLOT(slotColorChanged(int)));
     connect(lineName, SIGNAL(returnPressed()), this, SLOT(slotNameChanged()));
     connect(lineName, SIGNAL(textChanged(QString)), this, SLOT(slotNameChanged(QString)));
-
     connect(tabWidget, SIGNAL(currentChanged(int)), this, SLOT(slotCurrentChanged(int)));
-
-    connect(&CWptDB::self(), SIGNAL(sigChanged()), this, SLOT(slotStagesChanged()));
-    connect(&CTrackDB::self(), SIGNAL(sigChanged()), this, SLOT(slotStagesChanged()));
     connect(checkStages, SIGNAL(stateChanged(int)), this, SLOT(slotStagesChanged(int)));
+    connect(textStages, SIGNAL(sigHighlightArea(QString)), this, SLOT(slotHighlightArea(QString)));
 
-    //connect(textStages, SIGNAL(cursorPositionChanged()), this, SLOT(slotCursorPositionChanged()));
+    connect(&CTrackDB::self(), SIGNAL(sigModified()), this, SLOT(slotStagesChanged()));
+    connect(&CTrackDB::self(), SIGNAL(sigPointOfFocus(int)), this, SLOT(slotPointOfFocus(int)));
+    connect(&CWptDB::self(), SIGNAL(sigModified()), this, SLOT(slotStagesChanged()));
+
+    CTrackFilterWidget * w = tabWidget->findChild<CTrackFilterWidget*>();
+    if(w)
+    {
+        w->setTrackEditWidget(this);
+    }
+
 }
 
 
@@ -262,7 +258,7 @@ void CTrackEditWidget::resizeEvent(QResizeEvent * e)
 
     if(oldSize.width() != e->size().width())
     {
-        updateStages(wpts);
+        updateStages();
     }
 
     oldSize = e->size();
@@ -796,8 +792,7 @@ void CTrackEditWidget::slotPurge()
         ++item;
     }
     track->rebuild(false);
-    emit CTrackDB::self().sigModified();
-    emit CTrackDB::self().sigModified(track->getKey());
+    CTrackDB::self().emitSigModified();
 }
 
 
@@ -1137,8 +1132,7 @@ void CTrackEditWidget::slotColorChanged(int idx)
     {
         track->setColor(comboColor->currentIndex());
         track->rebuild(true);
-        emit CTrackDB::self().sigModified();
-        emit CTrackDB::self().sigModified(track->getKey());
+        CTrackDB::self().emitSigModified();
     }
 }
 
@@ -1171,8 +1165,7 @@ void CTrackEditWidget::slotNameChanged()
     {
         track->setName(name);
         track->rebuild(true);
-        emit CTrackDB::self().sigModified();
-        emit CTrackDB::self().sigModified(track->getKey());
+        CTrackDB::self().emitSigModified();
 
         palette.setColor(QPalette::Base, QColor(128, 255, 128));
     }
@@ -1181,18 +1174,12 @@ void CTrackEditWidget::slotNameChanged()
     lineName->setPalette(palette);
 }
 
-void CTrackEditWidget::slotFilter()
-{
-    if(track.isNull()) return;
-    CDlgTrackFilter dlg(*track, this);
-    dlg.exec();
-}
-
 
 void CTrackEditWidget::slotReset()
 {
     if(track.isNull()) return;
     track->reset();
+    track->slotScaleWpt2Track();
     emit CTrackDB::self().sigModified();
     emit CTrackDB::self().sigModified(track->getKey());
 }
@@ -1235,22 +1222,18 @@ void CTrackEditWidget::slotDelete()
     originator = false;
 
     track->rebuild(true);
-    emit CTrackDB::self().sigModified();
-    emit CTrackDB::self().sigModified(track->getKey());
+    track->slotScaleWpt2Track();
+    CTrackDB::self().emitSigModified();
 }
 
 void CTrackEditWidget::slotCurrentChanged(int idx)
 {
     if(idx == eStages)
     {
-        updateStages(wpts);
+        updateStages();
     }
 }
 
-static bool qSortWptLessDistance(CTrack::wpt_t& p1, CTrack::wpt_t& p2)
-{
-    return p1.trkpt.distance < p2.trkpt.distance;
-}
 
 void CTrackEditWidget::slotStagesChanged(int state)
 {
@@ -1265,30 +1248,93 @@ void CTrackEditWidget::slotStagesChanged()
 
     // get waypoints near track
     originator = true;
-    track->scaleWpt2Track(wpts);
     checkStages->setCheckState(track->getDoScaleWpt2Track());
     originator = false;
 
-    QList<CTrack::wpt_t>::iterator wpt = wpts.begin();
-    while(wpt != wpts.end())
-    {
-        if(wpt->d > WPT_TO_TRACK_DIST)
-        {
-            wpt = wpts.erase(wpt);
-            continue;
-        }
-        ++wpt;
-    }
-
-
+    const QList<CTrack::wpt_t>& wpts = track->getStageWaypoints();
     if(wpts.isEmpty())
     {
         tabWidget->setTabEnabled(eStages, false);
         return;
     }
 
-    updateStages(wpts);
+    updateStages();
 
+}
+
+void CTrackEditWidget::slotPointOfFocus(const int idx)
+{
+    int cnt = 0;
+
+    const QList<CTrack::wpt_t>& wpts = track->getStageWaypoints();
+    if(idx < 0 || wpts.isEmpty() || track.isNull())
+    {
+        textStages->slotHighlightArea("");
+        if(trackStatProfileDist)
+        {
+            trackStatProfileDist->getPlot()->slotHighlightSection(WPT_NOFLOAT,WPT_NOFLOAT);
+        }
+        return;
+    }
+
+    double x1 = 0;
+    double x2 = 0;
+
+    foreach(const CTrack::wpt_t& wpt, wpts)
+    {
+//        qDebug() << idx << wpt.trkpt.idx;
+
+        x2 = wpt.trkpt.distance;
+
+        if(idx <= wpt.trkpt.idx)
+        {
+            textStages->slotHighlightArea(QString("stage%1").arg(cnt));
+            if(trackStatProfileDist)
+            {
+                double x = track->getTrackPoints()[idx].distance;
+                trackStatProfileDist->getPlot()->slotHighlightSection(x1,x);
+            }
+            return;
+        }
+
+        x1 = x2;
+        cnt++;
+    }
+
+    if(idx >= wpts.last().trkpt.idx)
+    {
+        textStages->slotHighlightArea(QString("stage%1").arg(cnt));
+
+        if(trackStatProfileDist && track)
+        {
+            double x = track->getTrackPoints()[idx].distance;
+            trackStatProfileDist->getPlot()->slotHighlightSection(x1,x);
+        }
+
+    }
+}
+
+void CTrackEditWidget::slotHighlightArea(const QString& key)
+{
+    if(lastStageKey == key)
+    {
+        return;
+    }
+
+    lastStageKey = key;
+
+    if(trackStatProfileDist)
+    {
+        if(stages.contains(key))
+        {
+            stage_t& stage = stages[key];
+            trackStatProfileDist->getPlot()->slotHighlightSection(stage.x1, stage.x2);
+        }
+        else
+        {
+            trackStatProfileDist->getPlot()->slotHighlightSection(WPT_NOFLOAT, WPT_NOFLOAT);
+        }
+    }
 }
 
 #define CHAR_PER_LINE 120
@@ -1296,24 +1342,25 @@ void CTrackEditWidget::slotStagesChanged()
 #define BASE_FONT_SIZE  9
 
 
-void CTrackEditWidget::updateStages(QList<CTrack::wpt_t>& wpts)
+void CTrackEditWidget::updateStages()
 {
+    textStages->clear();
 
     if(track.isNull()) return;
+
+    const QList<CTrack::wpt_t>& wpts = track->getStageWaypoints();
+
     if(wpts.isEmpty()) return;
 
     tabWidget->setTabEnabled(eStages, true);
-    qSort(wpts.begin(), wpts.end(), qSortWptLessDistance);
-
-    // resize font
 
     QTextDocument * doc = new QTextDocument(textStages);
-
     doc->setTextWidth(textStages->size().width() - 20);
     QFontMetrics fm(QFont(textStages->font().family(),BASE_FONT_SIZE));
     int w = doc->textWidth();
     int pointSize = ((BASE_FONT_SIZE * (w - 2 * ROOT_FRAME_MARGIN)) / (CHAR_PER_LINE *  fm.width("X")));
     if(pointSize == 0) return;
+    if(pointSize > 12) pointSize = 12;
 
     QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
@@ -1347,10 +1394,11 @@ void CTrackEditWidget::updateStages(QList<CTrack::wpt_t>& wpts)
 
     QTextBlockFormat fmtBlockRight;
     fmtBlockRight.setAlignment(Qt::AlignRight);
+    fmtBlockRight.setNonBreakableLines(true);
 
     QTextFrameFormat fmtFrameStandard;
-    fmtFrameStandard.setTopMargin(5);
-    fmtFrameStandard.setBottomMargin(5);
+    fmtFrameStandard.setTopMargin(ROOT_FRAME_MARGIN);
+    fmtFrameStandard.setBottomMargin(ROOT_FRAME_MARGIN);
     fmtFrameStandard.setWidth(w - 2 * ROOT_FRAME_MARGIN);
 
     QTextFrameFormat fmtFrameRoot;
@@ -1363,7 +1411,7 @@ void CTrackEditWidget::updateStages(QList<CTrack::wpt_t>& wpts)
     fmtTableStandard.setBorder(1);
     fmtTableStandard.setBorderStyle(QTextFrameFormat::BorderStyle_Groove);
     fmtTableStandard.setBorderBrush(QColor("#a0a0a0"));
-    fmtTableStandard.setCellPadding(4);
+    fmtTableStandard.setCellPadding(2);
     fmtTableStandard.setCellSpacing(0);
     fmtTableStandard.setHeaderRowCount(2);
     fmtTableStandard.setTopMargin(10);
@@ -1434,6 +1482,7 @@ void CTrackEditWidget::updateStages(QList<CTrack::wpt_t>& wpts)
 
 
     // first entry -------------------------
+    stage_t stage;
     QString val, unit;
     if(track->getStartElevation() != WPT_NOFLOAT)
     {
@@ -1472,6 +1521,8 @@ void CTrackEditWidget::updateStages(QList<CTrack::wpt_t>& wpts)
     int     timeLast = track->getStartTimestamp().toTime_t();
     float   ascLast  = 0;
     float   dscLast  = 0;
+
+    stages.clear();
 
     foreach(const CTrack::wpt_t& wpt, wpts)
     {
@@ -1596,6 +1647,10 @@ void CTrackEditWidget::updateStages(QList<CTrack::wpt_t>& wpts)
 
         table->cellAt(cnt ,eComment).firstCursorPosition().insertText(comment, fmtCharStandard);
 
+        stage.x1 = distLast;
+        stage.x2 = wpt.trkpt.distance;
+        stages[QString("stage%1").arg(cnt - 3)] = stage;
+
         distLast    = wpt.trkpt.distance;
         ascLast     = wpt.trkpt.ascend;
         dscLast     = wpt.trkpt.descend;
@@ -1702,8 +1757,22 @@ void CTrackEditWidget::updateStages(QList<CTrack::wpt_t>& wpts)
 
     table->cellAt(cnt ,eComment).firstCursorPosition().insertText(tr("End of track."), fmtCharStandard);
 
+    stage.x1 = distLast;
+    stage.x2 = track->getTotalDistance();
+    stages[QString("stage%1").arg(cnt - 3)] = stage;
+
     textStages->setDocument(doc);
 
-    QApplication::restoreOverrideCursor();
+    const int N = cnt;
+    textStages->resetAreas();
+    for(cnt = 2; cnt < N; cnt++)
+    {
+        QRect rect1 = textStages->cursorRect(table->cellAt(cnt, eToNextDist).firstCursorPosition());
+        QRect rect2 = textStages->cursorRect(table->cellAt(cnt, eToNextDesc).lastCursorPosition());
+        QRect rect(rect1.x(), rect1.y(), rect2.x() - rect1.x(), rect2.bottom() - rect1.top());
+        rect.adjust(-5,-5,5,5);
+        textStages->addArea(QString("stage%1").arg(cnt - 2), rect);
+    }
 
+    QApplication::restoreOverrideCursor();
 }

@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2008 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2012 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,36 +16,39 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 **********************************************************************************************/
-#ifndef ITRACKSTAT_H
-#define ITRACKSTAT_H
 
-#include <QWidget>
-#include <QPointer>
-#include "ui_ITrackStatWidget.h"
+#ifndef CTEXTBROWSER_H
+#define CTEXTBROWSER_H
 
-#include "CTrack.h"
+#include <QTextBrowser>
 
-class CPlot;
-class CWpt;
-
-class ITrackStat : public QWidget, private Ui::ITrackStatWidget
+class CTextBrowser : public QTextBrowser
 {
     Q_OBJECT;
     public:
-        enum type_e {eOverDistance, eOverTime};
+        CTextBrowser(QWidget * parent);
+        virtual ~CTextBrowser();
 
-        ITrackStat(type_e type, QWidget * paren);
-        virtual ~ITrackStat();
+        void resetAreas();
 
-        CPlot * getPlot(){return plot;}
+        void addArea(const QString& key, const QRect& rect);
+
+    public slots:
+        void slotHighlightArea(const QString& key);
+
+    signals:
+        void sigHighlightArea(const QString& key);
 
     protected:
+        void paintEvent(QPaintEvent * e);
+        void mouseMoveEvent(QMouseEvent * e);
 
-        type_e type;
-        CPlot * plot;
-        QPointer<CTrack> track;
-    protected slots:
-        void slotActivePoint(double x);
-        void slotSetWaypoint(double dist);
+    private:
+
+        QMap<QString, QRect> areas;
+
+        QString areaKey;
 };
-#endif                           //ITRACKSTAT_H
+
+#endif //CTEXTBROWSER_H
+

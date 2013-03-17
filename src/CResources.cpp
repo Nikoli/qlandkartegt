@@ -66,6 +66,7 @@ CResources::CResources(QObject * parent)
 , m_pathGeoDB(QDir::home().filePath(CONFIGDIR))
 #endif
 , m_showTrackProfile(true)
+, m_showTrackEleInfo(true)
 , m_showNorth(true)
 , m_showScale(true)
 , m_showToolTip(true)
@@ -81,7 +82,12 @@ CResources::CResources(QObject * parent)
 
     SETTINGS;
 
+#ifndef Q_WS_MAC
     QString family      = cfg.value("environment/mapfont/family","Arial").toString();
+#else
+    // Qt on Mac OS X 10.6 sometimes fails to render, so use the Mac default font here...
+    QString family      = cfg.value("environment/mapfont/family","Lucida Grande").toString();
+#endif
     int size            = cfg.value("environment/mapfont/size",8).toInt();
     bool bold           = cfg.value("environment/mapfont/bold",false).toBool();
     bool italic         = cfg.value("environment/mapfont/italic",false).toBool();
@@ -143,6 +149,7 @@ CResources::CResources(QObject * parent)
     }
 
     m_showTrackProfile = cfg.value("environment/showTrackProfile",m_showTrackProfile).toBool();
+    m_showTrackEleInfo = cfg.value("environment/showTrackEleInfo",m_showTrackEleInfo).toBool();
     m_showNorth        = cfg.value("environment/showNorth",m_showNorth).toBool();
     m_showScale        = cfg.value("environment/showScale",m_showScale).toBool();
     m_showToolTip      = cfg.value("environment/showToolTip",m_showToolTip).toBool();
@@ -235,6 +242,7 @@ CResources::~CResources()
 
     cfg.setValue("environment/unittype",unit->type);
     cfg.setValue("environment/showTrackProfile",m_showTrackProfile);
+    cfg.setValue("environment/showTrackEleInfo",m_showTrackEleInfo);
     cfg.setValue("environment/showNorth",m_showNorth);
     cfg.setValue("environment/showScale",m_showScale);
     cfg.setValue("environment/showToolTip",m_showToolTip);

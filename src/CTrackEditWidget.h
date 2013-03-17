@@ -79,7 +79,6 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
         void slotToggleStatTime();
         void slotToggleTrainee();
         void slotShowProfile();
-        void slotFilter();
         void slotReset();
         void slotDelete();
 
@@ -105,12 +104,16 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
         void slotStagesChanged();
         void slotStagesChanged(int state);
 
+        void slotPointOfFocus(const int idx);
+
+        void slotHighlightArea(const QString& key);
+
     protected:
         void keyPressEvent(QKeyEvent * e);
         void resizeEvent(QResizeEvent * e);
 
     private:
-        void updateStages(QList<CTrack::wpt_t>& wpts);
+        void updateStages();
         enum columns_e
         {
             eNum       = 0
@@ -128,7 +131,7 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
 
         enum eTblCol{eSym, eInfo, eProx, ePic, eEleWpt, eEleTrk, eToNextDist, eToNextTime, eToNextAsc, eToNextDesc, eTotalDist, eTotalTime, eTotalAsc, eTotalDesc, eComment, eMax};
 
-        enum eTabs {eStages, ePoints, eSetup};
+        enum eTabs {eStages, ePoints, eFilter, eSetup};
 
         QPointer<CTrack> track;
 
@@ -156,9 +159,17 @@ class CTrackEditWidget : public QWidget, private Ui::ITrackEditWidget
         QMenu * contextMenu;
         QAction * actSplit;
 
-        QList<CTrack::wpt_t> wpts;
         QPointer<QTextTable> table;
 
         QSize oldSize;
+
+        struct stage_t
+        {
+            double x1;
+            double x2;
+        };
+
+        QMap<QString, stage_t> stages;
+        QString lastStageKey;
 };
 #endif                           //CTRACKEDITWIDGET_H

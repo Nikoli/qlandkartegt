@@ -60,15 +60,17 @@ class CPlot : public QWidget
 
     signals:
         void sigActivePoint(double dist);
-        void sigFocusPoint(double dist);
         void sigSetWaypoint(double dist);
         void sigClicked();
 
-    public slots:
-        void slotTrkPt(CTrack::pt_t * pt);
+    public slots:        
+        void slotPointOfFocus(const int idx);
+        void slotHighlightSection(double x1, double x2);
+        void resetZoom();
 
 
     protected slots:
+        void slotTrkPt(CTrack::pt_t * pt);
         void slotSave();
         void slotAddWpt();
 
@@ -134,11 +136,11 @@ class CPlot : public QWidget
         QRect rectY1Label;
         QRect rectGraphArea;
         QRect rectIconArea;
+        QRect rectTrackInfo;
 
         QFontMetrics fm;
 
         QPoint startMovePos;
-
 
         double initialYMax;
         double initialYMin;
@@ -155,7 +157,8 @@ class CPlot : public QWidget
         QPoint posWpt;
         QImage buffer;
         CTrack::pt_t * selTrkPt;
-    public slots:
-        void resetZoom();
+
+        int idxHighlight1;
+        int idxHighlight2;
 };
 #endif                           //CPLOT_H

@@ -187,6 +187,7 @@ set(qlandkarte_SRCS
     CTrackStatSpeedWidget.cpp
     CTrackStatTraineeWidget.cpp
     CTrackStatDistanceWidget.cpp
+    CTrackFilterWidget.cpp
     CRoute.cpp
     CRouteDB.cpp
     CRouteToolWidget.cpp
@@ -234,6 +235,7 @@ set(qlandkarte_SRCS
     IDiskCache.cpp
     CDiskCache.cpp
     CDiskCacheZip.cpp
+    CTextBrowser.cpp
 )
 
 if (WIN32)
@@ -353,6 +355,7 @@ set(qlandkarte_HDRS
     CTrackStatSpeedWidget.h
     CTrackStatTraineeWidget.h
     CTrackStatDistanceWidget.h
+    CTrackFilterWidget.h
     CRoute.h
     CRouteDB.h
     CRouteToolWidget.h
@@ -403,6 +406,7 @@ set(qlandkarte_HDRS
     CDiskCache.h
     CDiskCacheZip.h
     CSettings.h
+    CTextBrowser.h
 )
 
 
@@ -416,6 +420,7 @@ SET(qlandkarte_UIS
     ITrackToolWidget.ui
     ITrackEditWidget.ui
     ITrackStatWidget.ui
+    ITrackFilterWidget.ui
     ISearchToolWidget.ui
     IDlgConfig.ui
     IDlgEditWpt.ui

@@ -80,7 +80,6 @@ CMainWindow::CMainWindow()
     setupMenu = 0;
     setObjectName("MainWidget");
     setWindowTitle("QLandkarte GT");
-//    setWindowIcon(QIcon(":/icons/iconGlobe16x16.png"));
     setAcceptDrops(true);
 
     initWptIcons();
@@ -227,17 +226,12 @@ CMainWindow::CMainWindow()
 #ifdef HAS_DBUS
     actionGroupProvider->addAction(CMenus::MainMoreMenu, "aOcm");
 #endif
-
-
-
     actionGroupProvider->addAction(CMenus::RouteMenu, "aSwitchToMain");
     actionGroupProvider->addAction(CMenus::RouteMenu, "aMoveArea");
     actionGroupProvider->addAction(CMenus::RouteMenu, "aZoomArea");
     actionGroupProvider->addAction(CMenus::RouteMenu, "aCenterMap");
     actionGroupProvider->addAction(CMenus::RouteMenu, "aUploadRoute");
     actionGroupProvider->addAction(CMenus::RouteMenu, "aDownloadRoute");
-
-
 
     connect(actionGroupProvider, SIGNAL(stateChanged()),megaMenu , SLOT(switchState()));
 
@@ -254,7 +248,6 @@ CMainWindow::CMainWindow()
     summary->setAlignment(Qt::AlignJustify|Qt::AlignTop);
     //
     ltmp->addWidget(summary);
-
     ltmp->addWidget(new QLabel(tr("<b>GPS Device:</b>"), wtmp));
 
     comboDevice = new QComboBox(wtmp);
@@ -303,6 +296,8 @@ CMainWindow::CMainWindow()
         geodb       = new CGeoDB(tabbar, this);
     }
 
+    canvas->setupDelayed();
+
     connect(searchdb, SIGNAL(sigChanged()), canvas, SLOT(update()));
     connect(wptdb, SIGNAL(sigChanged()), canvas, SLOT(update()));
     connect(trackdb, SIGNAL(sigChanged()), canvas, SLOT(update()));
@@ -324,7 +319,6 @@ CMainWindow::CMainWindow()
 #ifdef HAS_POWERDB
     connect(powerdb, SIGNAL(sigModified()), this, SLOT(slotModified()));
 #endif
-
 
     if(geodb)
     {
