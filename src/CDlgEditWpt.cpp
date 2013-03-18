@@ -31,6 +31,8 @@
 
 #include "config.h"
 
+#include "CImageViewer.h"
+
 #include <QtGui>
 
 CDlgEditWpt::CDlgEditWpt(CWpt &wpt, QWidget * parent)
@@ -90,6 +92,8 @@ CDlgEditWpt::CDlgEditWpt(CWpt &wpt, QWidget * parent)
         imageSelect->show();
         checkTransparent->show();
     }
+
+    labelImage->installEventFilter(this);
 }
 
 
@@ -576,4 +580,19 @@ void CDlgEditWpt::slotCreateBuddies()
 void CDlgEditWpt::slotTransparent(bool ok)
 {
     imageSelect->setTransparent(ok);
+}
+
+
+bool CDlgEditWpt::eventFilter(QObject *obj, QEvent *event)
+{
+    if(obj == labelImage)
+    {
+        if(event->type() == QEvent::MouseButtonPress && !wpt.images.isEmpty())
+        {
+            CImageViewer viewer(wpt.images, idxImg, this);
+            viewer.exec();
+        }
+    }
+
+    return QObject::eventFilter(obj, event);
 }

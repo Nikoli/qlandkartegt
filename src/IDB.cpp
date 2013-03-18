@@ -24,8 +24,17 @@
 #include <QString>
 #include <QDateTime>
 
-IDB::IDB(QTabWidget * tb, QObject * parent)
+#include "CWptDB.h"
+#include "CTrackDB.h"
+#include "CRouteDB.h"
+#include "COverlayDB.h"
+#include "CMapDB.h"
+
+quint32 IDB::signalFlags = 0;
+
+IDB::IDB(dbType_e type, QTabWidget *tb, QObject *parent)
 : QObject(parent)
+, type(type)
 , tabbar(tb)
 {
 
@@ -131,3 +140,29 @@ bool IDB::parseTimestamp(const QString &time, quint32 &tstamp,
      return parseTstampInternal(time, tstamp, true, tstamp_msec);
 }
 
+void IDB::signalsOff()
+{
+    CWptDB::self().blockSignals(true);
+    CTrackDB::self().blockSignals(true);
+    CRouteDB::self().blockSignals(true);
+    COverlayDB::self().blockSignals(true);
+    CMapDB::self().blockSignals(true);
+
+    signalFlags = 0;
+}
+
+void IDB::signalsOn()
+{
+    qDebug() << "signalsOn" << hex << signalFlags;
+
+    CWptDB::self().blockSignals(false);
+    if(signalFlags & eTypeWpt) CWptDB::self().emitSigChanged();
+    CTrackDB::self().blockSignals(false);
+    if(signalFlags & eTypeTrk) CTrackDB::self().emitSigChanged();
+    CRouteDB::self().blockSignals(false);
+    if(signalFlags & eTypeRte) CRouteDB::self().emitSigChanged();
+    COverlayDB::self().blockSignals(false);
+    if(signalFlags & eTypeOvl) COverlayDB::self().emitSigChanged();
+    CMapDB::self().blockSignals(false);
+    if(signalFlags & eTypeMap) CMapDB::self().emitSigChanged();
+}

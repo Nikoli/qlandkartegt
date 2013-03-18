@@ -241,6 +241,7 @@ void CPlot::setSizes()
     setSizeIconArea();
     setSizeXLabel();
     setSizeYLabel();
+    setSizeTrackInfo();
     setSizeDrawArea();
 
 }
@@ -279,6 +280,11 @@ void CPlot::setLRTB()
     {
         bottom -= deadAreaY;
     }
+
+    if(!m_pData->tags.isEmpty() && CResources::self().showTrackProfileEleInfo())
+    {
+        bottom -= fontHeight;
+    }
 }
 
 
@@ -307,6 +313,11 @@ void CPlot::setSizeXLabel()
         rectX1Label.setWidth( right - left );
         rectX1Label.setHeight( fontHeight );
         y = ( size().height() - rectX1Label.height()) - deadAreaY;
+        if(!m_pData->tags.isEmpty() && CResources::self().showTrackProfileEleInfo())
+        {
+            y -= fontHeight;
+        }
+
         rectX1Label.moveTopLeft( QPoint( left, y ) );
     }
 }
@@ -334,6 +345,19 @@ void CPlot::setSizeYLabel()
     }
 }
 
+void CPlot::setSizeTrackInfo()
+{
+    if(m_pData->tags.isEmpty() || !CResources::self().showTrackProfileEleInfo())
+    {
+        rectTrackInfo = QRect();
+        return;
+    }
+
+    rectTrackInfo.setWidth(right - left);
+    rectTrackInfo.setHeight(fontHeight);
+    rectTrackInfo.moveLeft(left);
+    rectTrackInfo.moveTop(size().height() - fontHeight);
+}
 
 void CPlot::setSizeDrawArea()
 {
@@ -433,13 +457,8 @@ void CPlot::draw(QPainter& p)
                 QFont           f = CResources::self().getMapFont();
                 QFontMetrics    fm(f);
                 QRect           r1 = fm.boundingRect(QRect(0,0,1,1), Qt::AlignLeft|Qt::AlignTop, str);
-
-                r1.moveTopLeft(QPoint(left, rectX1Label.bottom()));
-
-                qDebug() << r1;
-
-                CCanvas::drawText(str, p, r1.center());
-
+                r1.moveTopLeft(rectTrackInfo.topLeft());
+                CCanvas::drawText(str, p, r1);
             }
         }
     }
@@ -876,7 +895,7 @@ void CPlot::drawLegend(QPainter& p)
 
 void CPlot::drawTags(QPainter& p)
 {
-    if(m_pData->tags.isEmpty()) return;
+    if(m_pData->tags.isEmpty() || !CResources::self().showTrackProfileEleInfo()) return;
 
     QRect rect;
     int ptx, pty;

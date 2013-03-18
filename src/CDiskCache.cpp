@@ -59,7 +59,6 @@ CDiskCache::CDiskCache(bool overlay, QObject *parent)
     slotCleanup();
 #endif                       // !STANDALONE
 
-    //qDebug() << "cache: found" << table.count() << "cache entries";
 }
 
 

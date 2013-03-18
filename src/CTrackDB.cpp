@@ -62,7 +62,7 @@ bool CTrackDB::keyLessThanTime(keys_t&  s1, keys_t&  s2)
 
 
 CTrackDB::CTrackDB(QTabWidget * tb, QObject * parent)
-: IDB(tb,parent)
+    : IDB(IDB::eTypeTrk, tb, parent)
 , cnt(0)
 , showBullets(true)
 , showMinMax(true)
@@ -88,11 +88,13 @@ CTrackDB::~CTrackDB()
 
 void CTrackDB::clear()
 {
+    if(tracks.isEmpty()) return;
+
     cnt = 0;
     delTracks(tracks.keys());
     CTrack::resetKeyCnt();
     emit sigHighlightTrack(0);
-    emit sigChanged();
+    emitSigChanged();
 }
 
 
@@ -143,7 +145,7 @@ void CTrackDB::loadQLB(CQlb& qlb, bool newKey)
 
     if(qlb.tracks().size())
     {
-        emit sigChanged();
+        emitSigChanged();
     }
 
 }
@@ -284,6 +286,9 @@ void CTrackDB::loadGPX(CGpx& gpx)
                 {
                     QString timetext = tmpelem.text();
                     (void)parseTimestamp(timetext, pt.timestamp, pt.timestamp_msec);
+
+                    pt._timestamp = pt.timestamp;
+                    pt._timestamp_msec = pt.timestamp_msec;
                 }
 
                 tmpelem = trkptmap.value("fix");
@@ -429,7 +434,7 @@ void CTrackDB::loadGPX(CGpx& gpx)
     CTrack::resetKeyCnt();
     if(hasItems)
     {
-        emit sigChanged();
+        emitSigChanged();
     }
 }
 
@@ -634,8 +639,8 @@ void CTrackDB::addTrack(CTrack* track, bool silent)
     connect(track,SIGNAL(sigChanged()),SIGNAL(sigChanged()));
     if(!silent)
     {
-        emit sigChanged();
-        emit sigModified();
+        emitSigChanged();
+        emitSigModified();
     }
 }
 
@@ -658,8 +663,8 @@ void CTrackDB::delTracks(const QStringList& keys)
     undoStack->endMacro();
     if(!keys.isEmpty())
     {
-        emit sigChanged();
-        emit sigModified();
+        emitSigChanged();
+        emitSigModified();
     }
 }
 
@@ -689,7 +694,7 @@ void CTrackDB::highlightTrack(const QString& key)
         emit sigHighlightTrack(0);
     }
 
-    emit sigChanged();
+    emitSigChanged();
 
 }
 
@@ -710,7 +715,7 @@ void CTrackDB::hideTrack(const QStringList& keys, bool hide)
             }
         }
     }
-    emit sigChanged();
+    emitSigChanged();
 }
 
 
@@ -771,8 +776,8 @@ void CTrackDB::download()
         }
     }
 
-    emit sigChanged();
-    emit sigModified();
+    emitSigChanged();
+    emitSigModified();
 }
 
 
@@ -814,8 +819,8 @@ void CTrackDB::splitTrack(int idx)
     addTrack(track2, true);
     delTrack(theTrack->getKey(), true);
 
-    emit sigChanged();
-    emit sigModified();
+    emitSigChanged();
+    emitSigModified();
 }
 
 void CTrackDB::drawLine(const QPolygon& line, const QRect& extViewport, QPainter& p)
@@ -1220,7 +1225,7 @@ void CTrackDB::pasteFromClipboard()
         qlb.load(&buffer);
         loadQLB(qlb, true);
 
-        emit sigModified();
+        emitSigModified();
     }
 }
 
@@ -1231,8 +1236,8 @@ CTrack *CTrackDB::take(const QString& key, bool silent)
 
     if (!silent)
     {
-        emit sigChanged();
-        emit sigModified();
+        emitSigChanged();
+        emitSigModified();
     }
     return track;
 }
@@ -1243,24 +1248,19 @@ void CTrackDB::insert(const QString& key, CTrack *track, bool silent)
     tracks.insert(key,track);
     if (!silent)
     {
-        emit sigChanged();
-        emit sigModified();
+        emitSigChanged();
+        emitSigModified();
     }
 }
 
 
-void CTrackDB::emitSigChanged()
-{
-    emit sigChanged();
-}
-
 
 void CTrackDB::emitSigModified()
 {
-    emit sigModified();
+    IDB::emitSigModified();
     if(highlightedTrack())
     {
-        emit sigModified(highlightedTrack()->getKey());
+        IDB::emitSigModified(highlightedTrack()->getKey());
     }
 }
 

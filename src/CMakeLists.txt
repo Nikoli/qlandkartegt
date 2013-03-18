@@ -59,6 +59,13 @@ else(GPSBABEL)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGPSBABEL=\\\"gpsbabel\\\"")
 endif(GPSBABEL)
 
+if(WITH_PROFILING)
+    set(PROFILING_LIBRARIES "conan")
+else(WITH_PROFILING)
+    set(PROFILING_LIBRARIES "")
+endif(WITH_PROFILING)
+
+
 if (NOT WIN32)
   find_program(MAP2JNX map2jnx DOC "full path of the map2jnx application")
   if(MAP2JNX)
@@ -236,6 +243,7 @@ set(qlandkarte_SRCS
     CDiskCache.cpp
     CDiskCacheZip.cpp
     CTextBrowser.cpp
+    CImageViewer.cpp
 )
 
 if (WIN32)
@@ -407,6 +415,7 @@ set(qlandkarte_HDRS
     CDiskCacheZip.h
     CSettings.h
     CTextBrowser.h
+    CImageViewer.h
 )
 
 
@@ -463,7 +472,7 @@ SET(qlandkarte_UIS
     IHelpDlg.ui
     IDiaryEdit.ui
     IImageSelect.ui
-
+    IImageViewer.ui
 )
 
 SET(qlandkarte_RCS
@@ -530,7 +539,6 @@ else(EXIF_FOUND)
     set(DMTX_LIBRARIES "")
 ENDIF(DMTX_FOUND)
 
-    
 IF (POWER_DB)
     add_definitions(-DHAS_POWERDB -DPOWERDB_VERSION=1)
     SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CPowerDB.h CMouseEditPower.h CDlgEditElectricWpt.h 
@@ -542,6 +550,11 @@ IF (POWER_DB)
     SET(qlandkarte_UIS ${qlandkarte_UIS} IDlgEditElectricWpt.ui IPowerToolWidget.ui IDlgEditPowerLine.ui
         IDlgEditPowerNW.ui ITextBox.ui)
 ENDIF (POWER_DB)
+
+IF(NOT QTSOAP_FOUND)
+    set(QTSOAP_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/3rdparty/qtsoap")
+    set(QTSOAP_LIBRARIES "qtsoap")
+ENDIF()
 
 add_definitions(-DDB_VERSION=8)
 SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CGeoDB.h CDlgSelGeoDBFolder.h CDlgEditFolder.h)
@@ -634,7 +647,8 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/3rdparty/QZip
   ${CMAKE_SOURCE_DIR}/3rdparty/QTextHtmlExporter
   ${CMAKE_SOURCE_DIR}/3rdparty/getopt
-  ${CMAKE_SOURCE_DIR}/3rdparty/qtsoap
+  ${CMAKE_SOURCE_DIR}/3rdparty/conan/include
+  ${QTSOAP_INCLUDE_DIRS}
   ${EXIF_INCLUDE_DIRS}
   ${DMTX_INCLUDE_DIRS}
   ${GPSD_INCLUDE_DIRS}
@@ -708,7 +722,8 @@ target_link_libraries(
       qzip
       qtexthtmlexporter
       getopt
-      qtsoap
+      ${QTSOAP_LIBRARIES}
+      ${PROFILING_LIBRARIES}
   )
 
 install(

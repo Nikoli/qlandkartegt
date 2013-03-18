@@ -7,7 +7,7 @@ set(APPLICATION_NAME ${PROJECT_NAME})
 
 set(APPLICATION_VERSION_MAJOR "1")
 set(APPLICATION_VERSION_MINOR "5")
-set(APPLICATION_VERSION_PATCH "0.post.PN-1.0.0")
+set(APPLICATION_VERSION_PATCH "1.post.PN-1.0.0")
 
 add_definitions(-DVER_MAJOR=${APPLICATION_VERSION_MAJOR} -DVER_MINOR=${APPLICATION_VERSION_MINOR} -DVER_STEP=${APPLICATION_VERSION_PATCH})
 
@@ -61,6 +61,8 @@ endif(NATIVE_FILE_DIALOG)
 include(ConfigureChecks.cmake)
 configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+option(WITH_PROFILING "BUILD WITH PROFILING" OFF)
+
 add_subdirectory(3rdparty/SerialPort)
 add_subdirectory(3rdparty/QMKToolBox)
 add_subdirectory(3rdparty/QZip)
@@ -69,7 +71,16 @@ add_subdirectory(3rdparty/getopt)
 add_subdirectory(3rdparty/map2gcm)
 add_subdirectory(3rdparty/map2rmap)
 add_subdirectory(3rdparty/cache2gtiff)
+find_package(QtSoap)
+if (NOT QTSOAP_FOUND)
 add_subdirectory(3rdparty/qtsoap)
+endif()
+
+if(WITH_PROFILING)
+add_definitions(-DDO_PROFILING)
+add_subdirectory(3rdparty/conan)
+endif(WITH_PROFILING)
+
 add_subdirectory(src)
 
 if (UNIX AND NOT WIN32 AND NOT APPLE)

@@ -2443,6 +2443,10 @@ Do you want to save your changes?</source>
         <translation>Les données chargées ont été modifié.
 Voulez vous sauvegarder vos changements ?</translation>
     </message>
+    <message>
+        <source>Profilig</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>CMap3D</name>
@@ -4517,6 +4521,30 @@ Your selection will be stored in the track&apos;s data. You can save it along wi
         <source> %3 %1 %2</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>End</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> %3 %1 %2 </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>| %3 %1 %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> %1 %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> %1 :%2</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>CTrackDB</name>
@@ -4689,6 +4717,14 @@ Your selection will be stored in the track&apos;s data. You can save it along wi
     <message>
         <source>Abort filter</source>
         <translation type="unfinished">Annuler le filtre</translation>
+    </message>
+    <message>
+        <source> (local)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source> (remote)</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -5978,6 +6014,10 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;alt+move mouse	move map&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Show track elevation info</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>IDlgConfig3D</name>
@@ -6803,6 +6843,13 @@ For modern Garmin device select &quot;Garmin Mass Storage&quot; device to exchan
     </message>
 </context>
 <context>
+    <name>IImageViewer</name>
+    <message>
+        <source>Dialog</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>ILiveLogToolWidget</name>
     <message>
         <source>-</source>
@@ -7474,18 +7521,6 @@ p, li { white-space: pre-wrap; }
         <translation type="unfinished">Form</translation>
     </message>
     <message>
-        <source>Reset Filter List</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Apply Filters</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Save Filter List</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Points</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7607,6 +7642,58 @@ p, li { white-space: pre-wrap; }
     </message>
     <message>
         <source>To be done.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>reset filter list</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>save filter list</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>apply filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Profile</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace elevation data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use elevation from loaded DEM data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Use elevation from www.geonames.org</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Username:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>apply now</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>add to list</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Douglas-Peucker</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Distance of a point to a straight line between neighbor points is less than</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
