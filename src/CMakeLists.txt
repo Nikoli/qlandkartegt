@@ -248,6 +248,7 @@ set(qlandkarte_SRCS
     CTextBrowser.cpp
     CImageViewer.cpp
     CMapRmp.cpp
+    CMapDEMSlopeSetup.cpp
 )
 
 if (WIN32)
@@ -424,6 +425,7 @@ set(qlandkarte_HDRS
     CTextBrowser.h
     CImageViewer.h
     CMapRmp.h
+    CMapDEMSlopeSetup.h
 )
 
 
@@ -483,6 +485,7 @@ SET(qlandkarte_UIS
     IDiaryEdit.ui
     IImageSelect.ui
     IImageViewer.ui
+    IMapDEMSlopeSetup.ui
 )
 
 SET(qlandkarte_RCS

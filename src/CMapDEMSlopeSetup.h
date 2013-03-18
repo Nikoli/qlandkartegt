@@ -1,5 +1,5 @@
 /**********************************************************************************************
-    Copyright (C) 2010 Oliver Eichler oliver.eichler@gmx.de
+    Copyright (C) 2013 Oliver Eichler oliver.eichler@gmx.de
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,46 +17,39 @@
 
 **********************************************************************************************/
 
-#include "IItem.h"
+#ifndef CMAPDEMSLOPESETUP_H
+#define CMAPDEMSLOPESETUP_H
 
-#include <QtGui>
+#include <QWidget>
+#include <QPointer>
+#include "ui_IMapDEMSlopeSetup.h"
 
-quint32 IItem::keycnt = 0;
+class CMapDEM;
 
-IItem::IItem(QObject * parent)
-: QObject(parent)
-, timestamp(QDateTime::currentDateTime().toUTC().toTime_t ())
+class CMapDEMSlopeSetup : public QWidget, private Ui::IMapDEMSlopeSetup
 {
+    Q_OBJECT;
+    public:
+        virtual ~CMapDEMSlopeSetup();
 
-}
+        static CMapDEMSlopeSetup& self(){return *m_pSelf;}
 
+        void registerDEMMap(CMapDEM * map);
 
-IItem::~IItem()
-{
+    protected:
+        void paintEvent(QPaintEvent * e);
 
-}
+    private slots:
+        void slotValueChanged(int val);
 
+    private:
+        friend class CCanvas;
+        CMapDEMSlopeSetup(QWidget * parent);
 
-QString IItem::getKey()
-{
-    if(key.isEmpty())
-    {
-        genKey();
-    }
+        static CMapDEMSlopeSetup *m_pSelf;
 
-    return key;
-}
+        QPointer<CMapDEM> dem;
+};
 
+#endif //CMAPDEMSLOPESETUP_H
 
-void IItem::genKey()
-{
-    key = QString("%1%2%3").arg(timestamp).arg(name).arg(keycnt++);
-}
-
-
-void IItem::removeHtml(QString &str)
-{
-    QTextDocument html;
-    html.setHtml(str);
-    str = html.toPlainText();
-}

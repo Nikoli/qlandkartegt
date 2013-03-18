@@ -1668,19 +1668,19 @@ void CMainWindow::slotFAQ()
 
 void CMainWindow::slotHelp()
 {
-    QDesktopServices::openUrl(QUrl("http://sourceforge.net/apps/mediawiki/qlandkartegt/index.php?title=Help_for_QLandkarte_GT"));
+    QDesktopServices::openUrl(QUrl("http://sourceforge.net/apps/mediawiki/qlandkartegt/index.php?title=QLandkarte_GT"));
 }
 
 
 void CMainWindow::slotSupport()
 {
-    QDesktopServices::openUrl(QUrl("http://www.qlandkarte.org/index.php?option=com_content&view=article&id=17&Itemid=19"));
+    QDesktopServices::openUrl(QUrl("http://www.qlandkarte.org/530747a0730821603/index.html"));
 }
 
 
 void CMainWindow::slotDownload()
 {
-    QDesktopServices::openUrl(QUrl("http://www.qlandkarte.org/index.php?option=com_content&view=article&id=17&Itemid=19"));
+    QDesktopServices::openUrl(QUrl("http://www.qlandkarte.org/530747a0720dfbb0d/index.html"));
 }
 
 

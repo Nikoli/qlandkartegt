@@ -68,6 +68,7 @@
 #include "CPowerDB.h"
 #endif
 #include "CGridDB.h"
+#include "CMapDEMSlopeSetup.h"
 
 #include <QtGui>
 
@@ -131,6 +132,10 @@ void CCanvas::setupDelayed()
     profile = new CPlot(CPlotData::eLinear, CPlot::eIcon, this);
     profile->resize(300,120);
     profile->hide();
+
+    slopeSetup = new CMapDEMSlopeSetup(this);
+    slopeSetup->adjustSize();
+    slopeSetup->hide();
 
     connect(&CTrackDB::self(), SIGNAL(sigPointOfFocus(int)), this, SLOT(slotPointOfFocus(int)));
 }
@@ -280,6 +285,8 @@ void CCanvas::resizeEvent(QResizeEvent * e)
     }
 
     profile->move(20, s.height() - profile->height() - 20);
+
+    slopeSetup->move(s.width() - slopeSetup->width() - 10, s.height() - slopeSetup->height() - 200);
 
     emit sigResize(e->size());
 }

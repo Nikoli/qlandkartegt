@@ -1055,7 +1055,7 @@ void CTrack::rebuild(bool reindex)
             slope = 0.;
         }
 
-        pt2->slope    = qRound(slope / pt2->delta * 10000)/100.0;
+        pt2->slope    = atan(slope / pt2->delta) * 360 / (2*M_PI);
         if (qAbs(pt2->slope )>100)
         {
             pt2->slope = pt1->slope;
@@ -1581,7 +1581,7 @@ QString CTrack::getTrkPtInfo2(pt_t& trkpt)
 
 QString CTrack::getFocusInfo()
 {
-    double tmp;
+    double tmp, d;
     QString str, val, unit;
     QList<pt_t> focus;
     getPointOfFocus(focus);
@@ -1594,7 +1594,7 @@ QString CTrack::getFocusInfo()
     const pt_t& p1 = focus.first();
     const pt_t& p2 = focus.last();
 
-    tmp = p2.distance - p1.distance;
+    d = tmp = p2.distance - p1.distance;
     IUnit::self().meter2distance(tmp, val, unit);
     str += QString("%3 %1%2\n").arg(val).arg(unit).arg(QChar(0x21A6));
     if(p1.timestamp != 0x00000000 && p1.timestamp != 0xFFFFFFFF)
@@ -1608,10 +1608,11 @@ QString CTrack::getFocusInfo()
     }
     tmp = p2.ascend - p1.ascend;
     IUnit::self().meter2elevation(tmp, val, unit);
-    str += QString("%3 %1%2\n").arg(val).arg(unit).arg(QChar(0x2197));
+    str += QString("%3 %1%2 (%4\260)\n").arg(val).arg(unit).arg(QChar(0x2197)).arg(qRound(atan(tmp/d) * 360 / (2*M_PI)));
     tmp = p1.descend - p2.descend;
     IUnit::self().meter2elevation(tmp, val, unit);
-    str += QString("%3 %1%2").arg(val).arg(unit).arg(QChar(0x2198));
+    str += QString("%3 %1%2 (%4\260)").arg(val).arg(unit).arg(QChar(0x2198)).arg(qRound(atan(tmp/d) * 360 / (2*M_PI)));
+
 
 
     return str;

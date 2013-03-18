@@ -57,6 +57,7 @@ class CMouseSelTrack;
 class QFont;
 class CPlot;
 class CTrack;
+class CMapDEMSlopeSetup;
 
 #define PAINT_ROUNDED_RECT(p,r) p.drawRoundedRect(r,5,5)
 #define COMPASS_H 60
@@ -218,6 +219,7 @@ class CCanvas : public QWidget
         QPoint posMouse;
         QLabel * info;
         CPlot * profile;
+        CMapDEMSlopeSetup * slopeSetup;
 
         QTimer * timerFadingMessage;
         QString fadingMessage;

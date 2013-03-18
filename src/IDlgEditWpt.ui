@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>500</height>
+    <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -357,6 +357,13 @@ For modern Garmin device select &quot;Garmin Mass Storage&quot; device to exchan
               </property>
               <property name="wordWrap">
                <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushSpoiler">
+              <property name="text">
+               <string>Get spoilers!</string>
               </property>
              </widget>
             </item>
