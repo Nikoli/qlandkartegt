@@ -32,6 +32,8 @@
 #include <QtNetwork/QHttp>
 #include <QtNetwork/QNetworkProxy>
 
+#include <tzdata.h>
+
 #ifndef _MKSTR_1
 #define _MKSTR_1(x)    #x
 #define _MKSTR(x)      _MKSTR_1(x)
@@ -944,6 +946,7 @@ void CTrack::hide(bool ok)
 
 void CTrack::rebuild(bool reindex)
 {
+    bool haveTimezone  = false;
     double slope    = 0;
     IMap& dem = CMapDB::self().getDEM();
     quint32 t1 = 0, t2 = 0;
@@ -994,6 +997,7 @@ void CTrack::rebuild(bool reindex)
         emit sigChanged();
         return;
     }
+
     // reset first valid point
     pt1->azimuth    = 0;
     pt1->delta      = 0;
@@ -1030,6 +1034,12 @@ void CTrack::rebuild(bool reindex)
         }
 
         ++visiblePointCount;
+
+        if(!haveTimezone)
+        {
+            timezone        = GPS_Timezone(pt1->lon, pt1->lat);
+            haveTimezone    = timezone != "UTC";
+        }
 
         double dt = -1;
         if(pt1->timestamp != 0x00000000 && pt1->timestamp != 0xFFFFFFFF)
@@ -1259,7 +1269,13 @@ QDateTime CTrack::getStartTimestamp()
             ++trkpt;
             continue;
         }
-        return QDateTime::fromTime_t(trkpt->timestamp);
+
+        QDateTime time = QDateTime::fromTime_t(trkpt->timestamp);
+        if(!timezone.isEmpty())
+        {
+            time = TimeStamp(trkpt->timestamp).toZone(timezone).toDateTime();
+        }
+        return time;
     }
     return QDateTime();
 }
@@ -1276,7 +1292,12 @@ QDateTime CTrack::getEndTimestamp()
             --trkpt;
             continue;
         }
-        return QDateTime::fromTime_t(trkpt->timestamp);
+        QDateTime time = QDateTime::fromTime_t(trkpt->timestamp);
+        if(!timezone.isEmpty())
+        {
+            time = TimeStamp(trkpt->timestamp).toZone(timezone).toDateTime();
+        }
+        return time;
     }
     return QDateTime();
 }
@@ -1395,7 +1416,11 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
     if(trkpt.timestamp != 0x00000000 && trkpt.timestamp != 0xFFFFFFFF)
     {
         QDateTime time = QDateTime::fromTime_t(trkpt.timestamp);
-        time.setTimeSpec(Qt::LocalTime);
+        if(!timezone.isEmpty())
+        {
+            time = TimeStamp(trkpt.timestamp).toZone(timezone).toDateTime();
+        }
+
         str = time.toString();
 
     }
@@ -1482,8 +1507,8 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
 
     //-----------------------------------------------------------------------------------------------------------
     //TODO: HOVERTEXT FOR EXTENSIONS
-#ifdef GPX_EXTENSIONS
-    if (!trkpt.gpx_exts.values.empty())
+//#ifdef GPX_EXTENSIONS
+    if (!trkpt.gpx_exts.values.isEmpty())
     {
         QList<QString> ext_list = trkpt.gpx_exts.values.keys();
         QString ex_name, ex_val;
@@ -1498,7 +1523,7 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
         }
 
     }
-#endif
+//#endif
 
     return str;
 }

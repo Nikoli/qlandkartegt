@@ -824,12 +824,12 @@
         <translation type="obsolete">Kopieer positie</translation>
     </message>
     <message>
-        <location filename="../CCanvas.cpp" line="777"/>
+        <location filename="../CCanvas.cpp" line="784"/>
         <source>[Grid: %1] </source>
         <translation>[Grid:%1] </translation>
     </message>
     <message>
-        <location filename="../CCanvas.cpp" line="781"/>
+        <location filename="../CCanvas.cpp" line="788"/>
         <source>[Grid: %1m, %2m] </source>
         <translation>[Grid:%1m, %2m] </translation>
     </message>
@@ -3473,9 +3473,8 @@ Cur. proj.: %1</translation>
         <translation>Alles wissen ...</translation>
     </message>
     <message>
-        <location filename="../CMainWindow.cpp" line="508"/>
         <source>This will erase all project data like waypoints and tracks.</source>
-        <translation>Deze actiie zal alle data wissen zoals waypoints en tracks.</translation>
+        <translation type="obsolete">Deze actiie zal alle data wissen zoals waypoints en tracks.</translation>
     </message>
     <message>
         <location filename="../CMainWindow.cpp" line="556"/>
@@ -3543,6 +3542,11 @@ Cur. proj.: %1</translation>
     <message>
         <location filename="../CMainWindow.cpp" line="103"/>
         <source>Profiling</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../CMainWindow.cpp" line="508"/>
+        <source>This will erase all workspace data like waypoints and tracks.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3687,8 +3691,12 @@ Do you want to save your changes?</source>
     </message>
     <message>
         <location filename="../CMainWindow.cpp" line="1309"/>
+        <source>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Workspace Summary (&lt;a href=&apos;Clear&apos;&gt;clear&lt;/a&gt; workspace):&lt;/b&gt;&lt;/div&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Project Summary (&lt;a href=&apos;Clear&apos;&gt;clear&lt;/a&gt; project):&lt;/b&gt;&lt;/div&gt;</source>
-        <translation>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Projectoverzicht (&lt;a href=&apos;Clear&apos;&gt;Wissen project&lt;/a&gt;):&lt;/b&gt;&lt;/div&gt;</translation>
+        <translation type="obsolete">&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Projectoverzicht (&lt;a href=&apos;Clear&apos;&gt;Wissen project&lt;/a&gt;):&lt;/b&gt;&lt;/div&gt;</translation>
     </message>
     <message>
         <location filename="../CMainWindow.cpp" line="1317"/>
@@ -3994,13 +4002,13 @@ Do you want to save your changes?</source>
 <context>
     <name>CMapDEM</name>
     <message>
-        <location filename="../CMapDEM.cpp" line="51"/>
-        <location filename="../CMapDEM.cpp" line="62"/>
+        <location filename="../CMapDEM.cpp" line="110"/>
+        <location filename="../CMapDEM.cpp" line="121"/>
         <source>Error...</source>
         <translation>Fout ...</translation>
     </message>
     <message>
-        <location filename="../CMapDEM.cpp" line="52"/>
+        <location filename="../CMapDEM.cpp" line="111"/>
         <source>Failed to load file: %1
 
 </source>
@@ -4009,9 +4017,17 @@ Do you want to save your changes?</source>
 </translation>
     </message>
     <message>
-        <location filename="../CMapDEM.cpp" line="63"/>
+        <location filename="../CMapDEM.cpp" line="122"/>
         <source>Failed to load file: %1</source>
         <translation>Laden van bestand mislukt: %1</translation>
+    </message>
+</context>
+<context>
+    <name>CMapDEMSlopeSetup</name>
+    <message>
+        <location filename="../CMapDEMSlopeSetup.cpp" line="99"/>
+        <source>Grade %1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -5831,22 +5847,22 @@ regel %2, kolom %3:
         <translation>%1:</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1089"/>
+        <location filename="../COverlayDistance.cpp" line="1091"/>
         <source>Revert</source>
         <translation>Omdraaien</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1091"/>
+        <location filename="../COverlayDistance.cpp" line="1093"/>
         <source>Make Track</source>
         <translation>Maak Track</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1092"/>
+        <location filename="../COverlayDistance.cpp" line="1094"/>
         <source>Make Route</source>
         <translation>Maak Route</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1088"/>
+        <location filename="../COverlayDistance.cpp" line="1090"/>
         <source>Edit...</source>
         <translation>Bewerken ...</translation>
     </message>
@@ -5856,17 +5872,17 @@ regel %2, kolom %3:
         <translation>Tour %1</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1094"/>
+        <location filename="../COverlayDistance.cpp" line="1096"/>
         <source>Show</source>
         <translation>Tonen</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1097"/>
+        <location filename="../COverlayDistance.cpp" line="1099"/>
         <source>Show Bullets</source>
         <translation>Toon punten</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1248"/>
+        <location filename="../COverlayDistance.cpp" line="1250"/>
         <source>Overlay</source>
         <translation>Overlay</translation>
     </message>
@@ -6700,32 +6716,32 @@ Your selection will be stored in the track&apos;s data. You can save it along wi
         <translation>Track%1</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1166"/>
+        <location filename="../CTrackDB.cpp" line="1168"/>
         <source>Hmax=%1%2</source>
         <translation>Hmax=%1%2</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1171"/>
+        <location filename="../CTrackDB.cpp" line="1173"/>
         <source>Hmin=%1%2</source>
         <translation>Hmin=%1%2</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1176"/>
+        <location filename="../CTrackDB.cpp" line="1178"/>
         <source>Vmax=%1%2</source>
         <translation>Vmax=%1%2</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1197"/>
+        <location filename="../CTrackDB.cpp" line="1199"/>
         <source>Failed...</source>
         <translation>Mislukt ...</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1197"/>
+        <location filename="../CTrackDB.cpp" line="1199"/>
         <source>Failed to copy track. You must select a track or track points of a track.</source>
         <translation>Kopieren van track mislukt. Slecteer een track of trackpunten van een track.</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1301"/>
+        <location filename="../CTrackDB.cpp" line="1303"/>
         <source>_rev</source>
         <translation>_rev</translation>
     </message>
@@ -10382,6 +10398,29 @@ DEM: %2</translation>
         <location filename="../IMap.cpp" line="393"/>
         <source>Changing the offset is not supported by this map.</source>
         <translation>Veranderen van de offset wordt niet ondersteund op deze kaart.</translation>
+    </message>
+</context>
+<context>
+    <name>IMapDEMSlopeSetup</name>
+    <message>
+        <location filename="../IMapDEMSlopeSetup.ui" line="14"/>
+        <source>Form</source>
+        <translation type="unfinished">Form</translation>
+    </message>
+    <message>
+        <location filename="../IMapDEMSlopeSetup.ui" line="47"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="54"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="61"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="68"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="75"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="82"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="89"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="96"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="103"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="110"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="125"/>
+        <source>TextLabel</source>
+        <translation type="unfinished">Tekstlabel</translation>
     </message>
 </context>
 <context>

@@ -78,7 +78,7 @@ class CMainWindow : public QMainWindow
         CMenus *getActionGroupProvider() { return actionGroupProvider;}
 
         void exportToOcm();
-        void loadData(const QString& filename, const QString& filter);
+        bool loadData(const QString& filename, const QString& filter);
 
         bool didCrash(){return crashed;}
 

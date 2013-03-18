@@ -159,6 +159,7 @@ class CCanvas : public QWidget
         void slotTrackChanged();
         void slotPointOfFocus(const int idx);
         void slotFadingMessage();
+        void slotTime();
 
     protected:
         void paintEvent(QPaintEvent * e);
@@ -181,6 +182,7 @@ class CCanvas : public QWidget
         void drawRefPoints(QPainter& p);
         void drawScale(QPainter& p);
         void drawCompass(QPainter& p);
+        void drawClock(QPainter& p);
         void drawFadingMessage(QPainter& p);
 
     private:
@@ -226,5 +228,8 @@ class CCanvas : public QWidget
 
         // work around possible Qt/OS X bug
         bool contextMenuActive;
+
+        QString timezone;
+        QTimer * timerClock;
 };
 #endif                           //CCANVAS_H

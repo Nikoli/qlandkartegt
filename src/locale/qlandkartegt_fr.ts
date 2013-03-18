@@ -2405,7 +2405,7 @@ Projection courante : %1</translation>
     </message>
     <message>
         <source>This will erase all project data like waypoints and tracks.</source>
-        <translation>Toutes les données du projet comme les points géographique et les tracés seront éffacées.</translation>
+        <translation type="obsolete">Toutes les données du projet comme les points géographique et les tracés seront éffacées.</translation>
     </message>
     <message>
         <source>Save Geo Data</source>
@@ -2517,7 +2517,7 @@ Projection courante : %1</translation>
     </message>
     <message>
         <source>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Project Summary (&lt;a href=&apos;Clear&apos;&gt;clear&lt;/a&gt; project):&lt;/b&gt;&lt;/div&gt;</source>
-        <translation>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Sommaire du projet (&lt;a href=&apos;Clear&apos;&gt;effacer&lt;/a&gt; le projet):&lt;/b&gt;&lt;/div&gt;</translation>
+        <translation type="obsolete">&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Sommaire du projet (&lt;a href=&apos;Clear&apos;&gt;effacer&lt;/a&gt; le projet):&lt;/b&gt;&lt;/div&gt;</translation>
     </message>
     <message>
         <source> %1 &lt;a href=&apos;Routes&apos;&gt;routes&lt;/a&gt; and </source>
@@ -2575,6 +2575,14 @@ Voulez vous sauvegarder vos changements ?</translation>
     </message>
     <message>
         <source>Magellan</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This will erase all workspace data like waypoints and tracks.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Workspace Summary (&lt;a href=&apos;Clear&apos;&gt;clear&lt;/a&gt; workspace):&lt;/b&gt;&lt;/div&gt;</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2747,6 +2755,13 @@ Voulez vous sauvegarder vos changements ?</translation>
     <message>
         <source>Error...</source>
         <translation>Erreur ...</translation>
+    </message>
+</context>
+<context>
+    <name>CMapDEMSlopeSetup</name>
+    <message>
+        <source>Grade %1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -7260,6 +7275,17 @@ DEM: %2</source>
 Map: %1
 
 DEM: %2</translation>
+    </message>
+</context>
+<context>
+    <name>IMapDEMSlopeSetup</name>
+    <message>
+        <source>Form</source>
+        <translation type="unfinished">Form</translation>
+    </message>
+    <message>
+        <source>TextLabel</source>
+        <translation type="unfinished">TextLabel</translation>
     </message>
 </context>
 <context>

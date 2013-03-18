@@ -664,6 +664,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/3rdparty/QTextHtmlExporter
   ${CMAKE_SOURCE_DIR}/3rdparty/getopt
   ${CMAKE_SOURCE_DIR}/3rdparty/conan/include
+  ${CMAKE_SOURCE_DIR}/3rdparty/tzone/include
   ${QTSOAP_INCLUDE_DIRS}
   ${EXIF_INCLUDE_DIRS}
   ${DMTX_INCLUDE_DIRS}
@@ -740,6 +741,7 @@ target_link_libraries(
       getopt
       ${QTSOAP_LIBRARIES}
       ${PROFILING_LIBRARIES}
+      tzone
   )
 
 install(

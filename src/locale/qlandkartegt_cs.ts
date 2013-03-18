@@ -872,12 +872,12 @@
         <translation type="obsolete">Position kopieren</translation>
     </message>
     <message>
-        <location filename="../CCanvas.cpp" line="777"/>
+        <location filename="../CCanvas.cpp" line="784"/>
         <source>[Grid: %1] </source>
         <translation>[Mřížka: %1]</translation>
     </message>
     <message>
-        <location filename="../CCanvas.cpp" line="781"/>
+        <location filename="../CCanvas.cpp" line="788"/>
         <source>[Grid: %1m, %2m] </source>
         <translation>[Mřížka: %1m, %2m] </translation>
     </message>
@@ -3688,9 +3688,8 @@ Akt. Proj: %1</translation>
         <translation>Smazat vše...</translation>
     </message>
     <message>
-        <location filename="../CMainWindow.cpp" line="508"/>
         <source>This will erase all project data like waypoints and tracks.</source>
-        <translation>Tento krok smaže všechna data projektu, jako jsou cestovní body a stopy.</translation>
+        <translation type="obsolete">Tento krok smaže všechna data projektu, jako jsou cestovní body a stopy.</translation>
     </message>
     <message>
         <location filename="../CMainWindow.cpp" line="556"/>
@@ -3823,9 +3822,8 @@ Chcete uložit změny?</translation>
         <translation>Vytisknout mapu</translation>
     </message>
     <message>
-        <location filename="../CMainWindow.cpp" line="1309"/>
         <source>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Project Summary (&lt;a href=&apos;Clear&apos;&gt;clear&lt;/a&gt; project):&lt;/b&gt;&lt;/div&gt;</source>
-        <translation>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Přehled projektu (&lt;a href=&apos;Clear&apos;&gt;smazat&lt;/a&gt; projekt):&lt;/b&gt;&lt;/div&gt;</translation>
+        <translation type="obsolete">&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Přehled projektu (&lt;a href=&apos;Clear&apos;&gt;smazat&lt;/a&gt; projekt):&lt;/b&gt;&lt;/div&gt;</translation>
     </message>
     <message>
         <location filename="../CMainWindow.cpp" line="1317"/>
@@ -3960,6 +3958,11 @@ Chcete uložit změny?</translation>
         <translation>Uložit mapu jako obrázek...</translation>
     </message>
     <message>
+        <location filename="../CMainWindow.cpp" line="508"/>
+        <source>This will erase all workspace data like waypoints and tracks.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../CMainWindow.cpp" line="581"/>
         <source>Toggle toolview</source>
         <translation>Zapnout/Vypnout panel s nástroji</translation>
@@ -4003,6 +4006,11 @@ Chcete uložit změny?</translation>
         <location filename="../CMainWindow.cpp" line="805"/>
         <source>Select input files</source>
         <translation>Vybrat vstupní soubory</translation>
+    </message>
+    <message>
+        <location filename="../CMainWindow.cpp" line="1309"/>
+        <source>&lt;div style=&apos;float: left;&apos;&gt;&lt;b&gt;Workspace Summary (&lt;a href=&apos;Clear&apos;&gt;clear&lt;/a&gt; workspace):&lt;/b&gt;&lt;/div&gt;</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../CMainWindow.cpp" line="1334"/>
@@ -4234,13 +4242,13 @@ Chcete uložit změny?</translation>
 <context>
     <name>CMapDEM</name>
     <message>
-        <location filename="../CMapDEM.cpp" line="51"/>
-        <location filename="../CMapDEM.cpp" line="62"/>
+        <location filename="../CMapDEM.cpp" line="110"/>
+        <location filename="../CMapDEM.cpp" line="121"/>
         <source>Error...</source>
         <translation>Chyba...</translation>
     </message>
     <message>
-        <location filename="../CMapDEM.cpp" line="52"/>
+        <location filename="../CMapDEM.cpp" line="111"/>
         <source>Failed to load file: %1
 
 </source>
@@ -4248,10 +4256,18 @@ Chcete uložit změny?</translation>
 </translation>
     </message>
     <message>
-        <location filename="../CMapDEM.cpp" line="63"/>
+        <location filename="../CMapDEM.cpp" line="122"/>
         <source>Failed to load file: %1</source>
         <translation>Nepodařilo se nahrát soubor %1
 </translation>
+    </message>
+</context>
+<context>
+    <name>CMapDEMSlopeSetup</name>
+    <message>
+        <location filename="../CMapDEMSlopeSetup.cpp" line="99"/>
+        <source>Grade %1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -6535,17 +6551,17 @@ line %2, column %3:
         <translation>%1:</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1089"/>
+        <location filename="../COverlayDistance.cpp" line="1091"/>
         <source>Revert</source>
         <translation>Vrátit</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1091"/>
+        <location filename="../COverlayDistance.cpp" line="1093"/>
         <source>Make Track</source>
         <translation>Udělat stopu</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1088"/>
+        <location filename="../COverlayDistance.cpp" line="1090"/>
         <source>Edit...</source>
         <translation>Upravit...</translation>
     </message>
@@ -6555,22 +6571,22 @@ line %2, column %3:
         <translation>Okružní cesta %1</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1094"/>
+        <location filename="../COverlayDistance.cpp" line="1096"/>
         <source>Show</source>
         <translation>Ukázat</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1097"/>
+        <location filename="../COverlayDistance.cpp" line="1099"/>
         <source>Show Bullets</source>
         <translation>Ukázat body</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1248"/>
+        <location filename="../COverlayDistance.cpp" line="1250"/>
         <source>Overlay</source>
         <translation>Vrstva</translation>
     </message>
     <message>
-        <location filename="../COverlayDistance.cpp" line="1092"/>
+        <location filename="../COverlayDistance.cpp" line="1094"/>
         <source>Make Route</source>
         <translation>Udělat cestu</translation>
     </message>
@@ -7432,32 +7448,32 @@ Váš výběr bude uložen v datech stopy. Můžete jej uložit s daty stopy. Pr
         <translation>Stopa %1</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1166"/>
+        <location filename="../CTrackDB.cpp" line="1168"/>
         <source>Hmax=%1%2</source>
         <translation>Vodorovně max=%1%2</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1171"/>
+        <location filename="../CTrackDB.cpp" line="1173"/>
         <source>Hmin=%1%2</source>
         <translation>Vodorovně min=%1%2</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1176"/>
+        <location filename="../CTrackDB.cpp" line="1178"/>
         <source>Vmax=%1%2</source>
         <translation>Svisle max=%1%2</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1197"/>
+        <location filename="../CTrackDB.cpp" line="1199"/>
         <source>Failed...</source>
         <translation>Nepodařilo se...</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1197"/>
+        <location filename="../CTrackDB.cpp" line="1199"/>
         <source>Failed to copy track. You must select a track or track points of a track.</source>
         <translation>Nepodařilo se zkopírovat stopu. Nejprve musíte vybrat stopu nebo body stopy.</translation>
     </message>
     <message>
-        <location filename="../CTrackDB.cpp" line="1301"/>
+        <location filename="../CTrackDB.cpp" line="1303"/>
         <source>_rev</source>
         <translation>_rev</translation>
     </message>
@@ -11423,6 +11439,29 @@ DEM: %2</translation>
         <location filename="../IMap.cpp" line="369"/>
         <source>This map does not support this feature.</source>
         <translation>Tato mapa tuto vlastnost nepodporuje.</translation>
+    </message>
+</context>
+<context>
+    <name>IMapDEMSlopeSetup</name>
+    <message>
+        <location filename="../IMapDEMSlopeSetup.ui" line="14"/>
+        <source>Form</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../IMapDEMSlopeSetup.ui" line="47"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="54"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="61"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="68"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="75"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="82"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="89"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="96"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="103"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="110"/>
+        <location filename="../IMapDEMSlopeSetup.ui" line="125"/>
+        <source>TextLabel</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
