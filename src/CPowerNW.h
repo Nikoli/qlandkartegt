@@ -41,7 +41,8 @@ class CPowerNW : public IItem
     public:
         quint32 selected;
         QString ph;
-        float   voltage;         
+        float   voltage;
+        float   minVoltage;
         float   watts; 
         float   conductivity;
         float   powerfactor;

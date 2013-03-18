@@ -34,11 +34,12 @@ class CDlgImportImages : public QDialog, private Ui::IDlgImportImages
 
     private slots:
         void slotSelectPath();
-
+        void slotSelectRefMethod();
+        void slotSelectPicture(QListWidgetItem * item);
 
     private:
         void searchForFiles(const QString& path);
+
+        QString selectedFile;
 };
-
-#endif //CDLGIMPORTIMAGES_H
-
+#endif                           //CDLGIMPORTIMAGES_H

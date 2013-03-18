@@ -302,6 +302,7 @@ void IMouse::drawSelWpt(QPainter& p)
         p.drawText(r1, Qt::AlignJustify|Qt::AlignTop|Qt::TextWordWrap,str);
 
     }
+#endif    
 }
 
 

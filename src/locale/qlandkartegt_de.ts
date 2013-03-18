@@ -322,7 +322,7 @@
     <message>
         <location filename="../CActions.cpp" line="108"/>
         <source>New Net&amp;work</source>
-        <translation>Neues Netzwerk</translation>
+        <translation>Neues Netz</translation>
     </message>
     <message>
         <location filename="../CActions.cpp" line="108"/>
@@ -6882,7 +6882,7 @@ Voltage: %1V</source>
     <message>
         <location filename="../CPowerToolWidget.cpp" line="60"/>
         <source>Networks</source>
-        <translation>Netzwerke</translation>
+        <translation>Netz</translation>
     </message>
     <message>
         <location filename="../CPowerToolWidget.cpp" line="314"/>
@@ -12577,17 +12577,17 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../IPowerToolWidget.ui" line="30"/>
         <source>Networks</source>
-        <translation>Netzwerke</translation>
+        <translation>Netz</translation>
     </message>
     <message>
         <location filename="../IPowerToolWidget.ui" line="59"/>
         <source>Lines</source>
-        <translation type="unfinished">Leitungen</translation>
+        <translation type="unfinished">Leitg.</translation>
     </message>
     <message>
         <location filename="../IPowerToolWidget.ui" line="77"/>
         <source>Setup</source>
-        <translation>Einstellungen</translation>
+        <translation>Einst.</translation>
     </message>
     <message>
         <location filename="../IPowerToolWidget.ui" line="85"/>

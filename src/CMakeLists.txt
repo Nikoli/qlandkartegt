@@ -556,7 +556,7 @@ else(DMTX_FOUND)
 ENDIF(DMTX_FOUND)
 
 IF (POWER_DB)
-    add_definitions(-DHAS_POWERDB -DPOWERDB_VERSION=1)
+    add_definitions(-DHAS_POWERDB -DPOWERDB_VERSION=2)
     SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CPowerDB.h CMouseEditPower.h CDlgEditElectricWpt.h 
         CPowerToolWidget.h CPowerNW.h CMouseAddPowerLine.h CPowerLine.h CDlgEditPowerLine.h
         CMouseAddPowerNW.h CDlgEditPowerNW.h CMouseEditPowerNW.h CMouseChangePH.h CTextBox.h)

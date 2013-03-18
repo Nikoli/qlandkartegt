@@ -79,6 +79,7 @@ CPowerToolWidget::CPowerToolWidget(QTabWidget * parent)
     // Setup tab
     connect(linePH,SIGNAL(textChanged(QString)),this,SLOT(slotPHChanged()));
     connect(spinVoltage,SIGNAL(valueChanged(int)),this,SLOT(slotVoltageChanged()));
+    connect(spinMinVoltage,SIGNAL(valueChanged(int)),this,SLOT(slotMinVoltageChanged()));
     connect(spinWatts,SIGNAL(valueChanged(int)),this,SLOT(slotWattsChanged()));
     connect(spinConductivity,SIGNAL(valueChanged(int)),this,SLOT(slotConductivityChanged()));
     connect(spinPF,SIGNAL(valueChanged(double)),this,SLOT(slotPowerfactorChanged()));
@@ -91,6 +92,8 @@ CPowerToolWidget::CPowerToolWidget(QTabWidget * parent)
 
     listNetworks->installEventFilter(this);
     listLines->installEventFilter(this);
+
+    listLines->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 }
 
 CPowerToolWidget::~CPowerToolWidget()
@@ -235,6 +238,8 @@ void CPowerToolWidget::slotDBChanged(const bool highlightOnly)
     if(highlighted)
     {
         listNetworks->setCurrentItem(highlighted);
+    } else if (listNetworks->count() > 1) {
+        listNetworks->setCurrentRow(1); // Select first network in list
     }
     
     // Lines
@@ -258,6 +263,7 @@ void CPowerToolWidget::slotNWItemClicked(QListWidgetItem * item)
 void CPowerToolWidget::slotLineItemClicked(QListWidgetItem * item)
 {
     qDebug() << "slotLineItemClicked";
+    if (listLines->selectedItems().size() > 1) return; // Mutiple items selected
     originator = true;
     CPowerDB::self().highlightPowerLine(item->data(Qt::UserRole).toString());
     originator = false;
@@ -328,9 +334,9 @@ void CPowerToolWidget::slotNWContextMenu(const QPoint& pos)
 void CPowerToolWidget::slotLineContextMenu(const QPoint& pos)
 {
     qDebug() << "slotLineContextMenu()";
-    QListWidgetItem * item = listLines->currentItem();
+    QList<QListWidgetItem *> items = listLines->selectedItems();
     
-    if(item)
+    if(items.size() > 0)
     {
         QPoint p = listLines->mapToGlobal(pos);
 
@@ -340,7 +346,7 @@ void CPowerToolWidget::slotLineContextMenu(const QPoint& pos)
         contextMenu.addSeparator();
         contextMenu.addAction(QPixmap(":/icons/iconChange16x16.png"),tr("Assign to network ..."));
 
-        CPowerLine* l = CPowerDB::self().getPowerLineByKey(item->data(Qt::UserRole).toString());
+        CPowerLine* l = CPowerDB::self().getPowerLineByKey(items.front()->data(Qt::UserRole).toString());
 
         QString key;
         QStringList keys = CPowerDB::self().getPowerNWs();
@@ -349,9 +355,9 @@ void CPowerToolWidget::slotLineContextMenu(const QPoint& pos)
         {
             CPowerNW* nw = CPowerDB::self().getPowerNWByKey(key);
             //if (nw->getName() == "unassigned power lines") continue; // But we might want to un-assign lines
-            if (l->keyNetwork == nw->getKey()) continue;
+            if ((items.size() == 1) && (l->keyNetwork == nw->getKey())) continue; // line already belongs to this nw
 
-            QAction* theAction = new QAction(QPixmap(":/icons/iconPowerNW16x16.png"), "  " + nw->getName(),this);
+            QAction* theAction = new QAction(QPixmap(":/icons/iconPowerNW16x16.png"), "    " + nw->getName(),this);
             contextMenu.addAction(theAction);
             connect(&contextMenu, SIGNAL(triggered(QAction*)), this, SLOT(slotAssignToPowerNW(QAction*)));
         }
@@ -407,20 +413,27 @@ void CPowerToolWidget::slotEditLine()
 
 void CPowerToolWidget::slotAssignToPowerNW(QAction* action)
 {
-    QListWidgetItem * item = listLines->currentItem();
-    if(item == NULL) return;
-
-    CPowerLine* l = CPowerDB::self().getPowerLineByKey(item->data(Qt::UserRole).toString());
-
-    //qDebug() << "slotAssignToPowerNW " << l->getName() << " to " << action->text().remove(0,2);
-
-    CPowerNW* nw = CPowerDB::self().getPowerNWByName(action->text().remove(0,2));
-    if (nw != NULL)
+    QStringList keys;
+    QListWidgetItem * item;
+    const QList<QListWidgetItem*>& items = listLines->selectedItems();
+    foreach(item,items)
     {
-        l->keyNetwork = nw->getKey();
-        CPowerDB::self().setPowerLineData(*l);
-        delete nw;
+        keys << item->data(Qt::UserRole).toString();
     }
+
+    CPowerNW* nw = CPowerDB::self().getPowerNWByName(action->text().remove(0,4));
+    if (nw == NULL) return;
+    QString nw_key = nw->getKey();
+
+    foreach (QString key, keys) {
+        CPowerLine* l = CPowerDB::self().getPowerLineByKey(key);
+        if (l->keyFirst == "") continue; // Line didn't exist in the DB
+        l->keyNetwork = nw_key;
+        CPowerDB::self().setPowerLineData(*l);
+        delete l;
+    }
+
+    delete nw;
 }
 
 
@@ -543,6 +556,8 @@ void CPowerToolWidget::changeSetup(const QString& which)
             CPowerDB::wpt_eElectric ph_electric = CPowerDB::self().getElectricData(nw->ph);
             ph_electric.voltage = nw->voltage;
             CPowerDB::self().setElectricData(nw->ph, ph_electric);
+        } else if (which == "minvoltage") {
+            nw->minVoltage = spinMinVoltage->value();
         } else if (which == "ph") {
             QMap<QString,CWpt*>wpts = CWptDB::self().getWpts();
             CWpt * wpt;
@@ -1101,18 +1116,26 @@ void CPowerToolWidget::slotNWSelectionChanged()
 void CPowerToolWidget::slotLineSelectionChanged()
 {
     qDebug() << "slotLineSelectionChanged()";
-    if(originator)
-    {
-        return;
-    }
+    if(originator) return;
 
-    qDebug() << "slotLineSelectionChanged() 2";
+    if (listLines->hasFocus()) {
+        if (listLines->selectedItems().isEmpty()) {
+            CPowerDB::self().highlightPowerLine("");
+            fillListLines("");
+        } else {
+            // Highlight all selected lines
+            QStringList keys;
+            QListWidgetItem * item;
+            const QList<QListWidgetItem*>& items = listLines->selectedItems();
+            foreach(item,items)
+            {
+                keys << item->data(Qt::UserRole).toString();
+            }
 
-    if (listLines->hasFocus() && listLines->selectedItems().isEmpty())
-    {
-        qDebug() << "slotLineSelectionChanged() 3";
-        CPowerDB::self().highlightPowerLine("");
-        fillListLines("");
+            originator = true;
+            CPowerDB::self().highlightPowerLines(keys);
+            originator = false;
+        }
     }
 }
 

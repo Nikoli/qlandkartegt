@@ -69,14 +69,14 @@ QObject(parent), parent(parent)
     createAction(tr("F9"), ":/icons/iconUpload16x16.png", tr("U&pload all"), "aUploadAll", tr("Upload all data to device."));
     createAction(tr("F10"), ":/icons/iconDownload16x16.png", tr("Down&load all"), "aDownloadAll", tr("Download all data from device."));
 #ifdef HAS_POWERDB
-    createAction(tr("F11"), "", tr("Electr&ic"), "aSwitchToElectric", tr("Electric distribution network."));
+    createAction(tr("F11"), ":/icons/iconPower16x16.png", tr("Electr&ic"), "aSwitchToElectric", tr("Electric distribution network."));
 #endif
 
     createAction(tr("ESC"), ":/icons/iconBack16x16.png", tr("&Back"), "aSwitchToMain", tr("Go back to main menu."));
     createAction(tr("F1"), ":/icons/iconMoveMap16x16.png", tr("Mo&ve Map"), "aMoveArea", tr("Move the map. Press down the left mouse button and move the mouse."));
     createAction(tr("F2"), ":/icons/iconZoomArea16x16.png", tr("&Zoom Map"), "aZoomArea", tr("Select area for zoom."));
     createAction(tr("F3"), ":/icons/iconCenter16x16.png", tr("&Center Map"), "aCenterMap", tr("Find your map by jumping to it's center."));
-
+    createAction(tr("F4"), ":/icons/iconRotate16x16.png", tr("&Toggle Map Orientation"), "aToggleMap", tr("Toggle landscape/portrait orientation of the map."));
     createAction(tr("F5"), ":/icons/iconSelect16x16.png", tr("Select &Sub Map"), "aSelectArea", tr("Select area of map to export. Select area by pressing down the left mouse button and move the mouse."));
     createAction(tr("F6"), ":/icons/iconEdit16x16.png", tr("&Edit / Create Map"), "aEditMap", tr(""));
     createAction(tr("F7"), ":/icons/iconFind16x16.png", tr("&Search Map"), "aSearchMap", tr("Find symbols on a map via image recognition."));
@@ -401,6 +401,11 @@ void CActions::funcZoomArea()
 void CActions::funcCenterMap()
 {
     canvas->move(CCanvas::eMoveCenter);
+}
+
+void CActions::funcToggleMap()
+{
+    CMapDB::self().getMap().toggleRotate();
 }
 
 

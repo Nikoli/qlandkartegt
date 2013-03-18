@@ -228,6 +228,7 @@ void CMouseMoveMap::contextMenu(QMenu& menu)
         menu.addSeparator();
         menu.addAction(QPixmap(":/icons/iconEdit16x16.png"),tr("Edit Power line ..."),this,SLOT(slotEditPowerLine()));
         menu.addAction(QPixmap(":/icons/iconClear16x16.png"),tr("Delete Power line"),this,SLOT(slotDeletePowerLine()));
+        menu.addAction(QPixmap(":/icons/iconMinus32x32"),tr("Split Power line"),this,SLOT(slotSplitPowerLine()));
         menu.addSeparator();
         menu.addAction(QPixmap(":/icons/iconChange16x16.png"),tr("Assign to network ..."));
 
@@ -239,7 +240,7 @@ void CMouseMoveMap::contextMenu(QMenu& menu)
             CPowerNW* nw = CPowerDB::self().getPowerNWByKey(key);
             //if (nw->getName() == "unassigned power lines") continue; // But we might want to un-assign lines!
             if (selLine->keyNetwork == nw->getKey()) continue;
-            QAction* theAction = new QAction(QPixmap(":/icons/iconPowerNW16x16.png"), "  " + nw->getName(),this);
+            QAction* theAction = new QAction(QPixmap(":/icons/iconPowerNW16x16.png"), "    " + nw->getName(),this);
             menu.addAction(theAction);
             connect(&menu, SIGNAL(triggered(QAction*)), this, SLOT(slotAssignToPowerNW(QAction*)));
         }
@@ -447,7 +448,7 @@ void CMouseMoveMap::slotAssignToPowerNW(QAction* action)
     if(selLine == NULL) return;
     qDebug() << "slotAssignToPowerNW " << selLine->getName() << " to " << action->text().remove(0,2);
 
-    CPowerNW* nw = CPowerDB::self().getPowerNWByName(action->text().remove(0,2));
+    CPowerNW* nw = CPowerDB::self().getPowerNWByName(action->text().remove(0,4));
     if (nw != NULL)
     {
         selLine->keyNetwork = nw->getKey();
@@ -485,6 +486,29 @@ void CMouseMoveMap::slotDeletePowerLine()
 
     QString key = selLine->getKey();
     CPowerDB::self().delPowerLine(key);
+}
+
+void CMouseMoveMap::slotSplitPowerLine()
+{
+    if(selLine == NULL) return;
+
+    QString key = selLine->getKey();
+
+    // Note: This is duplicate code from slotAddWpt() but there seems to be no way to
+    // get the key of the newly created waypoint back from slotAddWpt()
+    IMap& map = CMapDB::self().getMap();
+    IMap& dem = CMapDB::self().getDEM();
+
+    double u = mousePos.x();
+    double v = mousePos.y();
+    map.convertPt2Rad(u,v);
+    float ele = dem.getElevation(u,v);
+    if (ele < 1.0)
+        QMessageBox::warning(0, tr("Warning..."),tr("No elevation found for this waypoint. Please set elevation manually and correct the line lengths!"),QMessageBox::Ok,QMessageBox::Ok);
+
+    CWpt* wpt = CWptDB::self().newWpt(u, v, ele, "Point");
+
+    CPowerDB::self().splitPowerLine(key, wpt->getKey());
 }
 #endif
 

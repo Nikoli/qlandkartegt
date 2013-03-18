@@ -74,6 +74,7 @@ class CPowerToolWidget : public QWidget, private Ui::IPowerToolWidget
 
         void slotPHChanged() { changeSetup("ph"); }
         void slotVoltageChanged() { changeSetup("voltage"); }
+        void slotMinVoltageChanged () { changeSetup("minvoltage"); }
         void slotWattsChanged() { changeSetup("watts"); }
         void slotConductivityChanged() { changeSetup("conductivity"); }
         void slotPowerfactorChanged() { changeSetup("powerfactor"); }

@@ -376,8 +376,10 @@ void CCanvas::print(QPainter& p, const QSize& pagesize)
     qreal s = 0.0;
 
     p.save();
+    bool landscapeDevice = p.device()->height() < p.device()->width();
+    bool landscapeScreen = size().height() < size().width();
 
-    if(pagesize.height() > pagesize.width())
+    if(landscapeDevice != landscapeScreen)
     {
         _size_.setWidth(pagesize.height());
         _size_.setHeight(pagesize.width());
@@ -540,8 +542,10 @@ void CCanvas::drawScale(QPainter& p)
 
     }
     else
-    {
+    {        
         d = u1 - u2;
+        if (fabs(d) < 0.001)
+            d = v1 - v2; // Happens if map is rotated
         //     qDebug() << log10(d) << d << a << b;
     }
 
@@ -575,7 +579,7 @@ void CCanvas::drawScale(QPainter& p)
         return;
     }
 
-    pt2 = GPS_Math_Wpt_Projection(pt1, d, -90 * DEG_TO_RAD);
+    pt2 = GPS_Math_Wpt_Projection(pt1, d, (-90 + CMapDB::self().getMap().getAngleNorth()) * DEG_TO_RAD);
     map.convertRad2Pt(pt2.u, pt2.v);
 
     if(isnan(pt2.u) || isnan(pt2.v) || abs(pt2.u) > 5000) return;

@@ -59,6 +59,7 @@
 #include "version.h"
 
 #include <QtGui>
+#include <QSizeF>
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -150,6 +151,7 @@ CMainWindow::CMainWindow()
     actionGroupProvider->addAction(CMenus::MapMenu, "aMoveArea");
     actionGroupProvider->addAction(CMenus::MapMenu, "aZoomArea");
     actionGroupProvider->addAction(CMenus::MapMenu, "aCenterMap");
+    actionGroupProvider->addAction(CMenus::MapMenu, "aToggleMap");
     actionGroupProvider->addAction(CMenus::MapMenu, "aSelectArea");
     actionGroupProvider->addAction(CMenus::MapMenu, "aEditMap");
     actionGroupProvider->addAction(CMenus::MapMenu, "aSearchMap");
@@ -608,6 +610,9 @@ void CMainWindow::setupMenuBar()
     menu->addSeparator();
     menu->addAction(QIcon(":/icons/iconFileLoad16x16.png"),tr("Load Geo Data"),this,SLOT(slotLoadData()), Qt::CTRL + Qt::Key_L);
     menu->addAction(QIcon(":/icons/iconFileSave16x16.png"),tr("Save Geo Data"),this,SLOT(slotSaveData()), Qt::CTRL + Qt::Key_S);
+#ifdef HAS_POWERDB
+    menu->addAction(QIcon(":/icons/iconFileSave16x16.png"),tr("Save Geo Data As..."),this,SLOT(slotSaveDataAs()));
+#endif
     menu->addAction(QIcon(":/icons/iconFileExport16x16.png"),tr("Export Geo Data"),this,SLOT(slotExportData()), Qt::CTRL + Qt::Key_X);
     menu->addAction(QIcon(":/icons/iconFileAdd16x16.png"),tr("Add Geo Data"),this,SLOT(slotAddData()), Qt::ALT + Qt::Key_A);
     menu->addMenu(menuMostRecent);
@@ -1096,7 +1101,11 @@ bool CMainWindow::maybeSave()
 }
 
 
+#ifdef HAS_POWERDB
+void CMainWindow::slotSaveDataAs()
+#else
 void CMainWindow::slotSaveData()
+#endif
 {
     SETTINGS;
 
@@ -1104,9 +1113,10 @@ void CMainWindow::slotSaveData()
 
     QString filename = QFileDialog::getSaveFileName( 0, tr("Select output file")
         ,pathData
-        ,"QLandkarte (*.qlb);;GPS Exchange (*.gpx)"
 #ifdef HAS_POWERDB
-         ";;QLandkarte DB (*.qdb)"
+        ,"QLandkarte DB (*.qdb);;QLandkarte (*.qlb);;GPS Exchange (*.gpx)"
+#else
+        ,"QLandkarte (*.qlb);;GPS Exchange (*.gpx)"
 #endif
         ,&filter
         , FILE_DIALOG_FLAGS
@@ -1118,6 +1128,14 @@ void CMainWindow::slotSaveData()
     saveData(filename, filter);
     addRecent(filename);
 }
+
+#ifdef HAS_POWERDB
+void CMainWindow::slotSaveData()
+{
+    // Save data without asking for new filename
+    saveData(wksFile, ""); // No filter given: Default to using existing file extension
+}
+#endif
 
 
 void CMainWindow::slotExportData()
@@ -1362,14 +1380,38 @@ void CMainWindow::exportToOcm()
 
 void CMainWindow::slotPrint()
 {
+    SETTINGS;
+
     QPrinter printer;
-    printer.setOrientation(QPrinter::Landscape);
+    QPrinter::Orientation orientation = cfg.value("print/orientation","landscape").toString() == "landscape" ?
+                QPrinter::Landscape : QPrinter::Portrait;
+    printer.setOrientation(orientation);
+    QFileInfo outFile(cfg.value("print/lastfile","").toString());
+
+#ifdef HAS_POWERDB
+  #ifndef _MSC_VER
+    if (outFile.filePath() != "") {
+        if (QFileInfo(wksFile).fileName() == "")
+            printer.setOutputFileName(outFile.filePath());
+        else
+            printer.setOutputFileName(outFile.path() + "/" + QFileInfo(wksFile).baseName() + ".ps");
+    }
+    printer.setOutputFormat(QPrinter::PostScriptFormat);
+    // Note: This does not show up in the print options dialog, but if the user doesn't use that dialog it has effect
+    printer.setPageMargins(10, 10, 10, 10, QPrinter::Millimeter);
+  #endif
+
+#endif
     QPrintDialog dialog(&printer, this);
     dialog.setWindowTitle(tr("Print Map"));
     if (dialog.exec() != QDialog::Accepted)
     {
         return;
     }
+
+    outFile.setFile(printer.outputFileName());
+    cfg.setValue("print/lastfile", outFile.absoluteFilePath());
+    cfg.setValue("print/orientation", printer.orientation() == QPrinter::Landscape ? "landscape" : "portrait");
 
     canvas->print(printer);
 }
@@ -1413,8 +1455,7 @@ void CMainWindow::slotSaveImage()
     }
     pathData = fi.absolutePath();
     cfg.setValue("path/data", pathData);
-    cfg.setValue("canvas/imagetype", filter);
-
+    cfg.setValue("canvas/imagetype", filter);   
 }
 
 
@@ -1747,11 +1788,11 @@ QString CMainWindow::getGeoDataFormats()
     QString formats;
     if(haveGPSBabel)
     {
-        formats = "All supported files (*.qlb *.gpx *.tcx *.loc *.gdb *.kml *.plt *.rte *.wpt *.tk1);;QLandkarte (*.qlb);;GPS Exchange (*.gpx);;TwoNav (*.trk *.rte *.wpt);;TCX TrainingsCenterExchange (*.tcx);;Geocaching.com - EasyGPS (*.loc);;Mapsource (*.gdb);;Google Earth (*.kml);;Ozi Track (*.plt);;Ozi Route (*.rte);;Ozi Waypoint (*.wpt);;Wintec WBT201/1000 (*.tk1);;Universal CSV (*.csv);;QLandkarte DB(*.qdb)";
+        formats = "All supported files (*.qlb *.qdb *.gpx *.tcx *.loc *.gdb *.kml *.plt *.rte *.wpt *.tk1);;QLandkarte (*.qlb);;QLandkarte DB(*.qdb);;GPS Exchange (*.gpx);;TwoNav (*.trk *.rte *.wpt);;TCX TrainingsCenterExchange (*.tcx);;Geocaching.com - EasyGPS (*.loc);;Mapsource (*.gdb);;Google Earth (*.kml);;Ozi Track (*.plt);;Ozi Route (*.rte);;Ozi Waypoint (*.wpt);;Wintec WBT201/1000 (*.tk1);;Universal CSV (*.csv)";
     }
     else
     {
-        formats = "All supported files (*.qlb *.gpx *.tcx);;QLandkarte (*.qlb);;GPS Exchange (*.gpx);;TCX TrainingsCenterExchange (*.tcx);;QLandkarte DB(*.qdb)";
+        formats = "All supported files (*.qlb *.qdb *.gpx *.tcx);;QLandkarte (*.qlb);;QLandkarte DB(*.qdb);;GPS Exchange (*.gpx);;TCX TrainingsCenterExchange (*.tcx)";
     }
     return formats;
 }

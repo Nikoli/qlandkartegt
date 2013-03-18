@@ -73,6 +73,7 @@ void CMapNoMap::setup(const QString& proj, double xscale, double yscale)
 
 void CMapNoMap::convertPt2M(double& u, double& v)
 {
+    rotatePt(u, v, false); // adjust for 90 degree rotated map
     u = x + u * xscale * zoomFactor;
     v = y + v * yscale * zoomFactor;
 }
@@ -82,6 +83,7 @@ void CMapNoMap::convertM2Pt(double& u, double& v)
 {
     u = floor((u - x) / (xscale * zoomFactor) + 0.5);
     v = floor((v - y) / (yscale * zoomFactor) + 0.5);
+    rotatePt(u, v, true); // adjust for 90 degree rotated map
 }
 
 

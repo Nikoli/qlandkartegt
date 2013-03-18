@@ -53,9 +53,10 @@ class CPowerDB : public QObject
         void addWpt(CWpt* wpt);
         void delWpt(const QString& key);
         
-        CPowerLine* newPowerLine(const QString& start, const QString& end);
+        CPowerLine* newPowerLine(const QString& start, const QString& end, const bool silent = false);
         void delPowerLine(const QString& key);
         void delPowerLines(const QStringList& keys);
+        void splitPowerLine(const QString& key, const QString& wpt_key);
         const bool hasPowerLines();
         
         CPowerNW* newPowerNW(const QString& ph_key);
@@ -100,17 +101,19 @@ class CPowerDB : public QObject
         
         CPowerNW* getPowerNWByKey(const QString& key);
         CPowerNW* getPowerNWByName(const QString& name);
+        CPowerNW* getPowerNWFromWpt(const QString& wpt_key);
         const QStringList getPowerNWs() const;
 
         const bool containsPowerLine(const QString& key) const;
         const bool containsPowerNW(const QString& key) const;
         
-        void highlightPowerLine(const QString& key);
+        void highlightPowerLine(const QString& key, const bool single = true);
+        void highlightPowerLines(const QStringList& keys);
         void highlightPowerNW(const QString& key);
         
         /// unset the highlight flag
         void unHighlightPowerLine(const QString& key);
-        //void setHighlightPowerNW(const QString& key, bool yes);
+        void unHighlightPowerLines();
         /// get the value of the highlight flag
         unsigned isHighlightedPowerLine(const QString& key);
         bool isHighlightedPowerNW(const QString& key);
@@ -122,7 +125,6 @@ class CPowerDB : public QObject
 
             @return A pointer to the current highlighted power line or 0.
         */
-        CPowerLine* highlightedPowerLine();
         CPowerNW* highlightedPowerNW();
 
         QSqlQuery getCustomQuery();
@@ -157,7 +159,7 @@ class CPowerDB : public QObject
         void addPowerLine(CPowerLine * l, CPowerNW * nw, bool silent);
         void addPowerNW(CPowerNW * nw, bool silent);
         
-        void drawLine(const QLine& qline, const QRect& extViewport, QPainter& p);
+        void drawLine(const QLine& qline, QPainter& p);
         void drawElectricText(QPainter& p, const CPowerLine* l, const QPoint& middle, const double angle);
 
         /// left hand tool widget tabbar

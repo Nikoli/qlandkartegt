@@ -20,11 +20,12 @@
 #include "CSettings.h"
 #include "config.h"
 #include "CWptDB.h"
+#include "GeoMath.h"
 
 #include <QtGui>
 
 CDlgImportImages::CDlgImportImages(QWidget *parent)
-    : QDialog(parent)
+: QDialog(parent)
 {
     setupUi(this);
 
@@ -40,12 +41,26 @@ CDlgImportImages::CDlgImportImages(QWidget *parent)
 
     connect(toolPath, SIGNAL(clicked()), this, SLOT(slotSelectPath()));
 
+    radioRefExif->setChecked(cfg.value("imageImport/ref/exif", true).toBool());
+    radioRefTime->setChecked(cfg.value("imageImport/ref/time", false).toBool());
+    radioRefPosition->setChecked(cfg.value("imageImport/ref/position", false).toBool());
+
+    connect(radioRefExif, SIGNAL(clicked()), this, SLOT(slotSelectRefMethod()));
+    connect(radioRefTime, SIGNAL(clicked()), this, SLOT(slotSelectRefMethod()));
+    connect(radioRefPosition, SIGNAL(clicked()), this, SLOT(slotSelectRefMethod()));
+
     searchForFiles(path);
+
+    slotSelectRefMethod();
+
+    connect(listImages, SIGNAL(itemDoubleClicked(QListWidgetItem*)), this, SLOT(slotSelectPicture(QListWidgetItem*)));
 }
+
 
 CDlgImportImages::~CDlgImportImages()
 {
 }
+
 
 void CDlgImportImages::accept()
 {
@@ -70,8 +85,25 @@ void CDlgImportImages::accept()
         mode = CWptDB::eExifModeLink;
     }
 
-    CWptDB::self().createWaypointsFromImages(files, mode);
+    if(radioRefExif->isChecked())
+    {
+        CWptDB::self().createWaypointsFromImages(files, mode);
+    }
+    else if(radioRefTime->isChecked())
+    {
+        quint32 timestamp = dateTimeEdit->dateTime().toUTC().toTime_t();
+        CWptDB::self().createWaypointsFromImages(files, mode, selectedFile, timestamp);
+    }
+    else if(radioRefPosition->isChecked())
+    {
+        float lon = 0;
+        float lat = 0;
 
+        if(GPS_Math_Str_To_Deg(linePosition->text(), lon, lat))
+        {
+            CWptDB::self().createWaypointsFromImages(files, mode, selectedFile, lon, lat);
+        }
+    }
 
     SETTINGS;
     cfg.setValue("path/images", labelPath->text());
@@ -80,8 +112,13 @@ void CDlgImportImages::accept()
     cfg.setValue("imageImport/copy/original", radioCopyOriginal->isChecked());
     cfg.setValue("imageImport/copy/link", radioCopyLink->isChecked());
 
+    cfg.setValue("imageImport/ref/exif", radioRefExif->isChecked());
+    cfg.setValue("imageImport/ref/time", radioRefTime->isChecked());
+    cfg.setValue("imageImport/ref/position", radioRefPosition->isChecked());
+
     QDialog::accept();
 }
+
 
 void CDlgImportImages::searchForFiles(const QString& path)
 {
@@ -108,4 +145,41 @@ void CDlgImportImages::slotSelectPath()
     labelPath->setText(path);
 
     searchForFiles(path);
+}
+
+
+void CDlgImportImages::slotSelectRefMethod()
+{
+    if(radioRefTime->isChecked())
+    {
+        groupRefTime->show();
+    }
+    else
+    {
+        groupRefTime->hide();
+    }
+
+    if(radioRefPosition->isChecked())
+    {
+        groupRefPosition->show();
+    }
+    else
+    {
+        groupRefPosition->hide();
+    }
+}
+
+
+void CDlgImportImages::slotSelectPicture(QListWidgetItem * item)
+{
+    labelRefTimeFile->setText(item->text());
+    labelRefPositionFile->setText(item->text());
+
+    dateTimeEdit->setEnabled(true);
+    linePosition->setEnabled(true);
+
+    QFileInfo fi(item->data(Qt::UserRole).toString());
+    dateTimeEdit->setDateTime(fi.created());
+
+    selectedFile = fi.absoluteFilePath();
 }

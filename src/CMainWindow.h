@@ -100,6 +100,9 @@ class CMainWindow : public QMainWindow
         void slotLoadData();
         void slotAddData();
         void slotSaveData();
+#ifdef HAS_POWERDB
+        void slotSaveDataAs();
+#endif
         void slotExportData();
         void slotSaveImage();
         void slotPrint();
@@ -183,7 +186,6 @@ class CMainWindow : public QMainWindow
         CGeoDB * geodb;
 
         CGridDB * griddb;
-//        CPower * power;
         
         CPowerDB * powerdb;
 

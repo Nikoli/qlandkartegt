@@ -7,11 +7,11 @@ rem http://vlaurie.com/computers2/Articles/environment.htm
 
 rem Section 1.) Define path to Qt, MSVC, .... installations
 set QLGTI_QT_PATH="C:\QtSDK\Desktop\Qt\4.8.3\msvc2010"
-set QLGTI_VCREDIST_PATH="C:\Dokumente und Einstellungen\cad\Eigene Dateien\QLGT-PN\qlandkartegt-pn-1.0.0\Win32"
+set QLGTI_VCREDIST_PATH="C:\Dokumente und Einstellungen\cad\Eigene Dateien\QLGT-PN\qlandkartegt-pn-1.1.3\Win32"
 set QLGTI_LIBEXIF_PATH="E:\qlgt\tools\libexif"
 set QLGTI_GDAL_PATH="%CD%\..\Win32\gdal\bin"
-set QLGTI_SOURCE_PATH="C:\Dokumente und Einstellungen\cad\Eigene Dateien\QLGT-PN\qlandkartegt-pn-1.0.0"
-set QLGTI_BUILD_PATH="C:\Dokumente und Einstellungen\cad\Eigene Dateien\QLGT-PN\qlandkartegt-pn-1.0.0-build"
+set QLGTI_SOURCE_PATH="C:\Dokumente und Einstellungen\cad\Eigene Dateien\QLGT-PN\qlandkartegt-pn-1.1.3"
+set QLGTI_BUILD_PATH="C:\Dokumente und Einstellungen\cad\Eigene Dateien\QLGT-PN\qlandkartegt-pn-1.1.3-build"
 
 rem Section 2.) Copy Files
 del /s/q Files

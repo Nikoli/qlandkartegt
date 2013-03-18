@@ -129,11 +129,15 @@ class IMap : public QObject
             @param next the (new) location of the starting point
         */
         virtual void move(const QPoint& old, const QPoint& next) = 0;
+
+        /// Toggle rotation between portrait and landscape
+        void toggleRotate();
+
         /// zoom map around point [px]
         /**
             @param zoomIn set true to increase resolution and false to decrease resolution
             @param p      define center (steady point) of the transformation
-        */
+        */        
         virtual void zoom(bool zoomIn, const QPoint& p) = 0;
         /// zoom map to fit area
         /**
@@ -364,6 +368,15 @@ class IMap : public QObject
         QTimer * timerFastDraw;
 
         double angleNorth;
+
+        /// Display map rotated by 90 degrees
+        void rotate(const bool r);
+
+        /// Rotate screen coordinates (back) by 90 degrees if rotated flag is set
+        void rotatePt(double& u, double& v, const bool back);
+
+        /// Flag if map display should be rotated 90°
+        bool rotated;
 
     private:
         bool fastDrawWithoutTimer;

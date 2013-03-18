@@ -50,6 +50,7 @@ class CMouseMoveMap : public IMouse
         void slotEditElectricWpt();
         void slotEditPowerLine();
         void slotDeletePowerLine();
+        void slotSplitPowerLine();
         void slotAssignToPowerNW(QAction* action);
 #endif
         void slotCopyPositionWpt();

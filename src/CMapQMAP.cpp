@@ -25,6 +25,7 @@
 #include "CCanvas.h"
 #include "CMapSelectionRaster.h"
 #include "CResources.h"
+#include "CSettings.h"
 #include "CDlgMapQMAPConfig.h"
 #include "CMainWindow.h"
 
@@ -125,6 +126,7 @@ CMapQMAP::CMapQMAP(const QString& key, const QString& fn, CCanvas * parent)
 
     // If no configuration is stored read values from the map definition's "home" section
     // zoom() has to be called in either case to setup / initialize all other internal parameters
+    // Note: The "center" property is used (misused?) to store the top left corner of the displayed map
     mapdef.beginGroup(QString("home"));
     zoomidx = mapdef.value("zoom",1).toUInt();
     zoom(zoomidx);
@@ -167,6 +169,10 @@ CMapQMAP::~CMapQMAP()
     midU = rect.center().x();
     midV = rect.center().y();
     convertPt2Rad(midU, midV);
+
+    // Note: If we do this in ~IMap then the value of the DEM map gets written because it is the last to be destroyed...
+    SETTINGS;
+    cfg.setValue("map/rotated",rotated);
 }
 
 
@@ -345,9 +351,9 @@ void CMapQMAP::draw()
 
     const CMapFile * map = *pMaplevel->begin();
 
-    // top left
+    // top left of currently displayed map portion [rad]
     projXY pt = topLeft;
-    pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0);
+    pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0);    
 
     bottomRight.u = pt.u + size.width() * map->xscale * zoomFactor;
     bottomRight.v = pt.v + size.height() * map->yscale * zoomFactor;
@@ -415,8 +421,24 @@ void CMapQMAP::draw()
 
                     if(!err)
                     {
-                        double xx = intersect.left(), yy = intersect.bottom();
-                        convertM2Pt(xx,yy);
+                        double xx, yy;
+                        if (rotated) {
+                            QMatrix matrix;
+                            matrix.rotate(90);
+                            img = img.transformed(matrix, Qt::SmoothTransformation);                            
+
+                            xx = intersect.left();
+                            yy = intersect.top();
+                            convertM2Pt(xx,yy);
+                            //xx += size.height(); // adjust for rotation
+                        } else {
+                            // Note: Bottom left of viewport corresponds to top left of screen because the y-size of the viewport
+                            //       is negative!
+                            xx = intersect.left();
+                            yy = intersect.bottom();
+                            convertM2Pt(xx,yy);
+                        }
+
                         _p_.drawImage(xx,yy,img);
                         foundMap = true;
                     }
@@ -468,8 +490,23 @@ void CMapQMAP::draw()
 
                     if(!err)
                     {
-                        double xx = intersect.left(), yy = intersect.bottom();
-                        convertM2Pt(xx,yy);
+                        double xx, yy;
+
+                        if (rotated) {
+                            QMatrix matrix;
+                            matrix.rotate(90);
+                            img = img.transformed(matrix, Qt::SmoothTransformation);
+
+                            xx = intersect.left();
+                            yy = intersect.top();
+                            convertM2Pt(xx,yy);
+                            //xx += size.height(); // adjust for rotation
+                        } else {
+                            xx = intersect.left();
+                            yy = intersect.bottom();
+                            convertM2Pt(xx,yy);
+                        }
+
                         _p_.drawImage(xx,yy,img);
                         foundMap = true;
                     }
@@ -482,16 +519,16 @@ void CMapQMAP::draw()
     if(doFastDraw) setFastDrawTimer();
 }
 
-
 void CMapQMAP::convertPt2M(double& u, double& v)
 {
     if(pMaplevel.isNull() || pjsrc == 0) return;
 
     const CMapFile * map = *pMaplevel->begin();
 
-    projXY pt = topLeft;
-    pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0);
+    projXY pt = topLeft; // long/lat [rad]
+    pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0); // [m]
 
+    rotatePt(u, v, false); // adjust for 90 degree rotated map
     u = pt.u + u * map->xscale * zoomFactor;
     v = pt.v + v * map->yscale * zoomFactor;
 }
@@ -504,10 +541,11 @@ void CMapQMAP::convertM2Pt(double& u, double& v)
     const CMapFile * map = *pMaplevel->begin();
 
     projXY pt = topLeft;
-    pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0);
+    pj_transform(pjtar,pjsrc,1,0,&pt.u,&pt.v,0); // [m]
 
     u = floor((u - pt.u) / (map->xscale * zoomFactor) + 0.5);
     v = floor((v - pt.v) / (map->yscale * zoomFactor) + 0.5);
+    rotatePt(u, v, true); // adjust for 90 degree rotated map
 }
 
 

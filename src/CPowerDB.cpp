@@ -28,16 +28,10 @@
 #include "CPowerNW.h"
 #include "CDlgEditPowerLine.h"
 #include "CDlgEditPowerNW.h"
-//#include "CTextEditWidget.h"
 #include "CResources.h"
 #include "CMainWindow.h"
 #include "CPowerToolWidget.h"
 #include "CMapDB.h"
-//#include "CCanvas.h"
-//#include "IMap.h"
-//#include "CDlgEditFolder.h"
-
-//#include "CQlb.h"
 
 #include <QSqlQuery>
 #include <QSqlError>
@@ -237,6 +231,7 @@ QSqlDatabase* CPowerDB::createDB(const QString& dbname)
         "line_conductivity  FLOAT NOT NULL DEFAULT 30,"
         "power_factor       FLOAT NOT NULL DEFAULT 0.75,"
         "ratedvoltage       FLOAT NOT NULL DEFAULT 220,"
+        "minimalvoltage     FLOAT NOT NULL DEFAULT 200,"
         "highlighted        INTEGER UNSIGNED DEFAULT 0,"
         "FOREIGN KEY(powerhouse_key) REFERENCES wpts(key) ON DELETE CASCADE"
     ")"))
@@ -257,7 +252,7 @@ QSqlDatabase* CPowerDB::createDB(const QString& dbname)
 
 void CPowerDB::migrateDB(QSqlDatabase* thedb, int version)
 {
-    //qDebug() << "void CPowerDB::migrateDB(int version)" << version;
+    qDebug() << "void CPowerDB::migrateDB(int version)" << version;
     QSqlQuery query(*thedb);
 
     for(version++; version <= POWERDB_VERSION; version++)
@@ -266,24 +261,19 @@ void CPowerDB::migrateDB(QSqlDatabase* thedb, int version)
         switch(version)
         {
             case 1:
+                // This applies to migration from version 0 to 1, because of the version++
                 break;
 
             case 2:
             {
-                /*if(!query.exec( "CREATE TABLE workspace ("
-                    "id             INTEGER PRIMARY KEY NOT NULL,"
-                    "changed        BOOLEAN DEFAULT FALSE,"
-                    "data           BLOB NOT NULL"
-                ")"))
+            if (!query.exec( "ALTER TABLE networks ADD COLUMN minimalvoltage FLOAT NOT NULL DEFAULT 200"))
                 {
                     qDebug() << query.lastQuery();
                     qDebug() << query.lastError();
                     return;
-                }*/
-
+                }
                 break;
             }
-
         }
     }
     query.prepare( "UPDATE versioninfo set version=:version");
@@ -305,7 +295,7 @@ void CPowerDB::clear()
 // Load the given database into the memory database (adding to existing content if there is any)
 void CPowerDB::load(const QString& filename)
 {
-  //qDebug() << "CPowerDB::load() " << filename;
+  qDebug() << "CPowerDB::load() " << filename;
 
   QSqlDatabase* newdb = new QSqlDatabase(QSqlDatabase::addDatabase("QSQLITE","qlpowerdbnew"));
   newdb->setDatabaseName(filename);
@@ -393,8 +383,6 @@ void CPowerDB::load(const QString& filename)
   query.prepare("ATTACH DATABASE '" + filename + "' AS newdb ");
   QUERY_EXEC(;);
 
-  query.prepare("INSERT INTO newdb.wpts SELECT * FROM wpts");
-  QUERY_EXEC(;);
   query.exec("INSERT INTO wpts_eElectric SELECT * FROM newdb.wpts_eElectric");
   query.exec("INSERT INTO images SELECT * FROM newdb.images");
   query.exec("INSERT INTO image2wpt SELECT * FROM newdb.image2wpt");
@@ -777,7 +765,7 @@ const bool CPowerDB::hasPowerLines()
     return (getPowerLines().size() > 0);
 }
    
-CPowerLine* CPowerDB::newPowerLine(const QString& first, const QString& second)
+CPowerLine* CPowerDB::newPowerLine(const QString& first, const QString& second, const bool silent)
 {
     CPowerLine * l  = new CPowerLine(this);
     l->setName("New Power line");
@@ -811,11 +799,13 @@ CPowerLine* CPowerDB::newPowerLine(const QString& first, const QString& second)
         nw_key = "unassigned_power_lines";
     }
 
-    CDlgEditPowerLine dlg(*l,theMainWindow->getCanvas());
-    if(dlg.exec() == QDialog::Rejected)
-    {
-        delete l;
-        return NULL;
+    if (!silent) {
+        CDlgEditPowerLine dlg(*l,theMainWindow->getCanvas());
+        if(dlg.exec() == QDialog::Rejected)
+        {
+            delete l;
+            return NULL;
+        }
     }
 
     QSqlQuery query(*db);
@@ -877,6 +867,29 @@ void CPowerDB::delPowerLines(const QStringList& keys) {
     }  
 } // delPowerLines()
 
+void CPowerDB::splitPowerLine(const QString& key, const QString& wpt_key)
+{
+    CPowerLine* old_line = getPowerLineByKey(key);
+    CPowerLine* line1 = newPowerLine(old_line->keyFirst, wpt_key, true);
+    line1->keyNetwork = old_line->keyNetwork;
+    line1->setCrossSection(old_line->getCrossSection());
+    line1->setPhases(old_line->getPhases());
+    line1->setConductivity(old_line->getConductivity());
+    setPowerLineData(*line1);
+    delPowerLine(key); // Avoid creating a loop in the network
+    CPowerLine* line2 = newPowerLine(wpt_key, old_line->keySecond, true);
+    line2->keyNetwork = line1->keyNetwork;
+    line2->setCrossSection(line1->getCrossSection());
+    line2->setPhases(line1->getPhases());
+    line2->setConductivity(line1->getConductivity());
+    setPowerLineData(*line2);
+
+    // Set icon for intermediate waypoint
+    QStringList wpts;
+    wpts.push_back(wpt_key);
+    CWptDB::self().setIcon(wpts, "Pin, Blue");
+}
+
 void CPowerDB::addPowerLine(CPowerLine * l, CPowerNW * nw, bool silent)
 {
     if(containsPowerLine(l->getKey()))
@@ -916,7 +929,7 @@ void CPowerDB::setPowerLineData(CPowerLine& l)
     query.bindValue(":current", l.getCurrent());
     query.bindValue(":voltage_drop", l.getDrop());
     QUERY_EXEC(return);
-    qDebug() << "Set current to " << l.getCurrent() << " in DB";
+    //qDebug() << "Set current to " << l.getCurrent() << " in DB";
 
     emit sigChanged();
     emit sigModified();
@@ -939,6 +952,17 @@ void CPowerDB::unHighlightPowerLine(const QString& key) {
 
 }
 
+void CPowerDB::unHighlightPowerLines() {
+    QSqlQuery query(*db);
+
+    query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=2)");
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=3)");
+    QUERY_EXEC(return);
+
+    emit sigChanged(true);
+}
+
 unsigned CPowerDB::isHighlightedPowerLine(const QString& key) {
     QSqlQuery query(*db);
     
@@ -954,10 +978,12 @@ unsigned CPowerDB::isHighlightedPowerLine(const QString& key) {
     }
 }
 
+/*
+  // Note: This should return ALL highlighted power lines, not just the first
 CPowerLine* CPowerDB::highlightedPowerLine() {
     QSqlQuery query(*db);
     
-    query.prepare("SELECT key FROM lines WHERE highlighted != 0");
+    query.prepare("SELECT key FROM lines WHERE highlighted == 2 or highlighted == 3");
     QUERY_EXEC(return NULL);
     
     if (query.next())
@@ -967,6 +993,7 @@ CPowerLine* CPowerDB::highlightedPowerLine() {
       return NULL;
     }
 }
+*/
 
 const bool CPowerDB::containsPowerNW(const QString& key) const {
     QSqlQuery query(*db);
@@ -984,7 +1011,7 @@ CPowerNW* CPowerDB::getPowerNWByKey(const QString& key)
   
   query.prepare("SELECT timestamp,name,comment,icon,"
                 "powerhouse_key,powerhouse_voltage,watts_per_consumer,line_conductivity,"
-                "power_factor,ratedvoltage "
+                "power_factor,ratedvoltage,minimalvoltage "
                 "FROM networks WHERE key=:key");
   query.bindValue(":key", key);
   QUERY_EXEC(return NULL;);
@@ -1003,6 +1030,7 @@ CPowerNW* CPowerDB::getPowerNWByKey(const QString& key)
     result->powerfactor = query.value(8).toDouble();
     if (query.value(9).toDouble() > 0.01) // Is always ZERO in some buggy situations!!!
         result->ratedVoltage = query.value(9).toDouble();
+    result->minVoltage = query.value(10).toDouble();
   } else {
       qDebug() << "No network, using default values";
     // No such network
@@ -1016,6 +1044,7 @@ CPowerNW* CPowerDB::getPowerNWByKey(const QString& key)
     result->conductivity = 30.0;
     result->powerfactor = 0.75;
     result->ratedVoltage = 220;
+    result->minVoltage = 200;
   }
   return result;
 } // getPowerNWByKey
@@ -1037,6 +1066,22 @@ CPowerNW* CPowerDB::getPowerNWByName(const QString& name)
       return NULL;
   }
 } // getPowerNWByName
+
+CPowerNW* CPowerDB::getPowerNWFromWpt(const QString& wpt_key)
+{
+    QSqlQuery query(*db);
+
+    query.prepare("SELECT nw_key FROM lines WHERE first_key = :key OR second_key = :key");
+    query.bindValue(":key", wpt_key);
+    QUERY_EXEC(return NULL;);
+
+    if (query.next()) {
+        //qDebug() << "CPowerDB::getPowerNWByWpt() query successful, result " << query.value(0).toString();
+        return getPowerNWByKey(query.value(0).toString());
+    } else {
+        return NULL;
+    }
+}
 
 const QStringList CPowerDB::getPowerNWs() const
 {
@@ -1074,9 +1119,9 @@ CPowerNW* CPowerDB::newPowerNW(const QString& ph_key)
     
     query.prepare("INSERT INTO networks (key, timestamp, name, comment, icon, "
                   "powerhouse_key, powerhouse_voltage, watts_per_consumer, line_conductivity,"
-                  "power_factor, ratedvoltage) "
+                  "power_factor, ratedvoltage, minimalvoltage) "
                   "VALUES(:key, :timestamp, :name, :comment, :icon, "
-                  ":ph, :voltage, :watts, :conductivity, :pf, :ratedvoltage)");
+                  ":ph, :voltage, :watts, :conductivity, :pf, :ratedvoltage, :minimalvoltage)");
     query.bindValue(":key", nw->getKey());
     query.bindValue(":timestamp", nw->getTimestamp());
     query.bindValue(":name", nw->getName());
@@ -1088,6 +1133,7 @@ CPowerNW* CPowerDB::newPowerNW(const QString& ph_key)
     query.bindValue(":conductivity", nw->conductivity);
     query.bindValue(":pf", nw->powerfactor);
     query.bindValue(":ratedvoltage", nw->ratedVoltage);
+    query.bindValue(":minimalvoltage", nw->minVoltage);
     QUERY_EXEC(return nw);
 
     // propagate voltage to powerhouse waypoint
@@ -1117,7 +1163,7 @@ void CPowerDB::delPowerNW(const QString& key) {
   QUERY_EXEC(return);
 
   // Clear nw key from all related lines
-  query.prepare("UPDATE lines SET nw_key='' WHERE nw_key=:key");
+  query.prepare("UPDATE lines SET nw_key='unassigned_power_lines' WHERE nw_key=:key");
   query.bindValue(":key", key);
   QUERY_EXEC(return);
 } // delPowerNW()
@@ -1163,7 +1209,7 @@ void CPowerDB::setPowerNWData(CPowerNW& nw)
     QSqlQuery query(*db);
     query.prepare("UPDATE networks SET timestamp=:timestamp,name=:name,comment=:comment,icon=:icon,"
                   "powerhouse_key=:ph,powerhouse_voltage=:voltage,watts_per_consumer=:watts,"
-                  "line_conductivity=:conductivity,power_factor=:pf,ratedvoltage=:rv "
+                  "line_conductivity=:conductivity,power_factor=:pf,ratedvoltage=:rv,minimalvoltage=:mv "
                   "WHERE key=:key");
     query.bindValue(":key", nw.getKey());
     query.bindValue(":timestamp", nw.getTimestamp());
@@ -1176,6 +1222,7 @@ void CPowerDB::setPowerNWData(CPowerNW& nw)
     query.bindValue(":conductivity", nw.conductivity);
     query.bindValue(":pf", nw.powerfactor);
     query.bindValue(":rv",nw.ratedVoltage);
+    query.bindValue(":mv", nw.minVoltage);
     QUERY_EXEC(return);
     
     emit sigChanged(); // notify the CPowerToolWidget that something has changed
@@ -1247,7 +1294,7 @@ void CPowerDB::highlightPowerNW(const QString& key)
 
 }
 
-void CPowerDB::highlightPowerLine(const QString& key)
+void CPowerDB::highlightPowerLine(const QString& key, const bool single)
 {
     qDebug() << "CPowerDB::highlightPowerLine() for " << key;
 
@@ -1256,16 +1303,17 @@ void CPowerDB::highlightPowerLine(const QString& key)
         return;
     }
 
-    qDebug() << "CPowerDB::highlightPowerLine() 2";
-
     QSqlQuery query(*db);
 
-    query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=2) AND (key!=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=3) AND (key!=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
+    if (single) {
+        // Unhighlight other highlighted lines
+        query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=2) AND (key!=:key)");
+        query.bindValue(":key", key);
+        QUERY_EXEC(return);
+        query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=3) AND (key!=:key)");
+        query.bindValue(":key", key);
+        QUERY_EXEC(return);
+    }
     query.prepare("UPDATE lines SET highlighted=2 WHERE (highlighted=0) AND (key=:key)");
     query.bindValue(":key", key);
     QUERY_EXEC(return);
@@ -1280,8 +1328,35 @@ void CPowerDB::highlightPowerLine(const QString& key)
 
 }
 
-void CPowerDB::drawElectricText(QPainter& p, const CPowerLine* l, const QPoint& middle, const double angle)
+void CPowerDB::highlightPowerLines(const QStringList& keys)
 {
+    unHighlightPowerLines();
+
+    foreach (QString key, keys) {
+        highlightPowerLine(key, false);
+    }
+}
+
+const QList<QPointF> getIntersectionPoints(const QRect& r, const QLine& l)
+{
+    QList<QPoint> points;
+    points << r.topRight() << r.bottomRight() << r.bottomLeft() << r.topLeft();
+    QList<QPointF> result;
+    QPoint p1 = r.topLeft();
+
+    for (QList<QPoint>::const_iterator pt = points.begin(); pt != points.end(); pt++) {
+        QLineF line(p1, *pt);
+        QPointF p_inter;
+        if (line.intersect(l, &p_inter) == QLineF::BoundedIntersection)
+            result << p_inter;
+        p1 = *pt;
+    }
+
+    return result;
+}
+
+void CPowerDB::drawElectricText(QPainter& p, const CPowerLine* l, const QPoint &middle, const double angle)
+{    
     QString str;
     str += trUtf8("%1m, %2mm²").arg(l->getLength(),0,'f',0).arg(l->getCrossSection(),0,'f',0);
     str += QString(", ") + (l->getPhases() & 1 ? "1" : "-") + (l->getPhases() & 2 ? "2" : "-") + (l->getPhases() & 4 ? "3" : "-") + tr("ph");
@@ -1312,34 +1387,20 @@ void CPowerDB::drawElectricText(QPainter& p, const CPowerLine* l, const QPoint& 
     p.restore();
 }
 
-void CPowerDB::drawLine(const QLine& qline, const QRect& extViewport, QPainter& p)
+void CPowerDB::drawLine(const QLine& qline, QPainter &p)
 {
-    QPoint ptt;
-    
-    if (extViewport.contains(qline.p1()) || extViewport.contains(qline.p2())) 
-    {
-        ptt = qline.p1() - qline.p2();
-        
-        if(ptt.manhattanLength() >= 5)
-            p.drawLine(qline);
-    }
+    QPoint ptt = qline.p1() - qline.p2();
+    if(ptt.manhattanLength() < 5) return;
+
+    p.drawLine(qline);
 }
 
 void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 {
-    //qDebug() << "CPowerDB::draw()";
-    //QPoint focus(-1,-1);
-    //QVector<QPoint> selected;
-
     QStringList lines                 = CPowerDB::self().getPowerLines();
     QStringList::iterator lit         = lines.begin();
     QList< CPowerLine* > highlighted;
 
-    //QPixmap bullet_red(":/icons/bullet_red.png");
-
-    // extended vieport rectangle to cut line segments properly
-    QRect extRect = rect.adjusted(-10, -10, 10, 10);
-    
     while(lit != lines.end())
     {
         CPowerLine * l = CPowerDB::self().getPowerLineByKey(*lit);
@@ -1353,11 +1414,36 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         QPoint middle;
         double angle;
         QLine qline = l->getLine(middle, angle);
+        bool p1visible = rect.contains(qline.p1());
+        bool p2visible = rect.contains(qline.p2());
 
-        if(!rect.intersects(QRect(qline.p1(), qline.p2())))
-        {
-            ++lit;
-            continue;
+        // Quick intersection test
+        if (p1visible && p2visible) {
+            // Line completely visible
+        } else {
+            // Exact intersection test
+            QList<QPointF> points = getIntersectionPoints(rect, qline);
+
+            if (points.empty()) {
+                // Line not visible at all
+                ++lit;
+                continue;
+            } else if (points.size() == 1) {
+                if (p1visible)
+                    points << qline.p1();
+                else if (p2visible)
+                    points << qline.p2();
+                else {
+                    // line touches at a corner
+                    ++lit;
+                    continue;
+                }
+            }
+
+            // Line only partially visible
+            QLineF visibleSegment(points.front(), points.back());
+            if (visibleSegment.length() > 50.0)
+                middle = ((visibleSegment.p1() + visibleSegment.p2())/2.0).toPoint();
         }
 
         if (l->highlighted > 0)
@@ -1365,11 +1451,9 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             // store highlighted power line to draw it later
             // it must be drawn above all other power lines
             highlighted << l;
-            //qDebug() << "Adding to highlighted: " << l->getName();
         }
         else
         {
-            //qDebug() << "Drawing non-highlighted: " << l->getName();
             // draw normal power line
             QPen pen1(Qt::white,3);
             pen1.setCapStyle(Qt::RoundCap);
@@ -1380,12 +1464,9 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             pen2.setJoinStyle(Qt::RoundJoin);
 
             p.setPen(pen1);
-            drawLine(qline, extRect, p);
+            drawLine(qline, p);
             p.setPen(pen2);
-            drawLine(qline, extRect, p);
-
-            //p.setBrush(l->getColor());
-            //drawArrows(line, rect, p);
+            drawLine(qline, p);
 
             // Draw electric info on lines
             if (printView & 2)
@@ -1399,14 +1480,12 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 
     // if there are highlighted lines, draw them
     QList< CPowerLine* >::iterator hlit         = highlighted.begin();
-    //if (hlit != highlighted.end()) qDebug() << "Drawing highlighted lines";
     
     while (hlit != highlighted.end())
     {        
         QPoint middle;
         double angle;
         QLine qline = (*hlit)->getLine(middle, angle);
-        //qDebug() << "Highlighting line " << (*hlit)->getName();
 
         // draw skunk line
         QPen pen1(((*hlit)->highlighted == 1 ? QColor(255,255,255,128) : QColor(0,0,128,128)),6);
@@ -1420,12 +1499,9 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         pen2.setJoinStyle(Qt::RoundJoin);
 
         p.setPen(pen1);
-        drawLine(qline, extRect, p);
+        drawLine(qline, p);
         p.setPen(pen2);
-        drawLine(qline, extRect, p);
-
-        //p.setBrush((*Power)->getColor());
-        //drawArrows(line, rect, p);
+        drawLine(qline, p);
 
         // Draw electric info on lines
         if (printView & 2)

@@ -42,12 +42,14 @@ IMap::IMap(maptype_e type, const QString& key, CCanvas * parent)
 , key(key)
 , doFastDraw(false)
 , angleNorth(0)
+, rotated(false)
 , fastDrawWithoutTimer(false)
 {
     pjtar   = pj_init_plus("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
 
     SETTINGS;
     zoomidx = cfg.value("map/zoom",zoomidx).toUInt();
+    rotated = cfg.value("map/rotated",rotated).toBool();
 
     if(parent)
     {
@@ -84,17 +86,61 @@ GDALDataset * IMap::getDataset()
     return 0;
 }
 
+void IMap::toggleRotate() {
+    rotate(!rotated);
+}
+
+void IMap::rotate(const bool r) {
+    if (r && !rotated) {
+        rotated = true;
+        // rotate viewport (portrait)
+        size.transpose();
+        rect.setSize(size);
+        // redraw
+        needsRedraw = true;
+        emit sigResize(size);
+    } else if (!r && rotated) {
+        rotated = false;
+        // rotate viewport back (landscape)
+        size.transpose();
+        rect.setSize(size);
+        // redraw
+        needsRedraw = true;
+        emit sigResize(size);
+    }
+}
+
+void IMap::rotatePt(double& u, double& v, const bool back) {
+    if (rotated) {
+        if (back) {
+            double t;
+            t = u;
+            u = size.height() - v;
+            v = t;
+        } else {
+            double t;
+            t = v;
+            v = size.height() - u;
+            u = t;
+        }
+    }
+}
+
 
 void IMap::resize(const QSize& s)
 {
     size = s;
-    rect.setSize(s);
 
     if(!isThread())
     {
         pixBuffer = QPixmap(size);
     }
     imgBuffer = QImage(size,QImage::Format_ARGB32_Premultiplied);
+
+    // Note: The imgBuffer and pixBuffer are not rotated since the screen itself does not rotate
+    if (rotated)
+        size.transpose();
+    rect.setSize(size);
 
     needsRedraw = true;
     emit sigResize(s);

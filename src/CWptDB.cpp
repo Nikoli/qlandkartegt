@@ -37,6 +37,7 @@
 #include "CSettings.h"
 #ifdef HAS_POWERDB
 #include "CPowerDB.h"
+#include "CPowerNW.h"
 #endif
 #include "CTrackDB.h"
 
@@ -970,8 +971,31 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         {
 
             QPixmap icon = (*wpt)->getIcon();
+#ifdef HAS_POWERDB
+            // Scale waypoint by amount of consumers so that places with heavy load become obvious
+            double consumers = CPowerDB::self().getElectricData((*wpt)->getKey()).consumers;
+            double scale = 1.0;
+            if (consumers < 5.0)
+                scale = 0.8 + consumers / 2.5;
+            else
+                scale = log10(consumers + 5.0)/log10(8.0);
+
+            icon = icon.scaled(icon.size() * scale);
+#endif
             QPixmap back = QPixmap(icon.size());
+#ifdef HAS_POWERDB
+            // Colour in red the waypoints with voltage lower than 200
+            double voltage = CPowerDB::self().getElectricData((*wpt)->getKey()).voltage;
+            CPowerNW* nw = CPowerDB::self().getPowerNWFromWpt((*wpt)->getKey());
+            if ((nw != NULL) && (voltage < nw->minVoltage)) {
+                back.fill(Qt::magenta);
+            } else {
+                back.fill(Qt::white);
+            }
+#else
             back.fill(Qt::white);
+#endif
+
             back.setMask(icon.alphaChannel().createMaskFromColor(Qt::black));
 
             int o =  icon.width() >>1;

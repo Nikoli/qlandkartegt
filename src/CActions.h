@@ -64,6 +64,7 @@ class CActions : public QObject
         void funcMoveArea();
         void funcZoomArea();
         void funcCenterMap();
+        void funcToggleMap();
 
         void funcSelectArea();
         void funcEditMap();

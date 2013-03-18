@@ -89,9 +89,12 @@
         <file>icons/iconAdd32x32.png</file>
         <file>icons/iconMinus32x32.png</file>
         <file>icons/iconHelp48x48.png</file>
-	<file>icons/iconPower.png</file>
+	<file>icons/iconPower16x16.png</file>
 	<file>icons/iconPowerNW16x16.png</file>
 	<file>icons/iconPowerLine16x16.png</file>
+        <file>icons/iconBalance16x16.png</file>
+        <file>icons/iconMaterials16x16.png</file>
+        <file>icons/iconNetworks16x16.png</file>
         <file>icons/editundo.png</file>
         <file>icons/editredo.png</file>
         <file>icons/editcut.png</file>

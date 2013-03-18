@@ -1,3 +1,34 @@
+qlandkartegt-pn (1.1.3~precise) precise; urgency=low
+
+  * Fixed bug that did not show .qdb files under "All supported files"
+  * Save geo data without asking for filename and add 'Save As...' menu item
+  instead 
+  * Context menu for powerline now has an option to split the line
+  *  After deleting a network assign all lines to 'Unassigned power lines'
+  * Enable selection of multiple lines for assigning to a network and for
+  deletion
+  * Fix highlighting of multiple selected power lines
+  * Display power lines even if neither start point nor end point is on the
+  screen
+
+ -- Jan Rheinländer <jrheinlaender@users.sourceforge.net>  Mon, 11 Mar 2013 08:00:00 +0430
+
+qlandkartegt-pn (1.1.2~precise) precise; urgency=low
+
+  * Highlight waypoints that have less than the minimal voltage (usually 200V)
+  * Scale waypoints according to number of consumers there
+  * Fix bug that added existing waypoints to second file when choosing "Add Geo data"
+
+ -- Jan Rheinländer <jrheinlaender@users.sourceforge.net>  Mon, 04 Mar 2013 08:00:00 +0430
+
+qlandkartegt-pn (1.1.1~precise) precise; urgency=low
+
+  * Merged trunk code into PN branch
+  * Various minor improvements to PN code
+  * Added functionality to rotate maps
+
+ -- Jan Rheinländer <jrheinlaender@users.sourceforge.net>  Sun, 10 Feb 2013 08:00:00 +0430
+
 qlandkartegt-pn (1.0.0.1~precise) precise; urgency=low
 
   * First release with power network extension
