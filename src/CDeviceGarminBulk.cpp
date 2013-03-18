@@ -38,10 +38,12 @@ CDeviceGarminBulk::CDeviceGarminBulk(QObject * parent)
 
 }
 
+
 CDeviceGarminBulk::~CDeviceGarminBulk()
 {
 
 }
+
 
 void CDeviceGarminBulk::readDeviceXml(const QString& filename)
 {
@@ -86,8 +88,8 @@ void CDeviceGarminBulk::readDeviceXml(const QString& filename)
 
     }
 
-
 }
+
 
 bool CDeviceGarminBulk::aquire(QDir& dir)
 {
@@ -109,8 +111,6 @@ bool CDeviceGarminBulk::aquire(QDir& dir)
     {
         readDeviceXml(dir.absoluteFilePath("Garmin/GarminDevice.xml"));
     }
-
-
 
     if(!dir.exists() || !dir.exists(pathGpx))
     {
@@ -164,6 +164,7 @@ bool CDeviceGarminBulk::aquire(QDir& dir)
     return true;
 }
 
+
 void CDeviceGarminBulk::createDayPath(const QDir& root, const QString& what)
 {
 
@@ -205,7 +206,6 @@ void CDeviceGarminBulk::uploadWpts(const QList<CWpt*>& wpts)
                 QString name = wpt->getName();
                 quint32 size = name.size();
                 QString path = QString("%1/%2/%3").arg(name.at(size-1)).arg(name.at(size -2)).arg(name);
-
 
                 dir.cd(pathSpoilers);
                 dir.mkpath(path + "/Spoilers");
@@ -254,7 +254,14 @@ void CDeviceGarminBulk::uploadWpts(const QList<CWpt*>& wpts)
     dir.cd(pathDay);
     CGpx gpx(this, CGpx::eCleanExport);
     CWptDB::self().saveGPX(gpx, keys);
-    gpx.save(dir.absoluteFilePath("MyWaypoints.gpx"));
+    try
+    {
+        gpx.save(dir.absoluteFilePath("MyWaypoints.gpx"));
+    }
+    catch(const QString& msg)
+    {
+        QMessageBox::critical(0,tr("Error"), msg, QMessageBox::Cancel, QMessageBox::Cancel);
+    }
 
     dir.cd(pathRoot);
     theMainWindow->getCanvas()->setFadingMessage(tr("Upload waypoints finished!"));
@@ -284,7 +291,15 @@ void CDeviceGarminBulk::downloadWpts(QList<CWpt*>& /*wpts*/)
         foreach(const QString& filename, files)
         {
             CGpx gpx(this, CGpx::eCleanExport);
-            gpx.load(dir.absoluteFilePath(filename));
+            try
+            {
+                gpx.load(dir.absoluteFilePath(filename));
+            }
+            catch(const QString& msg)
+            {
+                QMessageBox::critical(0,tr("Error"), msg, QMessageBox::Ok, QMessageBox::Ok);
+                continue;
+            }
             CWptDB::self().loadGPX(gpx);
         }
 
@@ -378,8 +393,14 @@ void CDeviceGarminBulk::uploadTracks(const QList<CTrack*>& trks)
 
     CGpx gpx(this, CGpx::eCleanExport);
     CTrackDB::self().saveGPX(gpx, keys);
-    gpx.save(dir.absoluteFilePath("MyTracks.gpx"));
-
+    try
+    {
+        gpx.save(dir.absoluteFilePath("MyTracks.gpx"));
+    }
+    catch(const QString& msg)
+    {
+        QMessageBox:: critical(0,tr("Error"), msg, QMessageBox::Cancel, QMessageBox::Cancel);
+    }
     dir.cd(pathRoot);
     theMainWindow->getCanvas()->setFadingMessage(tr("Upload tracks finished!"));
 }
@@ -407,7 +428,16 @@ void CDeviceGarminBulk::downloadTracks(QList<CTrack*>& /*trks*/)
         foreach(const QString& filename, files)
         {
             CGpx gpx(this, CGpx::eCleanExport);
-            gpx.load(dir.absoluteFilePath(filename));
+            try
+            {
+                gpx.load(dir.absoluteFilePath(filename));
+            }
+            catch(const QString& msg)
+            {
+                QMessageBox::critical(0,tr("Error"), msg, QMessageBox::Ok, QMessageBox::Ok);
+                continue;
+            }
+
             CTrackDB::self().loadGPX(gpx);
         }
 
@@ -439,8 +469,14 @@ void CDeviceGarminBulk::uploadRoutes(const QList<CRoute*>& rtes)
 
     CGpx gpx(this, CGpx::eCleanExport);
     CRouteDB::self().saveGPX(gpx, keys);
-    gpx.save(dir.absoluteFilePath("MyRoutes.gpx"));
-
+    try
+    {
+        gpx.save(dir.absoluteFilePath("MyRoutes.gpx"));
+    }
+    catch(const QString& msg)
+    {
+        QMessageBox:: critical(0,tr("Error"), msg, QMessageBox::Cancel, QMessageBox::Cancel);
+    }
     dir.cd(pathRoot);
     theMainWindow->getCanvas()->setFadingMessage(tr("Upload routes finished!"));
 }
@@ -469,7 +505,16 @@ void CDeviceGarminBulk::downloadRoutes(QList<CRoute*>& /*rtes*/)
         foreach(const QString& filename, files)
         {
             CGpx gpx(this, CGpx::eCleanExport);
-            gpx.load(dir.absoluteFilePath(filename));
+            try
+            {
+                gpx.load(dir.absoluteFilePath(filename));
+            }
+            catch(const QString& msg)
+            {
+                QMessageBox::critical(0,tr("Error"), msg, QMessageBox::Ok, QMessageBox::Ok);
+                continue;
+            }
+
             CRouteDB::self().loadGPX(gpx);
         }
 
@@ -491,6 +536,7 @@ void CDeviceGarminBulk::downloadScreenshot(QImage& /*image*/)
 {
     QMessageBox::information(0,tr("Error..."), tr("Garmin Mass Storage: Download screenshots is not implemented."),QMessageBox::Abort,QMessageBox::Abort);
 }
+
 
 void CDeviceGarminBulk::setLiveLog(bool on)
 {

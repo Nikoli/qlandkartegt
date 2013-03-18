@@ -20,6 +20,8 @@
 #include "CDlgMapWmsConfig.h"
 #include "CMapWms.h"
 #include "CMapDB.h"
+#include "CResources.h"
+#include "CMainWindow.h"
 
 #include <QtGui>
 #include <QtXml>
@@ -27,7 +29,7 @@
 #include <proj_api.h>
 
 CDlgMapWmsConfig::CDlgMapWmsConfig(CMapWms &map)
-    : map(map)
+: map(map)
 {
 
     setupUi(this);
@@ -94,7 +96,6 @@ CDlgMapWmsConfig::CDlgMapWmsConfig(CMapWms &map)
     }
     item->setFlags(item->flags()|Qt::ItemIsEditable);
 
-
     if(pj_is_latlong(map.pjsrc))
     {
         item = new QTreeWidgetItem(treeMapConfig);
@@ -140,12 +141,14 @@ CDlgMapWmsConfig::CDlgMapWmsConfig(CMapWms &map)
         item->setFlags(item->flags()|Qt::ItemIsEditable);
     }
 
-
     treeMapConfig->resizeColumnToContents(eColProperty);
 
     accessManager = new QNetworkAccessManager(this);
     accessManager->setProxy(QNetworkProxy(QNetworkProxy::DefaultProxy));
+
     connect(accessManager,SIGNAL(finished(QNetworkReply*)),this,SLOT(slotRequestFinished(QNetworkReply*)));
+    connect(accessManager, SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),
+        this, SLOT(slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)));
 
     QNetworkRequest request;
     QUrl url(map.urlstr);
@@ -157,10 +160,12 @@ CDlgMapWmsConfig::CDlgMapWmsConfig(CMapWms &map)
 
 }
 
+
 CDlgMapWmsConfig::~CDlgMapWmsConfig()
 {
 
 }
+
 
 void CDlgMapWmsConfig::updateEntry(QDomDocument& dom, QTreeWidgetItem* item, QDomElement& elem, const QString& tag)
 {
@@ -178,6 +183,7 @@ void CDlgMapWmsConfig::updateEntry(QDomDocument& dom, QTreeWidgetItem* item, QDo
         elem.firstChildElement(tag).firstChild().setNodeValue(item->text(eColValue));
     }
 }
+
 
 void CDlgMapWmsConfig::accept()
 {
@@ -292,4 +298,16 @@ void CDlgMapWmsConfig::slotRequestFinished(QNetworkReply* reply)
 
         textCapabilities->setPlainText(dom.toString());
     }
+}
+
+
+void CDlgMapWmsConfig::slotProxyAuthenticationRequired(const QNetworkProxy &prox, QAuthenticator *auth)
+{
+    QString user;
+    QString pwd;
+
+    CResources::self().getHttpProxyAuth(user,pwd);
+
+    auth->setUser(user);
+    auth->setPassword(pwd);
 }

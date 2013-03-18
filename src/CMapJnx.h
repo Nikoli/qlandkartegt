@@ -47,31 +47,25 @@ class CMapJnx : public IMap
         void config();
 
     private:
-        void draw();
-        qint32 zlevel2idx(quint32);
-
         QString name;
-
-        double lon1;
-        double lat1;
-        double lon2;
-        double lat2;
 
 #pragma pack(1)
         struct hdr_t
         {
-            quint32 version;            // byte 00000000..00000003
-            quint32 devid;              // byte 00000004..00000007
-            qint32  top;              // byte 00000010..00000013
-            qint32  right;              // byte 00000014..00000017
-            qint32  bottom;              // byte 00000008..0000000B
-            qint32  left;              // byte 0000000C..0000000F
-            quint32 details;            // byte 00000018..0000001B
-            quint64 expire;             // byte 0000001C..00000023
-            quint32 crc;                // byte 00000024..00000027
-            quint32 signature;          // byte 00000028..0000002B
-            quint32 signature_offset;   // byte 0000002C..0000002F
-            quint32 zorder;             // byte 00000030--00000033
+            quint32 version;     // byte 00000000..00000003
+            quint32 devid;       // byte 00000004..00000007
+            qint32  lat1;         // byte 00000010..00000013
+            qint32  lon2;       // byte 00000014..00000017
+            qint32  lat2;      // byte 00000008..0000000B
+            qint32  lon1;        // byte 0000000C..0000000F
+            quint32 details;     // byte 00000018..0000001B
+            quint32 expire;      // byte 0000001C..0000001F
+            qint32  productId;   // byte 00000020..00000023
+            quint32 crc;         // byte 00000024..00000027
+            quint32 signature;   // byte 00000028..0000002B
+                                 // byte 0000002C..0000002F
+            quint32 signature_offset;
+            qint32 zorder;       // byte 00000030--00000033
         };
 
 #ifdef WIN32
@@ -104,6 +98,21 @@ class CMapJnx : public IMap
             QVector<tile_t> tiles;
         };
 
+
+        struct file_t
+        {
+            double lon1;
+            double lat1;
+            double lon2;
+            double lat2;
+            QRectF bbox;
+
+            QString filename;
+            QVector<level_t> levels;
+        };
+
+        QList<file_t> files;
+
         /// scale entry
         struct scale_t
         {
@@ -114,21 +123,23 @@ class CMapJnx : public IMap
 
         static scale_t scales[];
 
-        QVector<level_t> levels;
+        void draw();
+        void readFile(const QString& fn, qint32& productId);
+        qint32 zlevel2idx(quint32, const file_t &file);
 
         double x;
         double y;
+
+        double lon1;
+        double lat1;
+        double lon2;
+        double lat2;
 
         double xscale;
         double yscale;
 
         double zoomFactor;
 
-
-        QRectF viewport;
-
         QString info;
 };
-
-#endif //CMAPJNX_H
-
+#endif                           //CMAPJNX_H

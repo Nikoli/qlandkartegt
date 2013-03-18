@@ -27,6 +27,7 @@
 #include <QDateTime>
 #include <QMap>
 #include <QList>
+#include <QtNetwork>
 #include <QPointer>
 #include "CWpt.h"
 #include "IItem.h"
@@ -160,7 +161,7 @@ class CTrack : public IItem
             /// latitude [deg]
             float   _lat;
             /// elevation [m]
-            float   _ele;           
+            float   _ele;
             quint32 _timestamp;
             quint32 _timestamp_msec;
 
@@ -185,7 +186,6 @@ class CTrack : public IItem
             double y;
             pt_t trkpt;
         };
-
 
         /// set color by id
         void setColor(unsigned i);
@@ -271,6 +271,8 @@ class CTrack : public IItem
 
         quint32 getMedianFilterCount() const {return cntMedianFilterApplied;}
 
+        void offsetElevation(double offset);
+
         signals:
         void sigChanged();
 
@@ -278,10 +280,8 @@ class CTrack : public IItem
         void slotScaleWpt2Track();
 
     private slots:
-        void slotRequestStarted(int );
-        void slotRequestFinished(int , bool error);
-
-
+        void slotRequestFinished(QNetworkReply * reply);
+        void slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*);
 
     private:
         friend class CTrackDB;
@@ -334,9 +334,8 @@ class CTrack : public IItem
 
         quint32 doScaleWpt2Track;
 
-        QHttp * geonames;
-
-        QMap<int,int> id2idx;
+        QNetworkAccessManager * networkAccessManager;
+        QMap<QNetworkReply*,int> reply2idx;
 
         quint32 visiblePointCount;
 

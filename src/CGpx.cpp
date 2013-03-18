@@ -33,9 +33,6 @@ const QString CGpx::rmc_ns      = "urn:net:trekbuddy:1.0:nmea:rmc";
 const QString CGpx::ql_ns       = "http://www.qlandkarte.org/xmlschemas/v1.1";
 const QString CGpx::gs_ns       = "http://www.groundspeak.com/cache/1/0";
 
-
-
-
 uint qHash(QColor color)
 {
     return qHash(color.rgba());
@@ -113,7 +110,6 @@ void CGpx::writeMetadata()
         root.setAttribute("xmlns:ql",ql_ns);
     }
 
-
     QString schemaLocation = QString()
         + gpx_ns    + " http://www.topografix.com/GPX/1/1/gpx.xsd "
         + gpxx_ns   + " http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd "
@@ -183,13 +179,18 @@ void CGpx::save(const QString& filename)
 
     if(!file.open(QIODevice::WriteOnly))
     {
-        throw tr("Failed to open: ") + filename;
+        throw tr("Failed to create %1").arg(filename);
     }
     QTextStream out(&file);
     out.setCodec("UTF-8");
     out << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>" << endl;;
     out << toString();
     file.close();
+    if(file.error() != QFile::NoError)
+    {
+        throw tr("Failed to write %1").arg(filename);
+        return;
+    }
 }
 
 

@@ -28,10 +28,9 @@
 #define MAX_IDX_ZOOM 26
 #define MIN_IDX_ZOOM 0
 
-
 CMapJnx::scale_t CMapJnx::scales[] =
 {
-     {80000,  2083334 }
+    {80000,  2083334 }
     ,{5000,   1302084 }
     ,{3000,   781250  }
     ,{2000,   520834  }
@@ -75,62 +74,161 @@ void readCString(QDataStream& stream, QByteArray& ba)
 
 }
 
+
 CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
 : IMap(eRaster,key,parent)
+, lon1(180.0)
+, lat1(-90)
+, lon2(-180)
+, lat2(90)
 , xscale(1.0)
 , yscale(-1.0)
 {
-    hdr_t hdr;
+    qint32 productId = -1;
 
     filename = fn;
 
     QFileInfo fi(fn);
-    name = fi.fileName();
-    name = name.left(name.size() - 4);
+    name = fi.baseName();
 
-    QFile file(filename);
+    readFile(filename, productId);
+
+    // find submaps in same directory
+    QDir dir(fi.absoluteDir());
+    QStringList subMaps = dir.entryList(QStringList("*.jnx"), QDir::Files);
+
+    if(!files.isEmpty())
+    {
+        qDebug() << "load maps with product ID:" << productId;
+        foreach(const QString& subMap, subMaps)
+        {
+            if(dir.absoluteFilePath(subMap) == filename)
+            {
+                continue;
+            }
+            readFile(dir.absoluteFilePath(subMap), productId);
+        }
+    }
+
+
+    pjsrc = pj_init_plus("+proj=merc +ellps=WGS84 +datum=WGS84 +units=m +no_defs +towgs84=0,0,0");
+    oSRS.importFromProj4(getProjection());
+
+    x = lon1 * DEG_TO_RAD;
+    y = lat2 * DEG_TO_RAD;
+
+    pj_transform(pjtar, pjsrc,1,0,&x,&y,0);
+
+    SETTINGS;
+    cfg.beginGroup("birdseye/maps");
+    cfg.beginGroup(name);
+    zoomidx = cfg.value("zoomidx",23).toInt();
+    x       = cfg.value("x",x).toDouble();
+    y       = cfg.value("y",y).toDouble();
+    cfg.endGroup();
+    cfg.endGroup();
+
+    zoom(zoomidx);
+
+    setAngleNorth();
+
+    theMainWindow->getCheckBoxQuadraticZoom()->hide();
+}
+
+
+CMapJnx::~CMapJnx()
+{
+    qDebug() << "CMapJnx::~CMapJnx()";
+
+    midU = rect.center().x();
+    midV = rect.center().y();
+    convertPt2Rad(midU, midV);
+
+    if(pjsrc) pj_free(pjsrc);
+
+    SETTINGS;
+    cfg.beginGroup("birdseye/maps");
+    cfg.beginGroup(name);
+    cfg.setValue("zoomidx",zoomidx);
+    cfg.setValue("x",x);
+    cfg.setValue("y",y);
+    cfg.endGroup();
+    cfg.endGroup();
+
+    theMainWindow->getCheckBoxQuadraticZoom()->show();
+
+}
+
+
+void CMapJnx::readFile(const QString& fn, qint32& productId)
+{
+
+    hdr_t hdr;
+
+    qDebug() << fn;
+
+    QFile file(fn);
     file.open(QIODevice::ReadOnly);
 
     QDataStream stream(&file);
     stream.setByteOrder(QDataStream::LittleEndian);
 
-    info  = "<h1>" + name + "</h1>";
-
-    stream >> hdr.version;            // byte 00000000..00000003
-    stream >> hdr.devid;              // byte 00000004..00000007
-    stream >> hdr.top;              // byte 00000008..0000000B
-    stream >> hdr.right;              // byte 0000000C..0000000F
-    stream >> hdr.bottom;              // byte 00000010..00000013
-    stream >> hdr.left;              // byte 00000014..00000017
-    stream >> hdr.details;            // byte 00000018..0000001B
-    stream >> hdr.expire;             // byte 0000001C..00000023
-    stream >> hdr.crc;                // byte 00000024..00000027
-    stream >> hdr.signature;          // byte 00000028..0000002B
-    stream >> hdr.signature_offset;   // byte 0000002C..0000002F
+    stream >> hdr.version;       // byte 00000000..00000003
+    stream >> hdr.devid;         // byte 00000004..00000007
+    stream >> hdr.lat1;          // byte 00000008..0000000B
+    stream >> hdr.lon2;          // byte 0000000C..0000000F
+    stream >> hdr.lat2;          // byte 00000010..00000013
+    stream >> hdr.lon1;          // byte 00000014..00000017
+    stream >> hdr.details;       // byte 00000018..0000001B
+    stream >> hdr.expire;        // byte 0000001C..0000001F
+    stream >> hdr.productId;     // byte 00000020..00000023
+    stream >> hdr.crc;           // byte 00000024..00000027
+    stream >> hdr.signature;     // byte 00000028..0000002B
+                                 // byte 0000002C..0000002F
+    stream >> hdr.signature_offset;
 
     if(hdr.version > 3)
     {
         stream >> hdr.zorder;
     }
+    else
+    {
+        hdr.zorder = -1;
+    }
 
-    lat1 = hdr.top * 180.0 / 0x7FFFFFFF;
-    lat2 = hdr.bottom * 180.0 / 0x7FFFFFFF;
-    lon1 = hdr.left * 180.0 / 0x7FFFFFFF;
-    lon2 = hdr.right * 180.0 / 0x7FFFFFFF;
+    if(productId != -1 && hdr.productId != productId)
+    {
+        return;
+    }
 
-    qDebug() << filename;
+    productId = hdr.productId;
+
+    info  += "<h1>" + QFileInfo(fn).baseName() + "</h1>";
+
+    files.append(file_t());
+    file_t& mapFile = files.last();
+
+    mapFile.filename = fn;
+
+    mapFile.lat1 = hdr.lat1 * 180.0 / 0x7FFFFFFF;
+    mapFile.lat2 = hdr.lat2 * 180.0 / 0x7FFFFFFF;
+    mapFile.lon1 = hdr.lon1 * 180.0 / 0x7FFFFFFF;
+    mapFile.lon2 = hdr.lon2 * 180.0 / 0x7FFFFFFF;
+    mapFile.bbox = QRectF(QPointF(mapFile.lon1, mapFile.lat1), QPointF(mapFile.lon2, mapFile.lat2));
+
+
     qDebug() << hex << "Version:" << hdr.version << "DevId" <<  hdr.devid;
-    qDebug() << lon1 << lat1 << lon2 << lat2;
-    qDebug() << hex <<  hdr.top <<  hdr.right <<  hdr.bottom <<  hdr.left;
+    qDebug() << mapFile.lon1 << mapFile.lat1 << mapFile.lon2 << mapFile.lat2;
+    qDebug() << hex <<  hdr.lon1 <<  hdr.lat1 <<  hdr.lon2 <<  hdr.lat2;
     qDebug() << hex << "Details:" <<  hdr.details << "Expire:" <<  hdr.expire << "CRC:" <<  hdr.crc ;
     qDebug() << hex << "Signature:" <<  hdr.signature << "Offset:" <<  hdr.signature_offset;
 
-
     QString strTopLeft, strBottomRight;
-    GPS_Math_Deg_To_Str(lon1, lat1, strTopLeft);
-    GPS_Math_Deg_To_Str(lon2, lat2, strBottomRight);
+    GPS_Math_Deg_To_Str(mapFile.lon1, mapFile.lat1, strTopLeft);
+    GPS_Math_Deg_To_Str(mapFile.lon2, mapFile.lat2, strBottomRight);
 
     info += QString("<p><table><tr><th>%1</th><th width='100%'>%2</th></tr>").arg(tr("Parameter")).arg(tr("Value"));
+    info += QString("<tr><td>%1</td><td>%2</td></tr>").arg(tr("Product ID")).arg(hdr.productId);
     info += QString("<tr><td>%1</td><td>%2</td></tr>").arg(tr("Top/Left")).arg(strTopLeft.replace("\260","&#176;"));
     info += QString("<tr><td>%1</td><td>%2</td></tr>").arg(tr("Bottom/Right")).arg(strBottomRight.replace("\260","&#176;"));
 
@@ -160,10 +258,10 @@ CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
     info += "</table></p>";
 
     qDebug() << "Levels:";
-    levels.resize(hdr.details);
+    mapFile.levels.resize(hdr.details);
     for(quint32 i = 0; i < hdr.details; i++)
     {
-        level_t& level = levels[i];
+        level_t& level = mapFile.levels[i];
         stream >> level.nTiles >> level.offset >> level.scale;
 
         if(hdr.version > 3)
@@ -179,8 +277,6 @@ CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
         }
         qDebug() << i << hex << level.nTiles << level.offset << level.scale;
     }
-
-
 
     quint32 infoBlockVersion;
     stream >> infoBlockVersion;
@@ -206,7 +302,7 @@ CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
         info += QString("<p><table><tr><th>%1</th><th>%2</th><th>%3</th><th width='100%'>%4</th></tr>").arg(tr("Level")).arg(tr("#Tiles")).arg(tr("Scale")).arg(tr("Info"));
         for(quint32 i = 0; i < hdr.details; i++)
         {
-            level_t& level = levels[i];
+            level_t& level = mapFile.levels[i];
 
             stream >> level.level;
             readCString(stream, ba);
@@ -221,11 +317,10 @@ CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
         info += "</table></p>";
     }
 
-
     for(quint32 i = 0; i < hdr.details; i++)
     {
 
-        level_t& level = levels[i];
+        level_t& level = mapFile.levels[i];
         const quint32 M = level.nTiles;
         file.seek(level.offset);
 
@@ -247,45 +342,10 @@ CMapJnx::CMapJnx(const QString& key, const QString& fn, CCanvas * parent)
         }
     }
 
-    pjsrc = pj_init_plus("+proj=merc +ellps=WGS84 +datum=WGS84 +units=m +no_defs +towgs84=0,0,0");
-    oSRS.importFromProj4(getProjection());
-
-    x = lon1 * DEG_TO_RAD;
-    y = lat2 * DEG_TO_RAD;
-
-    pj_transform(pjtar, pjsrc,1,0,&x,&y,0);
-
-    SETTINGS;
-    cfg.beginGroup("birdseye/maps");
-    cfg.beginGroup(name);
-    zoomidx = cfg.value("zoomidx",23).toInt();
-    x       = cfg.value("x",x).toDouble();
-    y       = cfg.value("y",y).toDouble();
-    cfg.endGroup();
-    cfg.endGroup();
-
-    zoom(zoomidx);
-
-    setAngleNorth();
-
-    theMainWindow->getCheckBoxQuadraticZoom()->hide();
-}
-
-CMapJnx::~CMapJnx()
-{
-    qDebug() << "CMapJnx::~CMapJnx()";
-    if(pjsrc) pj_free(pjsrc);
-
-    SETTINGS;
-    cfg.beginGroup("birdseye/maps");
-    cfg.beginGroup(name);
-    cfg.setValue("zoomidx",zoomidx);
-    cfg.setValue("x",x);
-    cfg.setValue("y",y);
-    cfg.endGroup();
-    cfg.endGroup();
-
-    theMainWindow->getCheckBoxQuadraticZoom()->show();
+    if(mapFile.lon1 < lon1) lon1  = mapFile.lon1;
+    if(mapFile.lat1 > lat1) lat1  = mapFile.lat1;
+    if(mapFile.lon2 > lon2) lon2  = mapFile.lon2;
+    if(mapFile.lat2 < lat2) lat2  = mapFile.lat2;
 
 }
 
@@ -295,11 +355,13 @@ void CMapJnx::convertPt2M(double& u, double& v)
     v = y + v * yscale * zoomFactor;
 }
 
+
 void CMapJnx::convertM2Pt(double& u, double& v)
 {
     u = floor((u - x) / (xscale * zoomFactor) + 0.5);
     v = floor((v - y) / (yscale * zoomFactor) + 0.5);
 }
+
 
 void CMapJnx::move(const QPoint& old, const QPoint& next)
 {
@@ -322,6 +384,7 @@ void CMapJnx::move(const QPoint& old, const QPoint& next)
 
     setAngleNorth();
 }
+
 
 void CMapJnx::zoom(bool zoomIn, const QPoint& p0)
 {
@@ -360,6 +423,7 @@ void CMapJnx::zoom(bool zoomIn, const QPoint& p0)
     emit sigChanged();
 
 }
+
 
 void CMapJnx::zoom(double lon1, double lat1, double lon2, double lat2)
 {
@@ -407,6 +471,7 @@ void CMapJnx::zoom(double lon1, double lat1, double lon2, double lat2)
     }
 }
 
+
 void CMapJnx::zoom(qint32& level)
 {
     needsRedraw = true;
@@ -419,6 +484,7 @@ void CMapJnx::zoom(qint32& level)
     emit sigChanged();
 }
 
+
 void CMapJnx::dimensions(double& lon1, double& lat1, double& lon2, double& lat2)
 {
     lon1 = this->lon1 * DEG_TO_RAD;
@@ -428,6 +494,7 @@ void CMapJnx::dimensions(double& lon1, double& lat1, double& lon2, double& lat2)
 
 }
 
+
 void CMapJnx::draw(QPainter& p)
 {
     if(pjsrc == 0) return IMap::draw(p);
@@ -436,7 +503,6 @@ void CMapJnx::draw(QPainter& p)
     {
         draw();
     }
-
 
     p.drawPixmap(0,0,pixBuffer);
 
@@ -448,58 +514,52 @@ void CMapJnx::draw(QPainter& p)
     needsRedraw = false;
 }
 
+
 void CMapJnx::getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float& my_yscale)
 {
+    p1.u = 0;
+    p1.v = 0;
+    convertPt2Rad(p1.u, p1.v);
 
-    p1.u = x;
-    p1.v = y;
-    convertM2Rad(p1.u, p1.v);
-
-    p2.u = x;
-    p2.v = y;
-    convertM2Pt(p2.u, p2.v);
-
-    p2.u += size.width();
-    p2.v += size.height();
-
+    p2.u = size.width();
+    p2.v = size.height();
     convertPt2Rad(p2.u, p2.v);
-
 
     my_xscale   = xscale*zoomFactor;
     my_yscale   = yscale*zoomFactor;
 }
 
 
-qint32 CMapJnx::zlevel2idx(quint32 zl)
+qint32 CMapJnx::zlevel2idx(quint32 zl, const file_t& file)
 {
     qint32 idxLvl   = -1;
     quint32 actScale = scales[zl].jnxScale;
 
-//    qDebug() << "-----------";
-    for(int i = 0; i < levels.size(); i++)
+    for(int i = 0; i < file.levels.size(); i++)
     {
-        level_t& level = levels[i];
+        const level_t& level = file.levels[i];
 
-//        qDebug() << level.scale << actScale;
         if(actScale <= level.scale)
         {
             idxLvl = i;
         }
-
     }
 
     return idxLvl;
 }
 
+
 void CMapJnx::draw()
 {
     if(pjsrc == 0) return IMap::draw();
+
+    QImage image;
+    QRectF viewport;
 
     pixBuffer.fill(Qt::white);
     QPainter p(&pixBuffer);
 
     p.setBrush(Qt::NoBrush);
-
 
     double u1 = 0;
     double v1 = size.height();
@@ -514,80 +574,26 @@ void CMapJnx::draw()
     u2 *= RAD_TO_DEG;
     v2 *= RAD_TO_DEG;
 
-
     viewport.setTop(v2);
     viewport.setRight(u2);
     viewport.setBottom(v1);
     viewport.setLeft(u1);
 
-    qint32 level = zlevel2idx(zoomidx);
-
-    qDebug() << "use level" << level << "zoom level" << zoomidx << scales[zoomidx].qlgtScale;
-
-    if(level < 0)
+    foreach(const file_t& mapFile, files)
     {
-        double u1 = lon1 * DEG_TO_RAD;
-        double u2 = lon2 * DEG_TO_RAD;
-        double v2 = lat2 * DEG_TO_RAD;
-        double v1 = lat1 * DEG_TO_RAD;
-
-        convertRad2Pt(u1,v1);
-        convertRad2Pt(u2,v2);
-
-        QRectF r;
-        r.setLeft(u1);
-        r.setRight(u2);
-        r.setTop(v2);
-        r.setBottom(v1);
-
-        p.setPen(QPen(Qt::darkBlue,2));
-        p.setBrush(QBrush(QColor(230,230,255,100) ));
-        p.drawRect(r);
-        return;
-    }
-
-
-    QByteArray data(1024*1024*4,0);
-    //(char) typecast needed to avoid MSVC compiler warning
-    //in MSVC, char is a signed type.
-    //Maybe the QByteArray declaration should be fixed ;-)
-    data[0] = (char) 0xFF;
-    data[1] = (char) 0xD8;
-    char * pData = data.data() + 2;
-
-    QImage image;
-    QFile file(filename);
-    file.open(QIODevice::ReadOnly);
-
-    quint32 cnt = 0;
-    double m_px = 0.0;
-    double d_px = 0.0;
-    QVector<tile_t>& tiles = levels[level].tiles;
-    const quint32 M = tiles.size();
-    for(quint32 m = 0; m < M; m++)
-    {
-        tile_t& tile = tiles[m];
-
-        if(viewport.intersects(tile.area))
+        if(!viewport.intersects(mapFile.bbox))
         {
-            {
-                double u1 = tile.area.left() * DEG_TO_RAD;
-                double u2 = tile.area.right() * DEG_TO_RAD;
-                double v2 = tile.area.top() * DEG_TO_RAD;
-                double v1 = tile.area.bottom() * DEG_TO_RAD;
+            continue;
+        }
 
-                convertRad2M(u1,v1);
-                convertRad2M(u2,v2);
+        qint32 level = zlevel2idx(zoomidx, mapFile);
 
-                m_px += (u2 - u1) / tile.width;
-                d_px += (tile.area.right() - tile.area.left()) / tile.width;
-                cnt++;
-            }
-
-            double u1 = tile.area.left() * DEG_TO_RAD;
-            double u2 = tile.area.right() * DEG_TO_RAD;
-            double v2 = tile.area.top() * DEG_TO_RAD;
-            double v1 = tile.area.bottom() * DEG_TO_RAD;
+        if(level < 0)
+        {
+            double u1 = mapFile.lon1 * DEG_TO_RAD;
+            double u2 = mapFile.lon2 * DEG_TO_RAD;
+            double v2 = mapFile.lat2 * DEG_TO_RAD;
+            double v1 = mapFile.lat1 * DEG_TO_RAD;
 
             convertRad2Pt(u1,v1);
             convertRad2Pt(u2,v2);
@@ -598,20 +604,59 @@ void CMapJnx::draw()
             r.setTop(v2);
             r.setBottom(v1);
 
-            if(!r.isValid() || r.width() > 3000 || r.height() > 3000)
+            p.setPen(QPen(Qt::darkBlue,2));
+            p.setBrush(QBrush(QColor(230,230,255,100) ));
+            p.drawRect(r);
+            continue;
+        }
+
+        QByteArray data(1024*1024*4,0);
+        //(char) typecast needed to avoid MSVC compiler warning
+        //in MSVC, char is a signed type.
+        //Maybe the QByteArray declaration should be fixed ;-)
+        data[0] = (char) 0xFF;
+        data[1] = (char) 0xD8;
+        char * pData = data.data() + 2;
+
+        QFile file(mapFile.filename);
+        file.open(QIODevice::ReadOnly);
+
+        const QVector<tile_t>& tiles = mapFile.levels[level].tiles;
+        const quint32 M = tiles.size();
+        for(quint32 m = 0; m < M; m++)
+        {
+            const tile_t& tile = tiles[m];
+
+            if(viewport.intersects(tile.area))
             {
-                continue;
+
+                double u1 = tile.area.left() * DEG_TO_RAD;
+                double u2 = tile.area.right() * DEG_TO_RAD;
+                double v2 = tile.area.top() * DEG_TO_RAD;
+                double v1 = tile.area.bottom() * DEG_TO_RAD;
+
+                convertRad2Pt(u1,v1);
+                convertRad2Pt(u2,v2);
+
+                QRectF r;
+                r.setLeft(u1);
+                r.setRight(u2);
+                r.setTop(v2);
+                r.setBottom(v1);
+
+                if(!r.isValid() || r.width() > 3000 || r.height() > 3000)
+                {
+                    continue;
+                }
+
+                file.seek(tile.offset);
+                file.read(pData, tile.size);
+                image.loadFromData(data);
+
+                p.drawImage(r.toRect(), image.scaled(r.size().toSize(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
             }
-
-            file.seek(tile.offset);
-            file.read(pData, tile.size);
-            image.loadFromData(data);
-
-            p.drawImage(r.toRect(), image.scaled(r.size().toSize(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
         }
     }
-    qDebug() << m_px/cnt << "m/px";
-    qDebug() << d_px/cnt << "\260/px";
 }
 
 

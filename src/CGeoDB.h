@@ -117,6 +117,8 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         void slotHardCopyItem();
 
         void slotExportProject();
+        /// toggle the archive flag for folders
+        void slotArchiveFolder(bool yes);
 
     private:
         friend class CGeoDBInternalEditLock;
@@ -181,7 +183,8 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
 
         void exportProject(quint64 key, const QString &name, const QString &prefix);
 
-        enum EntryType_e {
+        enum EntryType_e
+        {
             eWpt        = QTreeWidgetItem::UserType + 3,
             eTrk        = QTreeWidgetItem::UserType + 4,
             eRte        = QTreeWidgetItem::UserType + 5,
@@ -196,18 +199,19 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
             eFolderN    = QTreeWidgetItem::UserType + 104
         };
 
-        enum ColumnType_e {
+        enum ColumnType_e
+        {
             eCoName     = 0,
             eCoState    = 1,
             eCoDiary    = 2
         };
-        enum UserRoles_e {
+        enum UserRoles_e
+        {
             eUrDBKey  = Qt::UserRole,
             eUrQLKey  = Qt::UserRole + 1,
             eUrType   = Qt::UserRole + 2,
             eUrDiary  = Qt::UserRole + 3
         };
-
 
         static CGeoDB * m_self;
 
@@ -250,6 +254,7 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         QAction * actEditDir;
         QAction * actMoveDir;
         QAction * actCopyDir;
+        QAction * actArchiveDir;
         QAction * actAddDiary;
         QAction * actShowDiary;
         QAction * actDelDiary;
@@ -270,6 +275,4 @@ class CGeoDB : public QWidget, private Ui::IGeoToolWidget
         QAction * actHardCopy;
 
 };
-
-#endif //CGEODB_H
-
+#endif                           //CGEODB_H

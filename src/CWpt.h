@@ -19,7 +19,6 @@
 #ifndef CWPT_H
 #define CWPT_H
 
-
 #include "IItem.h"
 
 #include <QObject>
@@ -170,7 +169,6 @@ class CWpt : public IItem
         void saveOcExt(QDomElement& gpxCache, bool isExport);
         void saveTwoNavExt(QDomElement& gpxCache, bool isExport);
 
-
         void setEntry(const QString& tag, const QString& val, QDomDocument& gpx, QDomElement& parent);
         void setEntryHtml(const QString& tag, const QString& val, QDomDocument& gpx, QDomElement& parent);
         QString getEntry(const QString& tag, const QDomNode& parent);
@@ -190,6 +188,7 @@ class CWpt : public IItem
         float   lon;             ///< [deg]
         float   ele;             ///< [m]
         float   prx;             ///< [m]
+        float   dir;             ///< [deg]
         QString link;
         QString urlname;
         QString type;

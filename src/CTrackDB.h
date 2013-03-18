@@ -113,10 +113,18 @@ class CTrackDB : public IDB
         // set the point of focus to the point passed
         void setPointOfFocusByIdx(qint32 idx);
 
-    signals:
+        // find the point with the lowest delta to the given timestamp
+        bool getClosestPoint2Timestamp(quint32 timestamp, quint32 maxDelta, double& lon, double& lat);
+        // find the point with the lowest distance delta to the given position and return it's position and timestamp
+        bool getClosestPoint2Position(double& lon, double& lat, quint32& timestamp, double maxDelta);
+
+        signals:
         void sigHighlightTrack(CTrack * track);
         /// the index into the current track
         void sigPointOfFocus(const int idx);
+
+    private slots:
+        void slotMapChanged();
 
     private:
 

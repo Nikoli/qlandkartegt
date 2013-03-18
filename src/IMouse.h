@@ -177,7 +177,6 @@ class IMouse : public QObject
         QPoint lastPoint;
         QPoint mousePos;
 
-
         static QPointF pos1Pixel;
         static QPointF pos1LonLat;
 

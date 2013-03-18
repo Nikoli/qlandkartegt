@@ -214,7 +214,6 @@ class CMainWindow : public QMainWindow
 
         QtSoapHttpTransport soapHttp;
 
-
 #ifdef DO_PROFILING
         conan::ConanWidget * conanWidget;
 #endif

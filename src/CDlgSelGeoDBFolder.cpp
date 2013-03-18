@@ -25,9 +25,9 @@
 #include <QSqlError>
 
 CDlgSelGeoDBFolder::CDlgSelGeoDBFolder(QSqlDatabase& db, quint64& result, bool topLevelToo)
-    : db(db)
-    , result(result)
-    , topLevelToo(topLevelToo)
+: db(db)
+, result(result)
+, topLevelToo(topLevelToo)
 {
     result = 0;
     setupUi(this);
@@ -36,10 +36,12 @@ CDlgSelGeoDBFolder::CDlgSelGeoDBFolder(QSqlDatabase& db, quint64& result, bool t
     item.setData(CGeoDB::eCoName, CGeoDB::eUrDBKey, 1);
     queryChildrenFromDB(&item);
 
-
     treeWidget->addTopLevelItems(item.takeChildren());
     treeWidget->expandAll();
+
+    showMaximized();
 }
+
 
 CDlgSelGeoDBFolder::~CDlgSelGeoDBFolder()
 {
@@ -85,7 +87,7 @@ void CDlgSelGeoDBFolder::queryChildrenFromDB(QTreeWidgetItem * parent)
         quint64 childId = query.value(0).toULongLong();
 
         QSqlQuery query2(db);
-        query2.prepare("SELECT icon, name, comment, type FROM folders WHERE id = :id");
+        query2.prepare("SELECT icon, name, comment, type, archived FROM folders WHERE id = :id");
         query2.bindValue(":id", childId);
         if(!query2.exec())
         {
@@ -95,11 +97,24 @@ void CDlgSelGeoDBFolder::queryChildrenFromDB(QTreeWidgetItem * parent)
         }
         query2.next();
 
+        // check for archive flag
+        if(query2.value(4).toBool())
+        {
+            continue;
+        }
+
+        QString comment = query2.value(2).toString();
         QTreeWidgetItem * item = new QTreeWidgetItem(parent, query2.value(3).toInt());
         item->setData(CGeoDB::eCoName, CGeoDB::eUrDBKey, childId);
         item->setIcon(CGeoDB::eCoName, QIcon(query2.value(0).toString()));
-        item->setText(CGeoDB::eCoName, query2.value(1).toString());
-        item->setToolTip(CGeoDB::eCoName, query2.value(2).toString());
+        if(comment.isEmpty())
+        {
+            item->setText(CGeoDB::eCoName, query2.value(1).toString());
+        }
+        else
+        {
+            item->setText(CGeoDB::eCoName, query2.value(1).toString() + " - " + comment);
+        }
 
         if(item->type() < CGeoDB::eFolder1)
         {

@@ -37,7 +37,7 @@
 #endif
 
 COsmTilesHash::COsmTilesHash(QString tileUrl, QObject *parent)
-    : QObject(parent)
+: QObject(parent)
 {
 
     m_tileUrl = QUrl(tileUrl.startsWith("http://") ? tileUrl : "http://" + tileUrl);
@@ -52,6 +52,8 @@ COsmTilesHash::COsmTilesHash(QString tileUrl, QObject *parent)
     m_networkAccessManager->setProxy(QNetworkProxy(QNetworkProxy::DefaultProxy));
 
     connect(m_networkAccessManager,SIGNAL(finished(QNetworkReply*)),this,SLOT(slotRequestFinished(QNetworkReply*)));
+    connect(m_networkAccessManager, SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),
+        this, SLOT(slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)));
 }
 
 
@@ -60,7 +62,6 @@ COsmTilesHash::~COsmTilesHash()
     QSettings cfg;
     cfg.setValue("tms/maxcachevalueMB",100);
 }
-
 
 
 void COsmTilesHash::startNewDrawing( double lon, double lat, int osm_zoom, const QRect& window)
@@ -102,6 +103,7 @@ void COsmTilesHash::startNewDrawing( double lon, double lat, int osm_zoom, const
     emit newImageReady(pixmap,!m_activeRequests.count());
 }
 
+
 void COsmTilesHash::getImage(int osm_zoom, int osm_x, int osm_y, QPoint point)
 {
     // *  Tiles are 256  256 pixel PNG files
@@ -126,15 +128,17 @@ void COsmTilesHash::getImage(int osm_zoom, int osm_x, int osm_y, QPoint point)
     dequeue();
 }
 
+
 void COsmTilesHash::dequeue()
 {
-     if(m_queuedRequests.size() && m_activeRequests.size() < 6)
-     {
-         QPair<QNetworkRequest, QPoint > pair = m_queuedRequests.dequeue();
-         QNetworkReply *reply = m_networkAccessManager->get(pair.first);
-         m_activeRequests.insert(reply->url().toString(),pair.second);
-     }
+    if(m_queuedRequests.size() && m_activeRequests.size() < 6)
+    {
+        QPair<QNetworkRequest, QPoint > pair = m_queuedRequests.dequeue();
+        QNetworkReply *reply = m_networkAccessManager->get(pair.first);
+        m_activeRequests.insert(reply->url().toString(),pair.second);
+    }
 }
+
 
 void COsmTilesHash::slotRequestFinished(QNetworkReply* reply)
 {
@@ -148,7 +152,6 @@ void COsmTilesHash::slotRequestFinished(QNetworkReply* reply)
         reply->deleteLater();
         return;
     }
-
 
     QPixmap img1;
     img1.loadFromData(reply->readAll());
@@ -185,4 +188,16 @@ int COsmTilesHash::long2tile(double lon, int z)
 int COsmTilesHash::lat2tile(double lat, int z)
 {
     return (int)(qRound(256*(1.0 - log( tan(lat * M_PI/180.0) + 1.0 / cos(lat * M_PI/180.0)) / M_PI) / 2.0 * pow(2.0, z)));
+}
+
+
+void COsmTilesHash::slotProxyAuthenticationRequired(const QNetworkProxy &prox, QAuthenticator *auth)
+{
+    QString user;
+    QString pwd;
+
+    CResources::self().getHttpProxyAuth(user,pwd);
+
+    auth->setUser(user);
+    auth->setPassword(pwd);
 }

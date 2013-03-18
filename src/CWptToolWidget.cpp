@@ -82,7 +82,6 @@ CWptToolWidget::CWptToolWidget(QTabWidget * parent)
 
     connect(listWpts,SIGNAL(customContextMenuRequested(const QPoint&)),this,SLOT(slotContextMenu(const QPoint&)));
 
-
     toolSortAlpha->setIcon(QPixmap(":/icons/iconDec16x16.png"));
     toolSortComment->setIcon(QPixmap(":/icons/iconText16x16.png"));
     toolSortIcon->setIcon(QPixmap(":/icons/iconWaypoint16x16.png"));
@@ -94,7 +93,6 @@ CWptToolWidget::CWptToolWidget(QTabWidget * parent)
     connect(toolSortIcon, SIGNAL(clicked()),SIGNAL(sigChanged()));
     connect(toolSortPosition, SIGNAL(clicked()), SIGNAL(sigChanged()));
     connect(toolSortTime, SIGNAL(clicked()), SIGNAL(sigChanged()));
-
 
     connect(linePosition, SIGNAL(textChanged(const QString&)), this, SLOT(slotPosTextChanged(const QString&)));
 
@@ -120,6 +118,7 @@ CWptToolWidget::~CWptToolWidget()
     cfg.setValue("waypoint/position", linePosition->text());
 }
 
+
 void CWptToolWidget::collectSelectedWaypoints(QList<CWpt*>& selWpts)
 {
     CWptDB::keys_t key;
@@ -135,6 +134,7 @@ void CWptToolWidget::collectSelectedWaypoints(QList<CWpt*>& selWpts)
         }
     }
 }
+
 
 void CWptToolWidget::keyPressEvent(QKeyEvent * e)
 {
@@ -152,8 +152,6 @@ void CWptToolWidget::keyPressEvent(QKeyEvent * e)
         QWidget::keyPressEvent(e);
     }
 }
-
-
 
 
 void CWptToolWidget::slotDBChanged()
@@ -245,6 +243,7 @@ void CWptToolWidget::slotItemDoubleClicked(QListWidgetItem* item)
     }
 }
 
+
 void CWptToolWidget::slotItemClicked(QListWidgetItem* item)
 {
     CWpt * wpt = CWptDB::self().getWptByKey(item->data(Qt::UserRole).toString());
@@ -330,6 +329,7 @@ void CWptToolWidget::slotDelete()
     CWptDB::self().delWpt(keys, false);
 }
 
+
 void CWptToolWidget::slotDeleteNonSel()
 {
     QStringList nonSelWpts;
@@ -348,6 +348,7 @@ void CWptToolWidget::slotDeleteNonSel()
 
     CWptDB::self().delWpt(nonSelWpts);
 }
+
 
 void CWptToolWidget::slotDeleteBy()
 {
@@ -407,7 +408,7 @@ void CWptToolWidget::selWptByKey(const QStringList& keys)
         {
             CWpt * wpt = CWptDB::self().getWptByKey(key);
             if(wpt)
-            {                
+            {
                 item1->setCheckState(wpt->selected ? Qt::Checked : Qt::Unchecked);
                 item = item1;
             }
@@ -530,6 +531,7 @@ void CWptToolWidget::slotPosTextChanged(const QString& text)
     }
 }
 
+
 void CWptToolWidget::slotShowNames()
 {
     CWptDB::self().setShowNames(!CWptDB::self().getShowNames());
@@ -550,6 +552,7 @@ void CWptToolWidget::slotResetSel()
     slotDBChanged();
     theMainWindow->getCanvas()->update();
 }
+
 
 void CWptToolWidget::slotParentWpt()
 {

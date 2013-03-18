@@ -57,7 +57,6 @@ CMegaMenu::CMegaMenu(CCanvas * canvas)
     actionGroup = theMainWindow->getActionGroupProvider();
     actions     = actionGroup->getActions();
 
-
 }
 
 

@@ -85,7 +85,10 @@ CMapTms::CMapTms(const QString& key, CCanvas *parent)
 
     accessManager = new QNetworkAccessManager(this);
     accessManager->setProxy(QNetworkProxy(QNetworkProxy::DefaultProxy));
+
     connect(accessManager,SIGNAL(finished(QNetworkReply*)),this,SLOT(slotRequestFinished(QNetworkReply*)));
+    connect(accessManager, SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),
+        this, SLOT(slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)));
 
     if ( layers[0].strUrl.startsWith("file") )
     {
@@ -119,12 +122,17 @@ CMapTms::~CMapTms()
     cfg.setValue("tms/lat", y * RAD_TO_DEG);
     cfg.setValue("tms/zoomidx",zoomidx);
 
+    midU = rect.center().x();
+    midV = rect.center().y();
+    convertPt2Rad(midU, midV);
+
     if(pjsrc) pj_free(pjsrc);
 
     delete status;
 
     theMainWindow->getCheckBoxQuadraticZoom()->show();
 }
+
 
 void CMapTms::readConfigFromFile(const QString& filename, QWidget *parent)
 {
@@ -183,13 +191,13 @@ void CMapTms::readConfigFromFile(const QString& filename, QWidget *parent)
             layers[idx].maxZoomLevel = layerSingle.firstChildElement("MaxZoomLevel").text().toInt();
         }
 
+        //        qDebug() << idx << layers[idx].strUrl << layers[idx].minZoomLevel << layers[idx].maxZoomLevel;
 
-//        qDebug() << idx << layers[idx].strUrl << layers[idx].minZoomLevel << layers[idx].maxZoomLevel;
-
-//        qDebug() << idx << layers[idx].script;
+        //        qDebug() << idx << layers[idx].script;
     }
 
 }
+
 
 void CMapTms::resize(const QSize& size)
 {
@@ -201,6 +209,7 @@ void CMapTms::resize(const QSize& size)
         layer.buffer = QPixmap(size);
     }
 }
+
 
 void CMapTms::convertPt2M(double& u, double& v)
 {
@@ -423,6 +432,7 @@ void CMapTms::draw(QPainter& p)
 
 }
 
+
 QString CMapTms::createUrl(const layer_t& layer, int x, int y, int z)
 {
     if(layer.strUrl.startsWith("script"))
@@ -447,13 +457,11 @@ QString CMapTms::createUrl(const layer_t& layer, int x, int y, int z)
             qDebug() << "uncaught exception at line" << line << ":" << fun.toString();
         }
 
-
         QScriptValueList args;
         args << z << x << y;
         QScriptValue res = fun.call(QScriptValue(), args);
 
-//        qDebug() << "yyy" << res.toString();
-
+        //        qDebug() << "yyy" << res.toString();
 
         return res.toString();
     }
@@ -465,8 +473,7 @@ QString CMapTms::createUrl(const layer_t& layer, int x, int y, int z)
         args << z << x << y;
         QScriptValue res = fun.call(QScriptValue(), args);
 
-//        qDebug() << "xxx" << res.toString();
-
+        //        qDebug() << "xxx" << res.toString();
 
         return res.toString();
 
@@ -474,6 +481,7 @@ QString CMapTms::createUrl(const layer_t& layer, int x, int y, int z)
 
     return layer.strUrl.arg(z).arg(x).arg(y);
 }
+
 
 void CMapTms::draw()
 {
@@ -488,7 +496,6 @@ void CMapTms::draw()
 
         layer.buffer.fill(Qt::transparent);
     }
-
 
     int z      = 18 - zoomidx;
     double lon = x;
@@ -656,6 +663,18 @@ void CMapTms::slotRequestFinished(QNetworkReply* reply)
 
     // the map did change
     emit sigChanged();
+}
+
+
+void CMapTms::slotProxyAuthenticationRequired(const QNetworkProxy &prox, QAuthenticator *auth)
+{
+    QString user;
+    QString pwd;
+
+    CResources::self().getHttpProxyAuth(user,pwd);
+
+    auth->setUser(user);
+    auth->setPassword(pwd);
 }
 
 

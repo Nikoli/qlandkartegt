@@ -70,7 +70,6 @@ const QString CWpt::htmlFrame = ""
 "%1"
 "</div></div></div></div></div></div></div></div>";
 
-
 struct wpt_head_entry_t
 {
     wpt_head_entry_t() : type(CWpt::eEnd), offset(0) {}
@@ -137,6 +136,15 @@ QDataStream& operator >>(QDataStream& s, CWpt& wpt)
                 s1 >> wpt.type;
                 s1 >> wpt.parentWpt;
                 s1 >> wpt.selected;
+
+                if(!s1.atEnd())
+                {
+                    s1 >> wpt.dir;
+                }
+                else
+                {
+                    wpt.dir = WPT_NOFLOAT;
+                }
 
                 wpt.setIcon(icon);
                 wpt.setKey(key);
@@ -258,6 +266,7 @@ QDataStream& operator <<(QDataStream& s, CWpt& wpt)
     s1 << wpt.type;
     s1 << wpt.getParentWpt();
     s1 << wpt.selected;
+    s1 << wpt.dir;
 
     entries << entryBase;
 
@@ -424,6 +433,7 @@ CWpt::CWpt(QObject * parent)
 , lon(1000)
 , ele(WPT_NOFLOAT)
 , prx(WPT_NOFLOAT)
+, dir(WPT_NOFLOAT)
 {
     setIcon("Small City");
 }
@@ -431,14 +441,16 @@ CWpt::CWpt(QObject * parent)
 
 CWpt::~CWpt()
 {
-//    qDebug() << "CWpt::~CWpt()";
+    //    qDebug() << "CWpt::~CWpt()";
 }
+
 
 void CWpt::setIcon(const QString& str)
 {
     iconString = str;
     iconPixmap = getWptIconByName(str);
 }
+
 
 QPixmap CWpt::getIcon() const
 {
@@ -461,6 +473,7 @@ QPixmap CWpt::getIcon() const
     return iconPixmap;
 }
 
+
 bool CWpt::hasHiddenInformation()
 {
     if(isGeoCache())
@@ -470,6 +483,7 @@ bool CWpt::hasHiddenInformation()
 
     return false;
 }
+
 
 QString CWpt::getInfo()
 {
@@ -494,6 +508,12 @@ QString CWpt::getInfo()
         QString val, unit;
         IUnit::self().meter2elevation(ele, val, unit);
         str += tr("elevation: %1 %2").arg(val).arg(unit);
+    }
+
+    if(dir != WPT_NOFLOAT)
+    {
+        if(str.count()) str += "\n";
+        str += tr("direction: %1%2").arg(dir).arg(QChar('\260'));
     }
 
     if(prx != WPT_NOFLOAT)
@@ -558,6 +578,7 @@ QString CWpt::getInfo()
     return str;
 }
 
+
 const QString CWpt::filename(const QDir& dir)
 {
     QDateTime ts;
@@ -571,6 +592,7 @@ const QString CWpt::filename(const QDir& dir)
     return dir.filePath(str);
 }
 
+
 QString CWpt::getEntry(const QString& tag, const QDomNode& parent)
 {
     if(parent.namedItem(tag).isElement())
@@ -580,6 +602,7 @@ QString CWpt::getEntry(const QString& tag, const QDomNode& parent)
 
     return "";
 }
+
 
 QString CWpt::getEntryHtml(const QString& tag, const QDomNode& parent)
 {
@@ -599,6 +622,7 @@ QString CWpt::getEntryHtml(const QString& tag, const QDomNode& parent)
 
     return "";
 }
+
 
 void CWpt::loadGpxExt(const QDomNode& wpt)
 {
@@ -622,6 +646,7 @@ void CWpt::loadGpxExt(const QDomNode& wpt)
         loadGcExt(gpxCache);
     }
 }
+
 
 void CWpt::loadGcExt(const QDomNode& gpxCache)
 {
@@ -683,6 +708,7 @@ void CWpt::loadGcExt(const QDomNode& gpxCache)
     geocache.hasData = true;
 }
 
+
 void CWpt::loadTwoNavExt(const QDomNode& gpxCache)
 {
     geocache.service = eGC;
@@ -716,7 +742,6 @@ void CWpt::loadTwoNavExt(const QDomNode& gpxCache)
 
     geocache.shortDesc  = getEntryHtml("groundspeak:short_description",gpxCache);
     geocache.longDesc   = getEntryHtml("groundspeak:long_description",gpxCache);
-
 
     const QDomNodeList& logs = gpxCache.toElement().elementsByTagName("groundspeak:log");
     uint N = logs.count();
@@ -763,7 +788,6 @@ void CWpt::loadOcExt(const QDomNode& gpxCache)
         geocache.available = false;
         geocache.archived  = true;
     }
-
 
     geocache.name       = getEntry("name",gpxCache);
     geocache.owner      = getEntry("owner",gpxCache);
@@ -822,6 +846,7 @@ void CWpt::setEntry(const QString& tag, const QString& val, QDomDocument& gpx, Q
     }
 }
 
+
 void CWpt::setEntryHtml(const QString& tag, const QString& val, QDomDocument& gpx, QDomElement& parent)
 {
     if(!val.isEmpty())
@@ -833,6 +858,7 @@ void CWpt::setEntryHtml(const QString& tag, const QString& val, QDomDocument& gp
         element.setAttribute("html","True");
     }
 }
+
 
 QString CWpt::insertBuddies(const QString& html)
 {
@@ -854,13 +880,13 @@ QString CWpt::insertBuddies(const QString& html)
     return _html_;
 }
 
+
 void CWpt::saveGpxExt(QDomNode& wpt, bool isExport)
 {
     if(!geocache.hasData)
     {
         return;
     }
-
 
     QDomDocument gpx = wpt.ownerDocument();
 
@@ -890,8 +916,8 @@ void CWpt::saveGpxExt(QDomNode& wpt, bool isExport)
         wpt.appendChild(extensions);
     }
 
-
 }
+
 
 void CWpt::saveGcExt(QDomElement& gpxCache, bool isExport)
 {
@@ -964,11 +990,11 @@ void CWpt::saveGcExt(QDomElement& gpxCache, bool isExport)
     }
 }
 
+
 void CWpt::saveTwoNavExt(QDomElement& gpxCache, bool isExport)
 {
     QString str;
     QDomDocument gpx  = gpxCache.ownerDocument();
-
 
     gpxCache.setAttribute("xmlns:groundspeak", "http://www.groundspeak.com/cache/1/0");
     gpxCache.setAttribute("id", geocache.id);
@@ -1118,7 +1144,6 @@ QString CWpt::getExtInfo(bool showHidden)
             info += "<p><b>Hint:</b> " + geocache.hint + "</p>";
         }
 
-
         info += geocache.longDesc;
 
         foreach(const geocachelog_t& log, geocache.logs)
@@ -1140,10 +1165,11 @@ QString CWpt::getExtInfo(bool showHidden)
     QString cpytext = html.arg(QUrl::fromLocalFile(dirWeb.path()).toString());
     cpytext = cpytext.replace("${info}", info);
     cpytext.replace("&deg;","\260");
-//    qDebug() << cpytext;
+    //    qDebug() << cpytext;
 
     return cpytext;
 }
+
 
 QString CWpt::htmlScale(float val)
 {
@@ -1159,11 +1185,9 @@ void CWpt::showBuddies(bool show)
     {
         bool isKnown;
 
-
         int p           = 0;
         quint32 cnt     = 0;
         QString html    = getExtInfo(false);
-
 
         while ((p = rx.indexIn(html, p)) != -1)
         {
@@ -1220,6 +1244,7 @@ void CWpt::showBuddies(bool show)
         buddies.clear();
     }
 }
+
 
 bool CWpt::hasBuddies()
 {

@@ -138,6 +138,11 @@ void CMapToolWidget::slotDBChanged()
                     icon = QIcon(":/icons/iconRMAP22x22.png");
                     item->setToolTip(eType, tr("TwoNav/RMAP"));
                 }
+                else if(map->filename.toLower().endsWith("rmp"))
+                {
+                    icon = QIcon(":/icons/iconRMP22x22.png");
+                    item->setToolTip(eType, tr("Magellan/RMP"));
+                }
                 else
                 {
                     icon = QIcon(":/icons/iconQMAP22x22.png");
@@ -197,7 +202,6 @@ void CMapToolWidget::slotDBChanged()
     treeKnownMapsStream->sortItems(eName, Qt::AscendingOrder);
     treeKnownMapsVector->sortItems(eName, Qt::AscendingOrder);
     treeKnownMapsRaster->sortItems(eName, Qt::AscendingOrder);
-
 
     if(selected)
     {
@@ -519,11 +523,13 @@ void CMapToolWidget::slotCfgMap()
     CMapDB::self().getMap().config();
 }
 
+
 void CMapToolWidget::slotAddTmsMap()
 {
     CDlgMapTmsConfig dlg;
     dlg.exec();
 }
+
 
 void CMapToolWidget::slotReload()
 {

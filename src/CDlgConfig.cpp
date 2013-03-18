@@ -68,6 +68,11 @@ void CDlgConfig::exec()
     lineProxyURL->setText(resources.m_httpProxy);
     lineProxyPort->setText(QString("%1").arg(resources.m_httpProxyPort));
 
+    /*
+    lineProxyUser->setText(resources.m_httpProxyUser);
+    lineProxyPwd->setText(resources.m_httpProxyPwd);
+    */
+
     labelFont->setFont(resources.m_mapfont);
     if(resources.unit->type == "metric")
     {
@@ -84,7 +89,7 @@ void CDlgConfig::exec()
 
     checkPlaySound->setChecked(resources.m_playSound);
     checkFlipMouseWheel->setChecked(resources.m_flipMouseWheel);
-    checkShowProfilePreview->setChecked(resources.m_showTrackProfile);    
+    checkShowProfilePreview->setChecked(resources.m_showTrackProfile);
     checkShowTrackEleInfo->setChecked(resources.m_showTrackEleInfo);
     checkShowNorth->setChecked(resources.m_showNorth);
     checkShowScale->setChecked(resources.m_showScale);
@@ -98,8 +103,6 @@ void CDlgConfig::exec()
     checkGeoDBSaveOnExit->setChecked(resources.m_saveGeoDBOnExit);
     spinGeoDBMinutes->setValue(resources.m_saveGeoDBMinutes);
     labelPathGeoDB->setText(resources.m_pathGeoDB.absolutePath());
-
-
 
     comboDevice->addItem(tr(""),"");
     comboDevice->addItem(tr("QLandkarte M"), "QLandkarteM");
@@ -161,10 +164,15 @@ void CDlgConfig::accept()
     resources.m_httpProxy       = lineProxyURL->text();
     resources.m_httpProxyPort   = lineProxyPort->text().toUInt();
 
+    /*
+    resources.m_httpProxyUser   = lineProxyUser->text();
+    resources.m_httpProxyPwd    = lineProxyPwd->text();
+    */
+
     if(resources.m_useHttpProxy)
-      QNetworkProxy::setApplicationProxy(QNetworkProxy(QNetworkProxy::HttpProxy,resources.m_httpProxy,resources.m_httpProxyPort));
+        QNetworkProxy::setApplicationProxy(QNetworkProxy(QNetworkProxy::HttpProxy,resources.m_httpProxy,resources.m_httpProxyPort));
     else
-      QNetworkProxy::setApplicationProxy(QNetworkProxy(QNetworkProxy::NoProxy));
+        QNetworkProxy::setApplicationProxy(QNetworkProxy(QNetworkProxy::NoProxy));
 
     resources.m_mapfont         = labelFont->font();
 
@@ -361,13 +369,12 @@ void CDlgConfig::fillCharsetCombo()
 }
 
 
-
-
 void CDlgConfig::slotSetupGarminIcons()
 {
     CDlgSetupGarminIcons dlg;
     dlg.exec();
 }
+
 
 void CDlgConfig::slotSelectPathGeoDB()
 {
@@ -377,6 +384,7 @@ void CDlgConfig::slotSelectPathGeoDB()
         labelPathGeoDB->setText(path);
     }
 }
+
 
 void CDlgConfig::slotSelectWptTextColor()
 {
@@ -393,6 +401,7 @@ void CDlgConfig::slotSelectWptTextColor()
 
 }
 
+
 void CDlgConfig::slotSelectPathMapCache()
 {
     QString path = QFileDialog::getExistingDirectory(this, tr("Open Directory"), labelPathMapCache->text(), QFileDialog::ShowDirsOnly);
@@ -401,4 +410,3 @@ void CDlgConfig::slotSelectPathMapCache()
         labelPathMapCache->setText(path);
     }
 }
-

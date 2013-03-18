@@ -27,6 +27,7 @@
 #ifdef HAS_RMAP
 #include "CMapRmap.h"
 #endif
+#include "CMapRmp.h"
 #include "CMapWms.h"
 #include "CMapTms.h"
 #include "CMapDEM.h"
@@ -55,7 +56,7 @@
 CMapDB * CMapDB::m_self = 0;
 
 CMapDB::CMapDB(QTabWidget * tb, QObject * parent)
-    : IDB(IDB::eTypeMap, tb, parent)
+: IDB(IDB::eTypeMap, tb, parent)
 {
     SETTINGS;
 
@@ -116,14 +117,14 @@ CMapDB::CMapDB(QTabWidget * tb, QObject * parent)
         {
             m.description = fi.baseName();
         }
-#endif // HAS_RMAP
+#endif                   // HAS_RMAP
         else
         {
             QSettings mapdef(map,QSettings::IniFormat);
             mapdef.setIniCodec(QTextCodec::codecForName("UTF-8"));
             m.description = mapdef.value("description/comment","").toString();
         }
-        if(m.description.isEmpty()) m.description = QFileInfo(map).fileName();
+        if(m.description.isEmpty()) m.description = QFileInfo(map).baseName();
         m.key            = map;
         m.type           = ext == "qmap" ? IMap::eRaster : ext == "tdb" ? IMap::eGarmin : ext == "xml" ? IMap::eWMS : ext == "tms" ? IMap::eTMS : IMap::eRaster;
         knownMaps[m.key] = m;
@@ -166,7 +167,6 @@ CMapDB::CMapDB(QTabWidget * tb, QObject * parent)
         }
     }
 
-
     if(theMainWindow->didCrash())
     {
         int res = QMessageBox::warning(0,tr("Crash detected...."), tr("QLandkarte GT was terminated with a crash. This is really bad. A common reason for that is a bad map. Do you really want to load the last map?"), QMessageBox::Yes|QMessageBox::No, QMessageBox::Yes);
@@ -188,7 +188,6 @@ CMapDB::CMapDB(QTabWidget * tb, QObject * parent)
         break;
     }
     cfg.setValue("maps/visibleMaps",maps.join("|"));
-
 
     emitSigChanged();
 
@@ -374,6 +373,26 @@ void CMapDB::openMap(const QString& filename, bool asRaster, CCanvas& canvas)
         cfg.setValue("maps/visibleMaps",filename);
     }
 #endif
+    else if(ext == "rmp")
+    {
+
+        CMapRmp * maprmp;
+
+        map.filename    = filename;
+        map.key         = filename;
+        map.type        = IMap::eRaster;
+
+        theMap = maprmp = new CMapRmp(map.key, filename, &canvas);
+
+        map.description = maprmp->getName();
+        if(map.description.isEmpty()) map.description = fi.fileName();
+
+        // add map to known maps
+        knownMaps[map.key] = map;
+
+        // store current map filename for next session
+        cfg.setValue("maps/visibleMaps",filename);
+    }
     else if(ext == "xml")
     {
         CMapWms * mapwms;
@@ -435,7 +454,7 @@ void CMapDB::openMap(const QString& filename, bool asRaster, CCanvas& canvas)
     connect(theMap, SIGNAL(sigChanged()),  theMainWindow->getCanvas(), SLOT(update()));
 
     QString fileDEM = cfg.value(QString("map/dem/%1").arg(theMap->getKey()),"").toString();
-    if(!fileDEM.isEmpty()) openDEM(fileDEM);
+    openDEM(fileDEM);
 
     emitSigChanged();
 
@@ -482,6 +501,10 @@ void CMapDB::openMap(const QString& key)
         theMap = new CMapRmap(key,filename,theMainWindow->getCanvas());
     }
 #endif
+    else if(ext == "rmp")
+    {
+        theMap = new CMapRmp(key,filename,theMainWindow->getCanvas());
+    }
     else if(ext == "xml")
     {
         theMap = new CMapWms(key,filename,theMainWindow->getCanvas());
@@ -502,7 +525,7 @@ void CMapDB::openMap(const QString& key)
     cfg.setValue("maps/visibleMaps",filename);
 
     QString fileDEM = cfg.value(QString("map/dem/%1").arg(theMap->getKey()),"").toString();
-    if(!fileDEM.isEmpty()) openDEM(fileDEM);
+    openDEM(fileDEM);
 
     double lon1, lon2, lat1, lat2;
     theMap->dimensions(lon1, lat1, lon2, lat2);
@@ -553,6 +576,12 @@ void CMapDB::openDEM(const QString& filename)
     if(!demMap.isNull())
     {
         demMap->deleteLater();
+        demMap = 0;
+    }
+
+    if(filename.isEmpty())
+    {
+        return;
     }
 
     try
@@ -634,7 +663,6 @@ void CMapDB::delKnownMap(const QStringList& keys)
             cfg.sync();
         }
 
-
     }
 
     emitSigChanged();
@@ -652,6 +680,7 @@ void CMapDB::delSelectedMap(const QStringList& keys)
     emitSigChanged();
 }
 
+
 void CMapDB::delSelectedMap(const QString& key, bool silent)
 {
     if(selectedMaps.contains(key))
@@ -663,6 +692,7 @@ void CMapDB::delSelectedMap(const QString& key, bool silent)
         }
     }
 }
+
 
 void CMapDB::selSelectedMap(const QString& key)
 {
@@ -695,11 +725,10 @@ QDataStream& CMapDB::operator<<(QDataStream& s)
     QString comment;
     QString description;
 
-
-    double lon1;             ///< top left longitude [rad]
-    double lat1;             ///< top left latitude [rad]
-    double lon2;             ///< bottom right longitude [rad]
-    double lat2;             ///< bottom right latitude [rad]
+    double lon1;                 ///< top left longitude [rad]
+    double lat1;                 ///< top left latitude [rad]
+    double lon2;                 ///< bottom right longitude [rad]
+    double lat2;                 ///< bottom right latitude [rad]
 
     QIODevice * dev = s.device();
     qint64      pos = dev->pos();
@@ -744,10 +773,10 @@ QDataStream& CMapDB::operator<<(QDataStream& s)
                 s1 >> name;
                 s1 >> comment;
                 s1 >> description;
-                s1 >> lon1;             ///< top left longitude [rad]
-                s1 >> lat1;             ///< top left latitude [rad]
-                s1 >> lon2;             ///< bottom right longitude [rad]
-                s1 >> lat2;             ///< bottom right latitude [rad]
+                s1 >> lon1;      ///< top left longitude [rad]
+                s1 >> lat1;      ///< top left latitude [rad]
+                s1 >> lon2;      ///< bottom right longitude [rad]
+                s1 >> lat2;      ///< bottom right latitude [rad]
                 s1 >> subtype;
                 break;
             }
@@ -855,6 +884,7 @@ QDataStream& CMapDB::operator<<(QDataStream& s)
     }
     return s;
 }
+
 
 void CMapDB::loadQLB(CQlb& qlb, bool newKey)
 {
@@ -997,7 +1027,6 @@ void CMapDB::select(const QRect& rect, const QMap< QPair<int,int>, bool>& selTil
             ms = new CMapSelectionRaster(IMapSelection::eTMS, this);
         }
 
-
         ms->mapkey       = mapkey;
         ms->selTiles     = selTiles;
         ms->setName(knownMaps[mapkey].description);
@@ -1046,7 +1075,6 @@ void CMapDB::select(const QRect& rect, const QMap< QPair<int,int>, bool>& selTil
             ms = new CMapSelectionGarmin(this);
         }
 
-
         ms->mapkey       = mapkey;
         ms->setDescription("Garmin - gmapsupp.img");
         theMap->select(*ms, rect);
@@ -1086,7 +1114,6 @@ IMapSelection * CMapDB::getSelectedMap(double lon, double lat)
         return 0;
     }
 
-
     QString mapkey = map.getKey();
     IMapSelection * mapSel = 0;
     foreach(mapSel, selectedMaps)
@@ -1106,6 +1133,7 @@ IMapSelection * CMapDB::getSelectedMap(double lon, double lat)
     return 0;
 }
 
+
 IMapSelection * CMapDB::getMapSelectionByKey(const QString& key)
 {
     if(selectedMaps.contains(key))
@@ -1116,6 +1144,7 @@ IMapSelection * CMapDB::getMapSelectionByKey(const QString& key)
     return 0;
 }
 
+
 const CMapDB::map_t& CMapDB::getMapData(const QString& key)
 {
     if(knownMaps.contains(key))
@@ -1124,6 +1153,7 @@ const CMapDB::map_t& CMapDB::getMapData(const QString& key)
     }
     return emptyMap;
 }
+
 
 void CMapDB::setMapData(const map_t& map)
 {
@@ -1137,6 +1167,7 @@ void CMapDB::setMapData(const map_t& map)
 
     emitSigChanged();
 }
+
 
 void CMapDB::reloadMap()
 {

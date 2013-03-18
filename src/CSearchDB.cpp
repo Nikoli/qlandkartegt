@@ -35,14 +35,17 @@ CSearchDB * CSearchDB::m_self;
 static const char google_api_key[] = "ABQIAAAAPztEvITCpkvDNrq-hFRvThQNZ4aRbgDVTL9C0r5u06RhgW2EtRR8yuKglxlHgpZfC5_TdLXlJvIWgA";
 
 CSearchDB::CSearchDB(QTabWidget * tb, QObject * parent)
-    : IDB(IDB::eTypeSrc, tb, parent)
+: IDB(IDB::eTypeSrc, tb, parent)
 , tmpResult(0)
 {
     m_self      = this;
     toolview    = new CSearchToolWidget(tb);
 
     networkAccessManager.setProxy(QNetworkProxy(QNetworkProxy::DefaultProxy));
+
     connect(&networkAccessManager,SIGNAL(finished(QNetworkReply*)),this,SLOT(slotRequestFinished(QNetworkReply*)));
+    connect(&networkAccessManager, SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),
+        this, SLOT(slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)));
 }
 
 
@@ -59,6 +62,7 @@ void CSearchDB::clear()
     emitSigChanged();
 }
 
+
 void CSearchDB::search(const QString& str, hosts_t host)
 {
     emit sigStatus(tr("start searching..."));
@@ -67,9 +71,9 @@ void CSearchDB::search(const QString& str, hosts_t host)
         case eOpenRouteService:
             startOpenRouteService(str);
             break;
-//        case eMapQuest:
-//            startMapQuest(str);
-//            break;
+            //        case eMapQuest:
+            //            startMapQuest(str);
+            //            break;
         case eGoogle:
             startGoogle(str);
             break;
@@ -96,6 +100,7 @@ void CSearchDB::startGoogle(const QString& str)
     pendingRequests[reply] = eGoogle;
 
 }
+
 
 const QString CSearchDB::xls_ns = "http://www.opengis.net/xls";
 const QString CSearchDB::sch_ns = "http://www.ascc.net/xml/schematron";
@@ -145,7 +150,7 @@ void CSearchDB::startOpenRouteService(const QString& str)
     QDomText _freeFormAddress_ = xml.createTextNode(str);
     freeFormAddress.appendChild(_freeFormAddress_);
 
-//    qDebug() << xml.toString();
+    //    qDebug() << xml.toString();
 
     QByteArray array;
     QTextStream out(&array, QIODevice::WriteOnly);
@@ -163,6 +168,7 @@ void CSearchDB::startOpenRouteService(const QString& str)
 
 }
 
+
 void CSearchDB::startMapQuest(const QString& str)
 {
 
@@ -176,7 +182,6 @@ void CSearchDB::slotRequestFinished(QNetworkReply * reply)
     {
         host = pendingRequests.take(reply);
     }
-
 
     if(reply->error() != QNetworkReply::NoError)
     {
@@ -200,9 +205,9 @@ void CSearchDB::slotRequestFinished(QNetworkReply * reply)
         case eOpenRouteService:
             slotRequestFinishedOpenRouteService(data);
             break;
-//        case eMapQuest:
-//            slotRequestFinishedMapQuest(data);
-//            break;
+            //        case eMapQuest:
+            //            slotRequestFinishedMapQuest(data);
+            //            break;
         case eGoogle:
             slotRequestFinishedGoogle(data);
             break;
@@ -212,9 +217,9 @@ void CSearchDB::slotRequestFinished(QNetworkReply * reply)
             emitSigChanged();
     }
 
-
     QApplication::restoreOverrideCursor();
 }
+
 
 void CSearchDB::slotRequestFinishedGoogle(QByteArray& data)
 {
@@ -280,13 +285,14 @@ void CSearchDB::slotRequestFinishedGoogle(QByteArray& data)
     emitSigChanged();
 }
 
+
 void CSearchDB::slotRequestFinishedOpenRouteService(QByteArray& data)
 {
     QDomDocument xml;
     QString status = tr("finished");
 
     xml.setContent(data);
-//    qDebug() << xml.toString();
+    //    qDebug() << xml.toString();
 
     QDomElement root = xml.documentElement();
     QDomNodeList Results = root.elementsByTagName("xls:GeocodedAddress");
@@ -347,6 +353,7 @@ void CSearchDB::slotRequestFinishedOpenRouteService(QByteArray& data)
 
 }
 
+
 void CSearchDB::slotRequestFinishedMapQuest(QByteArray& data)
 {
     QDomDocument xml;
@@ -361,6 +368,18 @@ void CSearchDB::slotRequestFinishedMapQuest(QByteArray& data)
     emit sigFinished();
     emitSigChanged();
 
+}
+
+
+void CSearchDB::slotProxyAuthenticationRequired(const QNetworkProxy &prox, QAuthenticator *auth)
+{
+    QString user;
+    QString pwd;
+
+    CResources::self().getHttpProxyAuth(user,pwd);
+
+    auth->setUser(user);
+    auth->setPassword(pwd);
 }
 
 
@@ -420,6 +439,7 @@ void CSearchDB::add(const QString& label, double lon, double lat)
     emitSigChanged();
 }
 
+
 void CSearchDB::selSearchByKey(const QString& key)
 {
     CSearchToolWidget * t = qobject_cast<CSearchToolWidget*>(toolview);
@@ -429,6 +449,3 @@ void CSearchDB::selSearchByKey(const QString& key)
         gainFocus();
     }
 }
-
-
-

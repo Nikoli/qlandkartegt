@@ -21,6 +21,7 @@
 
 #include <QWidget>
 #include <QSet>
+#include <QtNetwork>
 #include "CRoute.h"
 #include "ui_IRouteToolWidget.h"
 
@@ -34,13 +35,13 @@ class QTimer;
 class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
 {
     Q_OBJECT
-    public:
+        public:
         CRouteToolWidget(QTabWidget * parent);
         virtual ~CRouteToolWidget();
 
         enum sortmode_e
         {
-             eSortByName
+            eSortByName
             ,eSortByTime
         };
 
@@ -69,6 +70,7 @@ class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
         void slotTimeout();
         void slotServiceChanged(int);
 
+        void slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*);
 
     private:
         void startOpenRouteService(CRoute& rte);
@@ -78,10 +80,10 @@ class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
         void startMapQuest(CRoute& rte);
         void addMapQuestLocations(QDomDocument& xml, QDomElement& locations, CRoute& rte);
 
-
         bool originator;
 
-        enum tab_e {
+        enum tab_e
+        {
             eTabRoute = 0
             ,eTabSetup = 1
             ,eTabHelp = 2
@@ -103,4 +105,3 @@ class CRouteToolWidget : public QWidget, private Ui::IRouteToolWidget
 
 };
 #endif                           //CROUTETOOLWIDGET_H
-

@@ -27,6 +27,7 @@
 #include <QSet>
 #include <QtCore>
 #include <IDiskCache.h>
+#include <QtNetwork>
 
 class QNetworkAccessManager;
 class QNetworkReply;
@@ -60,10 +61,9 @@ class CMapTms : public IMap
     public slots:
         void resize(const QSize& size);
 
-
     private slots:
         void slotRequestFinished(QNetworkReply* reply);
-
+        void slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*);
 
     private:
         struct layer_t
@@ -75,8 +75,6 @@ class CMapTms : public IMap
             QString script;
 
         };
-
-
 
         void readConfigFromFile(const QString& filename, QWidget * parent);
         QString createUrl(const layer_t &layer, int x, int y, int z);

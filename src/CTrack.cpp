@@ -179,20 +179,28 @@ QDataStream& operator >>(QDataStream& s, CTrack& track)
                 QList<CTrack::pt_t>::iterator pt1 = track.track.begin();
                 while (pt1 != track.track.end())
                 {
-                    s1 >> pt1->altitude;    ///< [m]
-                    s1 >> pt1->height;      ///< [m]
-                    s1 >> pt1->velocity;    ///< [m/s]
-                    s1 >> pt1->heading;     ///< [deg]
-                    s1 >> pt1->magnetic;    ///< [deg]
+                                 ///< [m]
+                    s1 >> pt1->altitude;
+                                 ///< [m]
+                    s1 >> pt1->height;
+                                 ///< [m/s]
+                    s1 >> pt1->velocity;
+                                 ///< [deg]
+                    s1 >> pt1->heading;
+                                 ///< [deg]
+                    s1 >> pt1->magnetic;
                     s1 >> pt1->vdop;
                     s1 >> pt1->hdop;
                     s1 >> pt1->pdop;
-                    s1 >> pt1->x;           ///< [m] cartesian gps coordinate
-                    s1 >> pt1->y;           ///< [m] cartesian gps coordinate
-                    s1 >> pt1->z;           ///< [m] cartesian gps coordinate
-                    s1 >> pt1->vx;          ///< [m/s] velocity
-                    s1 >> pt1->vy;          ///< [m/s] velocity
-                    s1 >> pt1->vz;          ///< [m/s] velocity
+                    s1 >> pt1->x;///< [m] cartesian gps coordinate
+                    s1 >> pt1->y;///< [m] cartesian gps coordinate
+                    s1 >> pt1->z;///< [m] cartesian gps coordinate
+                                 ///< [m/s] velocity
+                    s1 >> pt1->vx;
+                                 ///< [m/s] velocity
+                    s1 >> pt1->vy;
+                                 ///< [m/s] velocity
+                    s1 >> pt1->vz;
                     pt1++;
                 }
 
@@ -375,20 +383,23 @@ QDataStream& operator <<(QDataStream& s, CTrack& track)
         s4 << (quint32)trkpts.size();
         while(trkpt != trkpts.end())
         {
-            s4 << trkpt->altitude;  ///< [m]
-            s4 << trkpt->height;    ///< [m]
-            s4 << trkpt->velocity;  ///< [m/s]
-            s4 << trkpt->heading;   ///< [deg]
-            s4 << trkpt->magnetic;  ///< [deg]
-            s4 << trkpt->vdop;      ///<
-            s4 << trkpt->hdop;      ///<
-            s4 << trkpt->pdop;      ///<
-            s4 << trkpt->x;         ///< [m] cartesian gps coordinate
-            s4 << trkpt->y;         ///< [m] cartesian gps coordinate
-            s4 << trkpt->z;         ///< [m] cartesian gps coordinate
-            s4 << trkpt->vx;        ///< [m/s] velocity
-            s4 << trkpt->vy;        ///< [m/s] velocity
-            s4 << trkpt->vz;        ///< [m/s] velocity
+                                 ///< [m]
+            s4 << trkpt->altitude;
+            s4 << trkpt->height; ///< [m]
+                                 ///< [m/s]
+            s4 << trkpt->velocity;
+            s4 << trkpt->heading;///< [deg]
+                                 ///< [deg]
+            s4 << trkpt->magnetic;
+            s4 << trkpt->vdop;   ///<
+            s4 << trkpt->hdop;   ///<
+            s4 << trkpt->pdop;   ///<
+            s4 << trkpt->x;      ///< [m] cartesian gps coordinate
+            s4 << trkpt->y;      ///< [m] cartesian gps coordinate
+            s4 << trkpt->z;      ///< [m] cartesian gps coordinate
+            s4 << trkpt->vx;     ///< [m/s] velocity
+            s4 << trkpt->vy;     ///< [m/s] velocity
+            s4 << trkpt->vz;     ///< [m/s] velocity
             ++trkpt;
         }
 
@@ -409,7 +420,6 @@ QDataStream& operator <<(QDataStream& s, CTrack& track)
 
         s5 << (quint32)trkpts.size();
         s5 << track.tr_ext.set;
-
 
         while(trkpt != trkpts.end())
         {
@@ -442,7 +452,6 @@ QDataStream& operator <<(QDataStream& s, CTrack& track)
 
     entries << entryShdwPts;
 
-
     //---------------------------------------
     // prepare track shadow data 2
     //---------------------------------------
@@ -468,7 +477,6 @@ QDataStream& operator <<(QDataStream& s, CTrack& track)
     }
 
     entries << entryShdwPts2;
-
 
     //---------------------------------------
     // prepare terminator
@@ -534,6 +542,7 @@ void operator <<(QFile& f, CTrack& track)
     s << track;
     f.close();
 }
+
 
 #define DEFAULT_COLOR 4
 
@@ -601,6 +610,7 @@ bool trackpointLessThan(const CTrack::pt_t &p1, const CTrack::pt_t &p2)
     return p1.timestamp < p2.timestamp;
 }
 
+
 static bool qSortWptLessDistance(CTrack::wpt_t& p1, CTrack::wpt_t& p2)
 {
     return p1.trkpt.distance < p2.trkpt.distance;
@@ -617,8 +627,7 @@ CTrack::CTrack(QObject * parent)
 , ext1Data(false)
 , firstTime(true)
 , m_hide(false)
-, doScaleWpt2Track(Qt::PartiallyChecked	)
-, geonames(0)
+, doScaleWpt2Track(Qt::PartiallyChecked )
 , visiblePointCount(0)
 , cntMedianFilterApplied(0)
 , replaceOrigData(true)
@@ -626,11 +635,11 @@ CTrack::CTrack(QObject * parent)
     ref = 1;
 
     setColor(DEFAULT_COLOR);
-    geonames = new QHttp(this);
-    geonames->setProxy(QNetworkProxy(QNetworkProxy::DefaultProxy));
-    geonames->setHost("ws.geonames.org");
-    connect(geonames,SIGNAL(requestStarted(int)),this,SLOT(slotRequestStarted(int)));
-    connect(geonames,SIGNAL(requestFinished(int,bool)),this,SLOT(slotRequestFinished(int,bool)));
+
+    networkAccessManager = new QNetworkAccessManager(this);
+    networkAccessManager->setProxy(QNetworkProxy(QNetworkProxy::DefaultProxy));
+    connect(networkAccessManager, SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),this, SLOT(slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)));
+    connect(networkAccessManager,SIGNAL(finished(QNetworkReply*)),this,SLOT(slotRequestFinished(QNetworkReply*)));
 
     connect(&CWptDB::self(), SIGNAL(sigChanged()), this, SLOT(slotScaleWpt2Track()));
 }
@@ -641,6 +650,7 @@ CTrack::~CTrack()
 
 }
 
+
 void CTrack::setHighlight(bool yes)
 {
     highlight = yes;
@@ -650,9 +660,10 @@ void CTrack::setHighlight(bool yes)
     }
 }
 
+
 void CTrack::replaceElevationByLocal(bool replaceOrignalData)
 {
-//    qDebug() << "CTrack::replaceElevationByLocal()";
+    //    qDebug() << "CTrack::replaceElevationByLocal()";
     IMap& map       = CMapDB::self().getDEM();
     const int size = track.size();
     for(int i = 0; i<size; i++)
@@ -667,6 +678,7 @@ void CTrack::replaceElevationByLocal(bool replaceOrignalData)
     emit sigChanged();
 }
 
+
 void CTrack::replaceElevationByRemote(bool replaceOrignalData)
 {
     SETTINGS;
@@ -674,10 +686,10 @@ void CTrack::replaceElevationByRemote(bool replaceOrignalData)
 
     replaceOrigData = replaceOrignalData;
 
-    int idx = 0, id;
+    int idx = 0;
     const int size = track.size();
 
-    id2idx.clear();
+    reply2idx.clear();
 
     while(idx < size)
     {
@@ -690,37 +702,44 @@ void CTrack::replaceElevationByRemote(bool replaceOrignalData)
             lngs << QString::number(track[idx + i].lon,'f', 8);
         }
 
-        QUrl url;
+        QUrl url("http://ws.geonames.org");
         url.setPath("/srtm3");
         url.addQueryItem("lats",lats.join(","));
         url.addQueryItem("lngs",lngs.join(","));
         url.addQueryItem("username",username);
-        id = geonames->get(url.toEncoded( ));
 
-        id2idx[id] = idx;
+        QNetworkRequest request;
+        request.setUrl(url);
+        QNetworkReply * reply = networkAccessManager->get(request);
+
+        reply2idx[reply] = idx;
 
         idx += s;
     }
 }
 
-void CTrack::slotRequestStarted(int id)
+
+void CTrack::slotProxyAuthenticationRequired(const QNetworkProxy &prox, QAuthenticator *auth)
 {
-//    qDebug() << "void CTrack::slotRequestStarted(int id)" << id;
+    QString user;
+    QString pwd;
+
+    CResources::self().getHttpProxyAuth(user,pwd);
+
+    auth->setUser(user);
+    auth->setPassword(pwd);
 }
 
-void CTrack::slotRequestFinished(int id, bool error)
-{
-//    qDebug() << "void CTrack::slotRequestFinished(int id, bool error)" << id << error;
 
-    if(error)
+void CTrack::slotRequestFinished(QNetworkReply * reply)
+{
+    if(reply->error() != QNetworkReply::NoError)
     {
-//        qDebug() << geonames->errorString();
         return;
     }
 
-    QString asw = geonames->readAll().simplified();
-
-//    qDebug() << asw;
+    QString asw = reply->readAll();
+    reply->deleteLater();
 
     if(asw.isEmpty())
     {
@@ -728,11 +747,12 @@ void CTrack::slotRequestFinished(int id, bool error)
     }
 
     QString val;
-    QStringList vals = asw.split(" ", QString::SkipEmptyParts);
+    QStringList vals = asw.split("\n", QString::SkipEmptyParts);
 
-    if(id2idx.contains(id))
+    if(reply2idx.contains(reply))
     {
-        int idx = id2idx[id];
+
+        int idx = reply2idx[reply];
         foreach(val, vals)
         {
             if(idx < track.size())
@@ -746,12 +766,16 @@ void CTrack::slotRequestFinished(int id, bool error)
             }
         }
 
-        id2idx.remove(id);
-        if(id2idx.isEmpty())
+        reply2idx.remove(reply);
+        if(reply2idx.isEmpty())
         {
             rebuild(false);
             emit sigChanged();
         }
+    }
+    else
+    {
+        qDebug() << "failed to recognize reply";
     }
 }
 
@@ -783,6 +807,7 @@ QRectF CTrack::getBoundingRectF()
     return QRectF(QPointF(west,north),QPointF(east,south));
 }
 
+
 void CTrack::setColor(const QColor& c)
 {
     int n;
@@ -810,6 +835,7 @@ void CTrack::setColor(const QColor& c)
 
 }
 
+
 void CTrack::setColor(unsigned i)
 {
     if(i>16) i = DEFAULT_COLOR;
@@ -819,7 +845,6 @@ void CTrack::setColor(unsigned i)
 
     setIcon(color.name());
 }
-
 
 
 CTrack& CTrack::operator<<(const pt_t& pt)
@@ -857,7 +882,6 @@ void CTrack::hide(bool ok)
 
 #define A 0.22140
 
-
 void CTrack::rebuild(bool reindex)
 {
     double slope    = 0;
@@ -878,7 +902,6 @@ void CTrack::rebuild(bool reindex)
     float minEle    =  WPT_NOFLOAT;
     float maxSpeed  = -WPT_NOFLOAT;
     float minSpeed  =  WPT_NOFLOAT;
-
 
     // reindex track if desired
     if(reindex)
@@ -921,7 +944,7 @@ void CTrack::rebuild(bool reindex)
     pt1->dem        = dem.getElevation(pt1->lon * DEG_TO_RAD, pt1->lat * DEG_TO_RAD);
     pt1->slope      = 0.0;
     t1              = pt1->timestamp;
-    t2              = t1;   //for the case that the track has only 1 point
+    t2              = t1;        //for the case that the track has only 1 point
 
     ++visiblePointCount;
 
@@ -1005,7 +1028,6 @@ void CTrack::rebuild(bool reindex)
         avgspeed1       = avgspeed0;
         pt2->avgspeed   = avgspeed0;
 
-
         if(pt2->ele   > maxEle)   {maxEle   = pt2->ele;   ptMaxEle   = *pt2;}
         if(pt2->ele   < minEle)   {minEle   = pt2->ele;   ptMinEle   = *pt2;}
         if(pt2->speed > maxSpeed) {maxSpeed = pt2->speed; ptMaxSpeed = *pt2;}
@@ -1054,6 +1076,7 @@ void CTrack::setPointOfFocus(int idx, bool eraseSelection, bool moveMap)
     }
     emit sigChanged();
 }
+
 
 CTrack::pt_t * CTrack::getPointOfFocus(double dist)
 {
@@ -1111,6 +1134,7 @@ QDateTime CTrack::getEndTimestamp()
     return QDateTime();
 }
 
+
 float CTrack::getStartElevation()
 {
     QList<CTrack::pt_t>& trkpts           = track;
@@ -1126,6 +1150,7 @@ float CTrack::getStartElevation()
     }
     return WPT_NOFLOAT;
 }
+
 
 float CTrack::getEndElevation()
 {
@@ -1204,6 +1229,7 @@ QString CTrack::getInfo()
     return str;
 }
 
+
 /// set the icon defined by a string
 void CTrack::setIcon(const QString& str)
 {
@@ -1227,7 +1253,6 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
 
     }
 
-
     // time to start and time to end
     if(trkpt.timestamp != 0x00000000 && trkpt.timestamp != 0xFFFFFFFF)
     {
@@ -1237,19 +1262,28 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
             quint32 t1s = trkpt.timeSinceStart;
             quint32 t2s = total - trkpt.timeSinceStart;
 
-            quint32 t1h = qreal(t1s)/3600;
-            quint32 t2h = qreal(t2s)/3600;
+            quint32 t1hh = t1s/3600;
+            quint32 t2hh = t2s/3600;
 
-            quint32 t1m = quint32(qreal(t1s - t1h * 3600)/60  + 0.5);
-            quint32 t2m = quint32(qreal(t2s - t2h * 3600)/60  + 0.5);
+            quint32 t1mm = (t1s - t1hh * 3600)/60;
+            quint32 t2mm = (t2s - t2hh * 3600)/60;
+
+            quint32 t1ss = t1s%60;
+            quint32 t2ss = t2s%60;
 
             quint32 t1p = quint32(qreal(100 * t1s) / total + 0.5);
             quint32 t2p = 100 - t1p;
 
-
             str += "\n";
-            str += tr("%4 %3 %1:%2h (%5%)").arg(t1h).arg(t1m, 2, 10, QChar('0')).arg(QChar(0x21A4)).arg(QChar(0x2690)).arg(t1p);
-            str += tr(" | (%5%) %1:%2h %3 %4").arg(t2h).arg(t2m, 2, 10, QChar('0')).arg(QChar(0x21A6)).arg(QChar(0x2691)).arg(t2p);
+#ifndef WIN32
+            str += tr("%5 %4 %1:%2:%3 (%6%)").arg(t1hh, 2, 10, QChar('0')).arg(t1mm, 2, 10, QChar('0')).arg(t1ss, 2, 10, QChar('0')).arg(QChar(0x21A4)).arg(QChar(0x2690)).arg(t1p);
+            str += tr(" | (%6%) %1:%2:%3 %4 %5").arg(t2hh, 2, 10, QChar('0')).arg(t2mm, 2, 10, QChar('0')).arg(t2ss, 2, 10, QChar('0')).arg(QChar(0x21A6)).arg(QChar(0x2691)).arg(t2p);
+#else
+            //Unicode character 0x2690 "WHITE FLAG" is not supported for Windows
+            str += tr("%4 %1:%2:%3 (%5%)").arg(t1hh, 2, 10, QChar('0')).arg(t1mm, 2, 10, QChar('0')).arg(t1ss, 2, 10, QChar('0')).arg(QChar(0x21A4)).arg(t1p);
+            //Unicode character 0x2691 "BLACK FLAG" is not supported for Windows
+            str += tr(" | (%5%) %1:%2:%3 %4").arg(t2hh, 2, 10, QChar('0')).arg(t2mm, 2, 10, QChar('0')).arg(t2ss, 2, 10, QChar('0')).arg(QChar(0x21A6)).arg(t2p);
+#endif
         }
 
     }
@@ -1257,19 +1291,47 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
     // distance to start and distance to end
     if(str.count()) str += "\n";
     IUnit::self().meter2distance(trkpt.distance, val, unit);
+#ifndef WIN32
     str += tr("%5 %4 %1%2 (%3%)").arg(val).arg(unit).arg(trkpt.distance * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A4)).arg(QChar(0x2690));
+#else
+    //Unicode character 0x2690 "WHITE FLAG" is not supported for Windows
+    str += tr("%4 %1%2 (%3%)").arg(val).arg(unit).arg(trkpt.distance * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A4));
+#endif
     IUnit::self().meter2distance(getTotalDistance() - trkpt.distance, val, unit);
+#ifndef WIN32
     str += tr(" | (%3%) %1%2 %4 %5").arg(val).arg(unit).arg((getTotalDistance() - trkpt.distance) * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A6)).arg(QChar(0x2691));
-
+#else
+    //Unicode character 0x2691 "BLACK FLAG" is not supported for Windows
+    str += tr(" | (%3%) %1%2 %4").arg(val).arg(unit).arg((getTotalDistance() - trkpt.distance) * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A6));
+#endif
 
     // elevation of point
     if(trkpt.ele != WPT_NOFLOAT)
     {
         if(str.count()) str += "\n";
         IUnit::self().meter2elevation(trkpt.ele, val, unit);
-        str += tr("elevation: %1 %2").arg(val).arg(unit);
+        str += tr("elevation: %1%2").arg(val).arg(unit);
     }
 
+    if((trkpt.heartReateBpm != -1) || (trkpt.cadenceRpm != -1))
+    {
+        if(str.count()) str += "\n";
+    }
+
+    if(trkpt.heartReateBpm != -1)
+    {
+        str += tr("heart rate: %1bpm").arg(trkpt.heartReateBpm);
+    }
+
+    if((trkpt.heartReateBpm != -1) && (trkpt.cadenceRpm != -1))
+    {
+        str += " | ";
+    }
+
+    if(trkpt.cadenceRpm != -1)
+    {
+        str += tr("cadence: %1rpm").arg(trkpt.cadenceRpm);
+    }
 
     //-----------------------------------------------------------------------------------------------------------
     //TODO: HOVERTEXT FOR EXTENSIONS
@@ -1294,6 +1356,7 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
     return str;
 }
 
+
 QString CTrack::getTrkPtInfo2(pt_t& trkpt)
 {
     QString str, val, unit;
@@ -1301,12 +1364,14 @@ QString CTrack::getTrkPtInfo2(pt_t& trkpt)
     if(CResources::self().showTrackProfileEleInfo())
     {
         // distance ascend descend in current stage
-        QString lastName = tr("Start");/* = QChar(0x2690);*/
+                                 /* = QChar(0x2690);*/
+        QString lastName = tr("Start");
         double lastDist  = 0;
         double lastAsc   = 0;
         double lastDesc  = 0;
 
-        QString nextName = tr("End");/* = QChar(0x2691);*/
+                                 /* = QChar(0x2691);*/
+        QString nextName = tr("End");
         double nextDist  = getTotalDistance();
         double nextAsc   = getAscend();
         double nextDesc  = getDescend();
@@ -1367,12 +1432,14 @@ QString CTrack::getTrkPtInfo2(pt_t& trkpt)
     return str;
 }
 
+
 void CTrack::setDoScaleWpt2Track(Qt::CheckState state)
 {
     doScaleWpt2Track = state;
     CTrackDB::self().emitSigModified();
     CTrackDB::self().emitSigChanged();
 }
+
 
 void CTrack::slotScaleWpt2Track()
 {
@@ -1392,16 +1459,16 @@ void CTrack::slotScaleWpt2Track()
         return ;
     }
 
-    if(doScaleWpt2Track == Qt::PartiallyChecked	)
+    if(doScaleWpt2Track == Qt::PartiallyChecked )
     {
         if(wptdb.count() > 1000 || track.count() > 10000)
         {
             QString msg = tr(
-                    "You are trying to find waypoints along a track with %1 waypoints and a track of size %2. "
-                    "This can be a very time consuming operation. Go on?\n\n"
-                    "Your selection will be stored in the track's data. You can save it along with the data. "
-                    "To change the selection use the checkbox in the track edit dialog."
-                    ).arg(wptdb.count()).arg(track.count());
+                "You are trying to find waypoints along a track with %1 waypoints and a track of size %2. "
+                "This can be a very time consuming operation. Go on?\n\n"
+                "Your selection will be stored in the track's data. You can save it along with the data. "
+                "To change the selection use the checkbox in the track edit dialog."
+                ).arg(wptdb.count()).arg(track.count());
 
             QMessageBox::Button res = QMessageBox::warning(0,tr("Warning..."), msg, QMessageBox::Ok| QMessageBox::Abort, QMessageBox::Ok);
 
@@ -1490,6 +1557,7 @@ void CTrack::slotScaleWpt2Track()
     return ;
 }
 
+
 void CTrack::medianFilter(quint32 len, QProgressDialog& progress)
 {
     cntMedianFilterApplied = (len - 5) >> 1;
@@ -1539,6 +1607,22 @@ void CTrack::medianFilter(quint32 len, QProgressDialog& progress)
 
 }
 
+void CTrack::offsetElevation(double offset)
+{
+
+    QList<pt_t>& trkpts                 = getTrackPoints();
+    QList<pt_t>::iterator trkpt   = trkpts.begin();
+    while(trkpt != trkpts.end())
+    {
+        if(trkpt->ele != WPT_NOFLOAT)
+        {
+            trkpt->ele += offset;
+        }
+
+        trkpt++;
+    }
+}
+
 void CTrack::reset()
 {
     QList<CTrack::pt_t>& trkpts           = getTrackPoints();
@@ -1561,6 +1645,7 @@ void CTrack::reset()
     slotScaleWpt2Track();
 }
 
+
 QDataStream& operator >>(QDataStream& s, CFlags& flag)
 {
     quint32 f;
@@ -1576,5 +1661,3 @@ QDataStream& operator <<(QDataStream& s, CFlags& flag)
     s << flag.flag();
     return s;
 }
-
-

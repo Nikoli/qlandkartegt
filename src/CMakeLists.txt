@@ -163,6 +163,7 @@ set(qlandkarte_SRCS
     CDlgCropMap.cpp
     CDlgParentWpt.cpp
     CDlgDeviceExportPath.cpp
+    CDlgProxy.cpp
     CQlb.cpp
     CGpx.cpp
     IDevice.cpp
@@ -244,6 +245,7 @@ set(qlandkarte_SRCS
     CDiskCacheZip.cpp
     CTextBrowser.cpp
     CImageViewer.cpp
+    CMapRmp.cpp
 )
 
 if (WIN32)
@@ -335,6 +337,7 @@ set(qlandkarte_HDRS
     CDlgCropMap.h
     CDlgParentWpt.h
     CDlgDeviceExportPath.h
+    CDlgProxy.h
     CQlb.h
     CGpx.h
     IDevice.h
@@ -416,6 +419,7 @@ set(qlandkarte_HDRS
     CSettings.h
     CTextBrowser.h
     CImageViewer.h
+    CMapRmp.h
 )
 
 
@@ -457,6 +461,7 @@ SET(qlandkarte_UIS
     IDlgCropMap.ui
     IDlgParentWpt.ui
     IDlgDeviceExportPath.ui
+    IDlgProxy.ui
     ICreateMapQMAP.ui
     ICreateMapGeoTiff.ui
     ICreateMapGridTool.ui
@@ -527,6 +532,9 @@ endif(GPSD_FOUND)
 
 IF(EXIF_FOUND)
     add_definitions(-DHAS_EXIF)
+    SET(qlandkarte_HDRS ${qlandkarte_HDRS} CDlgImportImages.h )
+    SET(qlandkarte_SRCS ${qlandkarte_SRCS} CDlgImportImages.cpp)
+    SET(qlandkarte_UIS ${qlandkarte_UIS} IDlgImportImages.ui)
 else(EXIF_FOUND)
     set(EXIF_INCLUDE_DIRS "")
     set(EXIF_LIBRARIES "")
@@ -534,7 +542,7 @@ ENDIF(EXIF_FOUND)
 
 IF(DMTX_FOUND)
     add_definitions(-DHAS_DMTX)
-else(EXIF_FOUND)
+else(DMTX_FOUND)
     set(DMTX_INCLUDE_DIRS "")
     set(DMTX_LIBRARIES "")
 ENDIF(DMTX_FOUND)
@@ -556,7 +564,7 @@ IF(NOT QTSOAP_FOUND)
     set(QTSOAP_LIBRARIES "qtsoap")
 ENDIF()
 
-add_definitions(-DDB_VERSION=8)
+add_definitions(-DDB_VERSION=9)
 SET(qlandkarte_HDRS ${qlandkarte_HDRS}  CGeoDB.h CDlgSelGeoDBFolder.h CDlgEditFolder.h)
 SET(qlandkarte_SRCS ${qlandkarte_SRCS}  CGeoDB.cpp CDlgSelGeoDBFolder.cpp CDlgEditFolder.cpp)
 SET(qlandkarte_UIS ${qlandkarte_UIS} IGeoToolWidget.ui IDlgSelGeoDBFolder.ui IDlgEditFolder.ui)

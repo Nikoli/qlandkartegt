@@ -30,7 +30,6 @@
 #include <QtXml>
 #include <QtNetwork>
 
-
 CMapWms::CMapWms(const QString &key, const QString &filename, CCanvas *parent)
 : IMap(eWMS,key,parent)
 , xsize_px(0)
@@ -103,7 +102,6 @@ CMapWms::CMapWms(const QString &key, const QString &filename, CCanvas *parent)
         projection = srs;
     }
 
-
     projection = projection.toLower();
     if(projection.startsWith("epsg"))
     {
@@ -116,7 +114,6 @@ CMapWms::CMapWms(const QString &key, const QString &filename, CCanvas *parent)
         pjsrc = pj_init_plus(projection.toLocal8Bit());
         qDebug() << "wms:" << projection.toLocal8Bit();
     }
-
 
     if(pjsrc == 0)
     {
@@ -156,7 +153,10 @@ CMapWms::CMapWms(const QString &key, const QString &filename, CCanvas *parent)
 
     accessManager = new QNetworkAccessManager(this);
     accessManager->setProxy(QNetworkProxy(QNetworkProxy::DefaultProxy));
+
     connect(accessManager,SIGNAL(finished(QNetworkReply*)),this,SLOT(slotRequestFinished(QNetworkReply*)));
+    connect(accessManager, SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),
+        this, SLOT(slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)));
 
     diskCache = new CDiskCache(false, this);
 
@@ -174,8 +174,14 @@ CMapWms::CMapWms(const QString &key, const QString &filename, CCanvas *parent)
 
 }
 
+
 CMapWms::~CMapWms()
 {
+
+    midU = rect.center().x();
+    midV = rect.center().y();
+    convertPt2Rad(midU, midV);
+
     if(pjsrc) pj_free(pjsrc);
 
     delete status;
@@ -192,11 +198,13 @@ CMapWms::~CMapWms()
 
 }
 
+
 void CMapWms::convertPixel2M(double& u, double& v)
 {
     u = xref1 + u * xscale;
     v = yref1 + v * yscale;
 }
+
 
 void CMapWms::convertM2Pixel(double& u, double& v)
 {
@@ -204,17 +212,20 @@ void CMapWms::convertM2Pixel(double& u, double& v)
     v = (v - yref1) / (yscale);
 }
 
+
 void CMapWms::convertPt2M(double& u, double& v)
 {
     u = x + u * xscale * zoomFactor;
     v = y + v * yscale * zoomFactor;
 }
 
+
 void CMapWms::convertM2Pt(double& u, double& v)
 {
     u = floor((u - x) / (xscale * zoomFactor) + 0.5);
     v = floor((v - y) / (yscale * zoomFactor) + 0.5);
 }
+
 
 void CMapWms::convertPt2Pixel(double& u, double& v)
 {
@@ -259,6 +270,7 @@ void CMapWms::move(const QPoint& old, const QPoint& next)
 
     setAngleNorth();
 }
+
 
 void CMapWms::zoom(bool zoomIn, const QPoint& p0)
 {
@@ -315,6 +327,7 @@ void CMapWms::zoom(bool zoomIn, const QPoint& p0)
     emit sigChanged();
 }
 
+
 void CMapWms::zoom(double lon1, double lat1, double lon2, double lat2)
 {
     if(pjsrc == 0) return;
@@ -360,6 +373,7 @@ void CMapWms::zoom(double lon1, double lat1, double lon2, double lat2)
     qDebug() << "zoom:" << zoomFactor;
 }
 
+
 void CMapWms::zoom(qint32& level)
 {
     if(pjsrc == 0) return;
@@ -383,6 +397,7 @@ void CMapWms::zoom(qint32& level)
     qDebug() << "zoom:" << zoomFactor;
 }
 
+
 void CMapWms::dimensions(double& lon1, double& lat1, double& lon2, double& lat2)
 {
     if(pjsrc == 0) return;
@@ -395,6 +410,7 @@ void CMapWms::dimensions(double& lon1, double& lat1, double& lon2, double& lat2)
     lat2 = yref2;
     pj_transform(pjsrc,pjtar,1,0,&lon2,&lat2,0);
 }
+
 
 void CMapWms::getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float& my_yscale)
 {
@@ -412,6 +428,7 @@ void CMapWms::getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float&
     my_yscale   = yscale * zoomFactor;
 
 }
+
 
 void CMapWms::draw(QPainter& p)
 {
@@ -573,6 +590,7 @@ void CMapWms::draw()
     checkQueue();
 }
 
+
 void CMapWms::addToQueue(request_t& req)
 {
     if(!seenRequest.contains(req.url.toString()))
@@ -581,6 +599,7 @@ void CMapWms::addToQueue(request_t& req)
         seenRequest << req.url.toString();
     }
 }
+
 
 void CMapWms::checkQueue()
 {
@@ -612,12 +631,11 @@ void CMapWms::checkQueue()
         status->setText(tr("Wait for %1 tiles.").arg(pendRequests.size() + newRequests.size()));
     }
 
-
 }
+
 
 void CMapWms::slotRequestFinished(QNetworkReply* reply)
 {
-
 
     QString _url_ = reply->url().toString();
     if(pendRequests.contains(_url_))
@@ -680,6 +698,19 @@ void CMapWms::slotRequestFinished(QNetworkReply* reply)
     emit sigChanged();
 }
 
+
+void CMapWms::slotProxyAuthenticationRequired(const QNetworkProxy &prox, QAuthenticator *auth)
+{
+    QString user;
+    QString pwd;
+
+    CResources::self().getHttpProxyAuth(user,pwd);
+
+    auth->setUser(user);
+    auth->setPassword(pwd);
+}
+
+
 void CMapWms::config()
 {
     CDlgMapWmsConfig dlg(*this);
@@ -691,6 +722,7 @@ quint32 CMapWms::scalePixelGrid(quint32 nPixel)
 {
     return double(nPixel) / zoomFactor;
 }
+
 
 void CMapWms::select(IMapSelection& ms, const QRect& rect)
 {

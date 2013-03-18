@@ -94,7 +94,7 @@ void IMouse::resizeRect(const QPoint& p, bool normalize)
     {
         QPoint p0(rect.topLeft());
         rect.setCoords(std::min(p.x(), p0.x()), std::min(p.y(), p0.y()),
-                       std::max(p.x(), p0.x()), std::max(p.y(), p0.y()));
+            std::max(p.x(), p0.x()), std::max(p.y(), p0.y()));
     }
     else
     {
@@ -141,6 +141,7 @@ void IMouse::drawPos1(QPainter& p)
     CCanvas::drawText(fi.fileName(), p, QRect(u,v, LENGTH, 20));
 }
 
+
 void IMouse::drawSelWpt(QPainter& p)
 {
     IMap& map = CMapDB::self().getMap();
@@ -151,7 +152,6 @@ void IMouse::drawSelWpt(QPainter& p)
         map.convertRad2Pt(u,v);
 
         QPixmap icon = selWpt->getIcon().scaled(16,16, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-
 
         p.setPen(CCanvas::penBorderBlue);
         p.setBrush(CCanvas::brushBackWhite);
@@ -252,6 +252,27 @@ void IMouse::drawSelWpt(QPainter& p)
         }
 
         p.restore();
+
+        if(selWpt->dir != WPT_NOFLOAT)
+        {
+#define ARROWDIR_H 15
+#define ARROWDIR_W 20
+
+            p.save();
+            p.setPen(CCanvas::penBorderBlue);
+            p.setBrush(CCanvas::brushBackWhite);
+
+            p.translate(u, v);
+            p.rotate(selWpt->dir);
+            p.translate(0,  - 37 - ARROWDIR_H/2);
+
+            QPolygon arrow;
+            arrow << QPoint(0, -ARROWDIR_H/2) << QPoint(-ARROWDIR_W/2, ARROWDIR_H/2) << QPoint(0, ARROWDIR_H/3) << QPoint(ARROWDIR_W/2, ARROWDIR_H/2);
+
+            p.drawPolygon(arrow);
+
+            p.restore();
+        }
     }
     
 #ifdef HAS_POWERDB
@@ -279,8 +300,8 @@ void IMouse::drawSelWpt(QPainter& p)
         p.setFont(CResources::self().getMapFont());
         p.setPen(Qt::darkBlue);
         p.drawText(r1, Qt::AlignJustify|Qt::AlignTop|Qt::TextWordWrap,str);
+
     }
-#endif
 }
 
 
@@ -345,7 +366,6 @@ void IMouse::drawSelTrkPt(QPainter& p)
             r2.setHeight(r1.height() + 20);
             r2.moveTop(r1.top() - 10);
 
-
             p.setPen(QPen(CCanvas::penBorderBlue));
             p.setBrush(CCanvas::brushBackWhite);
             PAINT_ROUNDED_RECT(p,r2);
@@ -372,7 +392,6 @@ void IMouse::drawSelTrkPt(QPainter& p)
             r2.setHeight(r1.height() + 10);
             r2.moveTop(r1.top() - 5);
 
-
             p.setPen(QPen(CCanvas::penBorderBlue));
             p.setBrush(CCanvas::brushBackWhite);
             PAINT_ROUNDED_RECT(p,r2);
@@ -383,6 +402,7 @@ void IMouse::drawSelTrkPt(QPainter& p)
         }
     }
 }
+
 
 void IMouse::drawSelRtePt(QPainter& p)
 {
@@ -409,7 +429,6 @@ void IMouse::drawSelRtePt(QPainter& p)
         r2.setHeight(r1.height() + 20);
         r2.moveTop(r1.top() - 10);
 
-
         p.setPen(QPen(CCanvas::penBorderBlue));
         p.setBrush(CCanvas::brushBackWhite);
         PAINT_ROUNDED_RECT(p,r2);
@@ -419,7 +438,6 @@ void IMouse::drawSelRtePt(QPainter& p)
         p.drawText(r1, Qt::AlignLeft|Qt::AlignTop|Qt::TextWordWrap,str);
     }
 }
-
 
 
 void IMouse::mouseMoveEventWpt(QMouseEvent * e)
@@ -701,15 +719,8 @@ void IMouse::mousePressEventWpt(QMouseEvent * e)
     }
     else if(rectViewWpt.contains(pt) && !selWpt->images.isEmpty() /*&& !selWpt->images[0].filePath.isEmpty()*/)
     {
-        if(!selWpt->images[0].filePath.isEmpty())
-        {
-            QDesktopServices::openUrl(QUrl("file:///" + selWpt->images[0].filePath));
-        }
-        else
-        {
-            CImageViewer view(selWpt->images, 0, theMainWindow);
-            view.exec();
-        }
+        CImageViewer view(selWpt->images, 0, theMainWindow);
+        view.exec();
     }
     else if(rectMarkWpt.contains(pt))
     {
@@ -768,7 +779,6 @@ void IMouse::mousePressEventSearch(QMouseEvent * e)
 }
 
 
-
 void IMouse::mouseMoveEventTrack(QMouseEvent * e)
 {
     CTrack * track = CTrackDB::self().highlightedTrack();
@@ -811,6 +821,7 @@ void IMouse::mouseMoveEventTrack(QMouseEvent * e)
         canvas->update();
     }
 }
+
 
 void IMouse::mouseMoveEventRoute(QMouseEvent * e)
 {
@@ -897,6 +908,7 @@ void IMouse::mouseMoveEventOverlay(QMouseEvent * e)
     }
 }
 
+
 void IMouse::mouseMoveEventMapSel(QMouseEvent * e)
 {
 
@@ -919,13 +931,13 @@ void IMouse::mouseMoveEventMapSel(QMouseEvent * e)
         theMainWindow->getCanvas()->setMouseMode(CCanvas::eMouseMoveArea);
     }
 
-
     if(selMap != oldSel)
     {
         canvas->update();
     }
 
 }
+
 
 void IMouse::slotSetPos1()
 {

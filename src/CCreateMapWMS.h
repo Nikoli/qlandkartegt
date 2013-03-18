@@ -21,6 +21,7 @@
 #define CCREATEMAPWMS_H
 
 #include <QWidget>
+#include <QtNetwortk>
 #include "ui_ICreateMapWMS.h"
 
 class QHttp;
@@ -37,6 +38,7 @@ class CCreateMapWMS : public QWidget, private Ui::ICreateMapWMS
         void slotSetupLink();
         void slotRequestStarted(int );
         void slotRequestFinished(int , bool error);
+        void slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*);
         void slotSave();
         void slotSelectFile();
 

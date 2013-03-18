@@ -17,7 +17,6 @@
 
 **********************************************************************************************/
 
-
 #include "CTrackFilterWidget.h"
 #include "CTrackDB.h"
 #include "CTrack.h"
@@ -36,9 +35,8 @@ enum meter_feet_index
     FEET_INDEX
 };
 
-
 CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
-    : QWidget(parent)
+: QWidget(parent)
 {
     setupUi(this);
     setObjectName("CTrackFilterWidget");
@@ -50,6 +48,7 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     connect(comboMeterFeet1, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
     connect(comboMeterFeet2, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
     connect(comboMeterFeet3, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
+    connect(comboMeterFeet4, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
 
     connect(toolAddHidePoints1, SIGNAL(clicked()), this, SLOT(slotAddFilterHidePoints1()));
     connect(toolAddHidePoints2, SIGNAL(clicked()), this, SLOT(slotAddFilterHidePoints2()));
@@ -61,6 +60,7 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     connect(toolReset, SIGNAL(clicked()), this, SLOT(slotAddFilterReset()));
     connect(toolDelete, SIGNAL(clicked()), this, SLOT(slotAddFilterDelete()));
     connect(toolAddReplaceEle, SIGNAL(clicked()), this, SLOT(slotAddReplaceElevation()));
+    connect(toolAddOffsetEle, SIGNAL(clicked()), this, SLOT(slotAddOffsetElevation()));
 
     connect(toolResetNow, SIGNAL(clicked()), this, SLOT(slotResetNow()));
     connect(toolHidePoints1Now, SIGNAL(clicked()), this, SLOT(slotHidePoints1Now()));
@@ -68,11 +68,11 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     connect(toolDeleteNow, SIGNAL(clicked()), this, SLOT(slotDeleteNow()));
     connect(toolSmoothProfile1Now, SIGNAL(clicked()), this, SLOT(slotSmoothProfile1Now()));
     connect(toolReplaceEleNow, SIGNAL(clicked()), this, SLOT(slotReplaceEleNow()));
+    connect(toolOffsetEleNow, SIGNAL(clicked()), this, SLOT(slotOffsetEleNow()));
     connect(toolSplit1Now, SIGNAL(clicked()), this, SLOT(slotSplit1Now()));
     connect(toolSplit2Now, SIGNAL(clicked()), this, SLOT(slotSplit2Now()));
     connect(toolSplit3Now, SIGNAL(clicked()), this, SLOT(slotSplit3Now()));
     connect(toolSplit4Now, SIGNAL(clicked()), this, SLOT(slotSplit4Now()));
-
 
     // ----------- read in GUI configuration -----------
     SETTINGS;
@@ -81,18 +81,22 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
         comboMeterFeet1->setCurrentIndex((int)FEET_INDEX);
         comboMeterFeet2->setCurrentIndex((int)FEET_INDEX);
         comboMeterFeet3->setCurrentIndex((int)FEET_INDEX);
+        comboMeterFeet4->setCurrentIndex((int)FEET_INDEX);
         spinDistance1->setSuffix("ft");
         spinSplit3->setSuffix("ft");
         spinSplit4->setSuffix("ft");
+        spinOffset1->setSuffix("ft");
     }
     else
     {
         comboMeterFeet1->setCurrentIndex((int)METER_INDEX);
         comboMeterFeet2->setCurrentIndex((int)METER_INDEX);
         comboMeterFeet3->setCurrentIndex((int)METER_INDEX);
+        comboMeterFeet4->setCurrentIndex((int)METER_INDEX);
         spinDistance1->setSuffix("m");
         spinSplit3->setSuffix("m");
         spinSplit4->setSuffix("m");
+        spinOffset1->setSuffix("m");
     }
 
     // Filter: Hide points 1
@@ -122,9 +126,9 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     radioEleFromRemote->setChecked(cfg.value("trackfilter/ReplaceElevation/fromRemote", radioEleFromRemote->isChecked()).toBool());
     editGeonamesOrgUsername->setText(cfg.value("geonames/username", "").toString());
 
+
     // register current track
     slotHighlightTrack(CTrackDB::self().highlightedTrack());
-
 
     radioSplitTracks->setChecked(cfg.value("trackfilter/Split/asTrack", radioSplitTracks->isChecked()).toBool());
     radioSplitStages->setChecked(cfg.value("trackfilter/Split/asStages", radioSplitStages->isChecked()).toBool());
@@ -150,7 +154,10 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     contextMenuStoredFilter->addAction(QIcon(":/icons/iconEdit16x16.png"), tr("Edit name..."), this, SLOT(slotStoredFilterEdit()));
     contextMenuStoredFilter->addAction(QIcon(":/icons/iconClear16x16.png"), tr("Delete"), this, SLOT(slotStoredFilterDelete()));
 
+    // remove later
+    scrollArea_4->setEnabled(false);
 }
+
 
 CTrackFilterWidget::~CTrackFilterWidget()
 {
@@ -183,7 +190,6 @@ CTrackFilterWidget::~CTrackFilterWidget()
     cfg.setValue("trackfilter/ReplaceElevation/fromRemote", radioEleFromRemote->isChecked());
     cfg.setValue("geonames/username", editGeonamesOrgUsername->text());
 
-
     cfg.setValue("trackfilter/Split/asTrack", radioSplitTracks->isChecked());
     cfg.setValue("trackfilter/Split/asStages", radioSplitStages->isChecked());
 
@@ -211,6 +217,7 @@ void CTrackFilterWidget::saveFilterList(const QString& filename)
 
     file.close();
 }
+
 
 void CTrackFilterWidget::loadFilterList(const QString& filename)
 {
@@ -248,10 +255,12 @@ void CTrackFilterWidget::loadFilterList(const QString& filename)
     }
 }
 
+
 void CTrackFilterWidget::setTrackEditWidget(CTrackEditWidget * w)
 {
     trackEditWidget = w;
 }
+
 
 void CTrackFilterWidget::slotHighlightTrack(CTrack * trk)
 {
@@ -261,6 +270,7 @@ void CTrackFilterWidget::slotHighlightTrack(CTrack * trk)
         // todo add track dependend setup
     }
 }
+
 
 void CTrackFilterWidget::slotComboMeterFeet(const QString &text)
 {
@@ -276,6 +286,10 @@ void CTrackFilterWidget::slotComboMeterFeet(const QString &text)
     {
         spinSplit4->setSuffix(text);
     }
+    else if(sender() == comboMeterFeet4)
+    {
+        spinOffset1->setSuffix(text);
+    }
 }
 
 
@@ -287,11 +301,13 @@ void CTrackFilterWidget::slotDoubleClickStoredFilter(QListWidgetItem * item)
     }
 }
 
+
 void CTrackFilterWidget::slotContextMenuStoredFilter( const QPoint & pos)
 {
     QPoint p = listStored->mapToGlobal(pos);
     contextMenuStoredFilter->exec(p);
 }
+
 
 void CTrackFilterWidget::slotStoredFilterEdit()
 {
@@ -313,6 +329,7 @@ void CTrackFilterWidget::slotStoredFilterEdit()
     file.rename(QDir::home().filePath(CONFIGDIR + name + ".filter"));
     item->setText(name);
 }
+
 
 void CTrackFilterWidget::slotStoredFilterDelete()
 {
@@ -345,6 +362,7 @@ void CTrackFilterWidget::slotResetFilterList()
     pushSave->setEnabled(false);
 }
 
+
 void CTrackFilterWidget::slotAddFilterHidePoints1()
 {
     QByteArray args;
@@ -371,6 +389,7 @@ void CTrackFilterWidget::readGuiHidePoints1(QByteArray& args, double& d, double&
     stream << quint32(eHidePoints1) << d << a;
 }
 
+
 void CTrackFilterWidget::slotAddFilterHidePoints2()
 {
     QByteArray args;
@@ -381,6 +400,7 @@ void CTrackFilterWidget::slotAddFilterHidePoints2()
     addFilter(name, ":/icons/iconTrack16x16.png", args);
 }
 
+
 void CTrackFilterWidget::readGuiHidePoints2(QByteArray& args, double& d)
 {
     QDataStream stream(&args, QIODevice::WriteOnly);
@@ -388,15 +408,17 @@ void CTrackFilterWidget::readGuiHidePoints2(QByteArray& args, double& d)
     stream << quint32(eHidePoints2) << d;
 }
 
+
 void CTrackFilterWidget::slotAddFilterSmoothProfile1()
 {
     QByteArray args;
     quint32 tabs;
 
     readGuiSmoothProfile1(args, tabs);
-    QString name = groupSmoothProfile1->title() + QString(" (%1 points)").arg(tabs);    
+    QString name = groupSmoothProfile1->title() + QString(" (%1 points)").arg(tabs);
     addFilter(name, ":/icons/iconGraph16x16.png", args);
 }
+
 
 void CTrackFilterWidget::readGuiSmoothProfile1(QByteArray& args, quint32& tabs)
 {
@@ -404,6 +426,7 @@ void CTrackFilterWidget::readGuiSmoothProfile1(QByteArray& args, quint32& tabs)
     tabs = spinSmoothProfileTabs1->value();
     stream << quint32(eSmoothProfile1) << tabs;
 }
+
 
 void CTrackFilterWidget::slotAddFilterSplit1()
 {
@@ -415,6 +438,7 @@ void CTrackFilterWidget::slotAddFilterSplit1()
     addFilter(name, ":/icons/editcut.png", args);
 }
 
+
 void CTrackFilterWidget::readGuiSplit1(QByteArray& args, double& val)
 {
     QDataStream stream(&args, QIODevice::WriteOnly);
@@ -422,6 +446,7 @@ void CTrackFilterWidget::readGuiSplit1(QByteArray& args, double& val)
     val = spinSplit1->value();
     stream << quint32(eSplit1) << val;
 }
+
 
 void CTrackFilterWidget::slotAddFilterSplit2()
 {
@@ -432,6 +457,7 @@ void CTrackFilterWidget::slotAddFilterSplit2()
     QString name = groupSplit2->title() + QString(" (%1 points)").arg(val);
     addFilter(name, ":/icons/editcut.png", args);
 }
+
 
 void CTrackFilterWidget::readGuiSplit2(QByteArray& args, double& val)
 {
@@ -452,6 +478,7 @@ void CTrackFilterWidget::slotAddFilterSplit3()
     addFilter(name, ":/icons/editcut.png", args);
 }
 
+
 void CTrackFilterWidget::readGuiSplit3(QByteArray& args, double& val)
 {
     QDataStream stream(&args, QIODevice::WriteOnly);
@@ -471,6 +498,7 @@ void CTrackFilterWidget::slotAddFilterSplit4()
     addFilter(name, ":/icons/editcut.png", args);
 }
 
+
 void CTrackFilterWidget::readGuiSplit4(QByteArray& args, double& val)
 {
     QDataStream stream(&args, QIODevice::WriteOnly);
@@ -482,12 +510,13 @@ void CTrackFilterWidget::readGuiSplit4(QByteArray& args, double& val)
 
 void CTrackFilterWidget::slotAddFilterReset()
 {
-    QByteArray args;    
+    QByteArray args;
 
     QString name = groupReset->title();
     readGuiReset(args);
     addFilter(name, ":/icons/editundo.png", args);
 }
+
 
 void CTrackFilterWidget::readGuiReset(QByteArray& args)
 {
@@ -495,14 +524,16 @@ void CTrackFilterWidget::readGuiReset(QByteArray& args)
     stream << quint32(eReset);
 }
 
+
 void CTrackFilterWidget::slotAddFilterDelete()
 {
     QByteArray args;
 
-    QString name = groupDelete->title();    
+    QString name = groupDelete->title();
     readGuiDelete(args);
     addFilter(name, ":/icons/iconDelete16x16.png", args);
 }
+
 
 void CTrackFilterWidget::readGuiDelete(QByteArray& args)
 {
@@ -510,15 +541,17 @@ void CTrackFilterWidget::readGuiDelete(QByteArray& args)
     stream << quint32(eDelete);
 }
 
+
 void CTrackFilterWidget::slotAddReplaceElevation()
 {
     QByteArray args;
     quint32 type;
 
     readGuiReplaceEle(args, type);
-    QString name = groupReplaceElevation->title() + (type == eLocal ? tr(" (local)") : tr(" (remote)"));    
+    QString name = groupReplaceElevation->title() + (type == eLocal ? tr(" (local)") : tr(" (remote)"));
     addFilter(name, ":/icons/iconGraph16x16.png", args);
 }
+
 
 void CTrackFilterWidget::readGuiReplaceEle(QByteArray& args, quint32& type)
 {
@@ -532,6 +565,36 @@ void CTrackFilterWidget::readGuiReplaceEle(QByteArray& args, quint32& type)
     stream << quint32(eReplaceElevation) << type << editGeonamesOrgUsername->text();
 }
 
+void CTrackFilterWidget::slotAddOffsetElevation()
+{
+    QByteArray args;
+
+    double val;
+    QString unit;
+
+    readGuiOffsetEle(args, val, unit);
+    QString name = groupOffsetElevation->title() + QString(" (%i%i)").arg(val).arg(unit);
+    addFilter(name, ":/icons/iconGraph16x16.png", args);
+}
+
+void CTrackFilterWidget::readGuiOffsetEle(QByteArray& args, double& val, QString& unit)
+{
+    QDataStream stream(&args, QIODevice::WriteOnly);
+
+    val     = spinOffset1->value();
+    unit    = spinOffset1->suffix();
+
+    if(unit == "ft")
+    {
+        stream << quint32(eOffsetElevation) << (val / 3.28084);
+    }
+    else
+    {
+        stream << quint32(eOffsetElevation) << val;
+    }
+
+}
+
 void CTrackFilterWidget::addFilter(const QString& name, const QString& icon, QByteArray& args)
 {
     QListWidgetItem * item = new QListWidgetItem(listFilters);
@@ -543,7 +606,6 @@ void CTrackFilterWidget::addFilter(const QString& name, const QString& icon, QBy
     pushResetFilterList->setEnabled(true);
     pushSave->setEnabled(true);
 }
-
 
 
 void CTrackFilterWidget::slotResetNow()
@@ -565,6 +627,7 @@ void CTrackFilterWidget::slotResetNow()
     postProcessTrack();
 }
 
+
 void CTrackFilterWidget::slotHidePoints1Now()
 {
     if(track.isNull()) return;
@@ -584,6 +647,7 @@ void CTrackFilterWidget::slotHidePoints1Now()
 
     postProcessTrack();
 }
+
 
 void CTrackFilterWidget::slotHidePoints2Now()
 {
@@ -605,6 +669,7 @@ void CTrackFilterWidget::slotHidePoints2Now()
     postProcessTrack();
 }
 
+
 void CTrackFilterWidget::slotDeleteNow()
 {
     if(track.isNull()) return;
@@ -623,6 +688,7 @@ void CTrackFilterWidget::slotDeleteNow()
 
     postProcessTrack();
 }
+
 
 void CTrackFilterWidget::slotSmoothProfile1Now()
 {
@@ -644,6 +710,7 @@ void CTrackFilterWidget::slotSmoothProfile1Now()
     postProcessTrack();
 }
 
+
 void CTrackFilterWidget::slotReplaceEleNow()
 {
     if(track.isNull()) return;
@@ -662,6 +729,29 @@ void CTrackFilterWidget::slotReplaceEleNow()
 
     postProcessTrack();
 }
+
+void CTrackFilterWidget::slotOffsetEleNow()
+{
+    if(track.isNull()) return;
+
+    quint32 type;
+    double val;
+    QString unit;
+    QByteArray args;
+
+    readGuiOffsetEle(args, val, unit);
+
+    QDataStream stream(&args, QIODevice::ReadOnly);
+    stream >> type;
+
+    QList<CTrack*> tracks;
+    tracks << track;
+
+    filterOffsetElevation(stream, tracks);
+
+    postProcessTrack();
+}
+
 
 void CTrackFilterWidget::slotSplit1Now()
 {
@@ -690,6 +780,7 @@ void CTrackFilterWidget::slotSplit1Now()
     postProcessTrack();
 }
 
+
 void CTrackFilterWidget::slotSplit2Now()
 {
     if(track.isNull()) return;
@@ -717,6 +808,7 @@ void CTrackFilterWidget::slotSplit2Now()
     postProcessTrack();
 }
 
+
 void CTrackFilterWidget::slotSplit3Now()
 {
     if(track.isNull()) return;
@@ -743,6 +835,7 @@ void CTrackFilterWidget::slotSplit3Now()
 
     postProcessTrack();
 }
+
 
 void CTrackFilterWidget::slotSplit4Now()
 {
@@ -789,6 +882,7 @@ void CTrackFilterWidget::slotSaveFilter()
     item->setText(name);
     item->setIcon(QIcon(":/icons/iconFilter16x16.png"));
 }
+
 
 void CTrackFilterWidget::slotApplyFilter()
 {
@@ -879,6 +973,10 @@ void CTrackFilterWidget::slotApplyFilter()
                 cancelled = filterReplaceElevation(args, tracks);
                 break;
 
+            case eOffsetElevation:
+                cancelled = filterOffsetElevation(args, tracks);
+                break;
+
             default:
                 qDebug() << "unknown filter" << type;
                 cancelled = true;
@@ -894,6 +992,7 @@ void CTrackFilterWidget::slotApplyFilter()
     postProcessTrack();
     QApplication::restoreOverrideCursor();
 }
+
 
 void CTrackFilterWidget::postProcessTrack()
 {
@@ -957,7 +1056,6 @@ bool CTrackFilterWidget::filterHidePoints1(QDataStream& args, QList<CTrack*>& tr
                 deltaAzimuth = 0;
             }
 
-
             double deltaEle = abs(lastEle - trkpt->ele);
 
             if (delta < minDistance || (deltaAzimuth < minAzimuthDelta))
@@ -996,6 +1094,7 @@ bool CTrackFilterWidget::filterHidePoints1(QDataStream& args, QList<CTrack*>& tr
 
     return false;
 }
+
 
 bool CTrackFilterWidget::filterHidePoints2(QDataStream& args, QList<CTrack*>& tracks)
 {
@@ -1072,6 +1171,7 @@ bool CTrackFilterWidget::filterHidePoints2(QDataStream& args, QList<CTrack*>& tr
     return false;
 }
 
+
 bool CTrackFilterWidget::filterSmoothProfile1(QDataStream &args, QList<CTrack *> &tracks)
 {
     quint32 tabs;
@@ -1098,6 +1198,7 @@ bool CTrackFilterWidget::filterSmoothProfile1(QDataStream &args, QList<CTrack *>
     }
     return false;
 }
+
 
 bool CTrackFilterWidget::filterSplit1Stages(QDataStream &args, QList<CTrack *> &tracks)
 {
@@ -1137,6 +1238,7 @@ bool CTrackFilterWidget::filterSplit1Stages(QDataStream &args, QList<CTrack *> &
     return false;
 
 }
+
 
 bool CTrackFilterWidget::filterSplit1Tracks(QDataStream &args, QList<CTrack *> &tracks)
 {
@@ -1192,6 +1294,7 @@ bool CTrackFilterWidget::filterSplit1Tracks(QDataStream &args, QList<CTrack *> &
     return false;
 }
 
+
 bool CTrackFilterWidget::filterSplit2Stages(QDataStream &args, QList<CTrack *> &tracks)
 {
     double val;
@@ -1229,6 +1332,7 @@ bool CTrackFilterWidget::filterSplit2Stages(QDataStream &args, QList<CTrack *> &
     }
     return false;
 }
+
 
 bool CTrackFilterWidget::filterSplit2Tracks(QDataStream &args, QList<CTrack *> &tracks)
 {
@@ -1285,6 +1389,7 @@ bool CTrackFilterWidget::filterSplit2Tracks(QDataStream &args, QList<CTrack *> &
     return false;
 }
 
+
 bool CTrackFilterWidget::filterSplit3Stages(QDataStream &args, QList<CTrack *> &tracks)
 {
     double val;
@@ -1321,6 +1426,7 @@ bool CTrackFilterWidget::filterSplit3Stages(QDataStream &args, QList<CTrack *> &
     }
     return false;
 }
+
 
 bool CTrackFilterWidget::filterSplit3Tracks(QDataStream &args, QList<CTrack *> &tracks)
 {
@@ -1377,6 +1483,7 @@ bool CTrackFilterWidget::filterSplit3Tracks(QDataStream &args, QList<CTrack *> &
     return false;
 }
 
+
 bool CTrackFilterWidget::filterSplit4Stages(QDataStream &args, QList<CTrack *> &tracks)
 {
     double val;
@@ -1413,6 +1520,7 @@ bool CTrackFilterWidget::filterSplit4Stages(QDataStream &args, QList<CTrack *> &
     }
     return false;
 }
+
 
 bool CTrackFilterWidget::filterSplit4Tracks(QDataStream &args, QList<CTrack *> &tracks)
 {
@@ -1468,17 +1576,20 @@ bool CTrackFilterWidget::filterSplit4Tracks(QDataStream &args, QList<CTrack *> &
     return false;
 }
 
+
 bool CTrackFilterWidget::filterReset(QDataStream &args, QList<CTrack *> &tracks)
 {
     trackEditWidget->slotReset();
     return false;
 }
 
+
 bool CTrackFilterWidget::filterDelete(QDataStream &args, QList<CTrack *> &tracks)
 {
     trackEditWidget->slotDelete();
     return false;
 }
+
 
 bool CTrackFilterWidget::filterReplaceElevation(QDataStream &args, QList<CTrack *> &tracks)
 {
@@ -1499,6 +1610,19 @@ bool CTrackFilterWidget::filterReplaceElevation(QDataStream &args, QList<CTrack 
         {
             trk->replaceElevationByRemote(false);
         }
+    }
+
+    return false;
+}
+
+bool CTrackFilterWidget::filterOffsetElevation(QDataStream &args, QList<CTrack *> &tracks)
+{
+    double offset;
+    args >> offset;
+
+    foreach(CTrack * trk, tracks)
+    {
+        trk->offsetElevation(offset);
     }
 
     return false;

@@ -24,7 +24,7 @@
 #include "CMainWindow.h"
 
 #include <QtGui>
-#include <QtNetwork/QHttp>
+#include <QtNetwork>
 #include <QtXml/QDomDocument>
 #include <projects.h>
 
@@ -70,6 +70,8 @@ void CCreateMapWMS::slotSetupLink()
     if(enableProxy)
     {
         server->setProxy(url,port);
+        connect(server, SIGNAL(proxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)),
+            this, SLOT(slotProxyAuthenticationRequired(const QNetworkProxy&, QAuthenticator*)));
     }
 
     connect(server,SIGNAL(requestStarted(int)),this,SLOT(slotRequestStarted(int)));
@@ -245,6 +247,18 @@ void CCreateMapWMS::slotRequestFinished(int , bool error)
     rectLatLonBoundingBox.setRight(maxx);
 
     frame->setEnabled(true);
+}
+
+
+void CCreateMapWMS::slotProxyAuthenticationRequired(const QNetworkProxy &prox, QAuthenticator *auth)
+{
+    QString user;
+    QString pwd;
+
+    CResources::self().getHttpProxyAuth(user,pwd);
+
+    auth->setUser(user);
+    auth->setPassword(pwd);
 }
 
 

@@ -18,6 +18,7 @@
 
 **********************************************************************************************/
 #include <stdio.h>
+#include <limits>
 
 #include "CTrackDB.h"
 #include "CTrack.h"
@@ -55,6 +56,7 @@ bool CTrackDB::keyLessThanAlpha(CTrackDB::keys_t&  s1, CTrackDB::keys_t&  s2)
     return s1.name.toLower() < s2.name.toLower();
 }
 
+
 bool CTrackDB::keyLessThanTime(keys_t&  s1, keys_t&  s2)
 {
     return s1.time < s2.time;
@@ -62,7 +64,7 @@ bool CTrackDB::keyLessThanTime(keys_t&  s1, keys_t&  s2)
 
 
 CTrackDB::CTrackDB(QTabWidget * tb, QObject * parent)
-    : IDB(IDB::eTypeTrk, tb, parent)
+: IDB(IDB::eTypeTrk, tb, parent)
 , cnt(0)
 , showBullets(true)
 , showMinMax(true)
@@ -75,6 +77,8 @@ CTrackDB::CTrackDB(QTabWidget * tb, QObject * parent)
     toolview    = new CTrackToolWidget(tb);
     undoStack   = CUndoStackModel::getInstance();
 
+
+    connect(&CMapDB::self(), SIGNAL(sigChanged()), this, SLOT(slotMapChanged()));
 }
 
 
@@ -123,8 +127,6 @@ QRectF CTrackDB::getBoundingRectF()
     }
     return r;
 }
-
-
 
 
 void CTrackDB::loadQLB(CQlb& qlb, bool newKey)
@@ -538,7 +540,6 @@ void CTrackDB::saveGPX(CGpx& gpx, const QStringList& keys)
             QDomText _time_ = gpx.createTextNode(t.toString("yyyy-MM-dd'T'hh:mm:ss.zzz'Z'"));
             time.appendChild(_time_);
 
-
             if(pt->hdop != WPT_NOFLOAT)
             {
                 QDomElement hdop = gpx.createElement("hdop");
@@ -582,7 +583,6 @@ void CTrackDB::saveGPX(CGpx& gpx, const QStringList& keys)
             {
                 bool hasExtensions = false;
                 QDomElement extensions = gpx.createElement("extensions");
-
 
                 if(pt->flags.flag() != 0)
                 {
@@ -686,7 +686,7 @@ void CTrackDB::highlightTrack(const QString& key)
 
     if(tracks.contains(key))
     {
-        tracks[key]->setHighlight(true);      
+        tracks[key]->setHighlight(true);
         emit sigHighlightTrack(tracks[key]);
     }
     else
@@ -823,6 +823,7 @@ void CTrackDB::splitTrack(int idx)
     emitSigModified();
 }
 
+
 void CTrackDB::drawLine(const QPolygon& line, const QRect& extViewport, QPainter& p)
 {
     QPolygon subline;
@@ -873,6 +874,7 @@ void CTrackDB::drawLine(const QPolygon& line, const QRect& extViewport, QPainter
 
 }
 
+
 static void drawMarker(QPainter& p, const QString& text, CTrack::pt_t& pt)
 {
     IMap& map = CMapDB::self().getMap();
@@ -900,6 +902,7 @@ static void drawMarker(QPainter& p, const QString& text, CTrack::pt_t& pt)
 
 }
 
+
 void CTrackDB::drawArrows(const QPolygon& line, const QRect& viewport, QPainter& p)
 {
     QPointF arrow[4] =
@@ -926,10 +929,9 @@ void CTrackDB::drawArrows(const QPolygon& line, const QRect& viewport, QPainter&
     t_paint.drawPolygon(arrow, 4);
     t_paint.end();
 
-
     foreach(pt,line)
     {
-        if(start)        // no arrow on  the first loop
+        if(start)                // no arrow on  the first loop
         {
             start = false;
         }
@@ -943,7 +945,7 @@ void CTrackDB::drawArrows(const QPolygon& line, const QRect& viewport, QPainter&
             {
                 continue;
             }
-                         // keep distance
+            // keep distance
             if((abs(pt.x() - ptt.x()) + abs(pt.y() - ptt.y())) > 100)
             {
                 if(0 != pt.x() - pt1.x() && (pt.y() - pt1.y()))
@@ -956,7 +958,7 @@ void CTrackDB::drawArrows(const QPolygon& line, const QRect& viewport, QPainter&
                     p.rotate(heading);
                     p.drawImage(-11, -7, arrow_pic);
                     p.restore();
-                         //remember last point
+                    //remember last point
                     ptt = pt;
                 }
             }
@@ -973,7 +975,6 @@ void CTrackDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
     QPoint focus(-1,-1);
     QVector<QPoint> selected;
     IMap& map = CMapDB::self().getMap();
-
 
     //     QMap<QString,CTrack*> tracks                = CTrackDB::self().getTracks();
     QMap<QString,CTrack*>::iterator track       = tracks.begin();
@@ -1097,7 +1098,6 @@ void CTrackDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         p.setPen(pen2);
         drawLine(line, extRect, p);
 
-
         if(showBullets)
         {
             foreach(pt,line)
@@ -1129,7 +1129,6 @@ void CTrackDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             p.drawLine(focus + QPoint(0,-20),focus + QPoint(0,20));
             p.drawLine(focus + QPoint(-20,0),focus + QPoint(20,0));
         }
-
 
         QString val, unit;
 
@@ -1254,7 +1253,6 @@ void CTrackDB::insert(const QString& key, CTrack *track, bool silent)
 }
 
 
-
 void CTrackDB::emitSigModified()
 {
     IDB::emitSigModified();
@@ -1292,6 +1290,7 @@ void CTrackDB::revertTrack(const QString& key)
 
 }
 
+
 QList<CTrackDB::keys_t> CTrackDB::keys()
 {
     QList<keys_t> k;
@@ -1317,7 +1316,6 @@ QList<CTrackDB::keys_t> CTrackDB::keys()
             k2.time     = track->track.first().timestamp;
         }
 
-
         icon.fill(track->getColor());
         k2.icon     = icon;
 
@@ -1339,6 +1337,7 @@ QList<CTrackDB::keys_t> CTrackDB::keys()
     return k;
 }
 
+
 CTrack * CTrackDB::getTrackByKey(const QString& key)
 {
     if(!tracks.contains(key)) return 0;
@@ -1346,6 +1345,7 @@ CTrack * CTrackDB::getTrackByKey(const QString& key)
     return tracks[key];
 
 }
+
 
 void CTrackDB::makeVisible(const QStringList& keys)
 {
@@ -1406,6 +1406,7 @@ void CTrackDB::setPointOfFocusByDist(double distance)
     }
 }
 
+
 void CTrackDB::setPointOfFocusByTime(quint32 timestamp)
 {
     CTrack * track = highlightedTrack();
@@ -1433,6 +1434,7 @@ void CTrackDB::setPointOfFocusByTime(quint32 timestamp)
     }
 }
 
+
 void CTrackDB::setPointOfFocusByIdx(qint32 idx)
 {
     CTrack * track = highlightedTrack();
@@ -1445,5 +1447,91 @@ void CTrackDB::setPointOfFocusByIdx(qint32 idx)
     if(idx < trkpts.size())
     {
         emit sigPointOfFocus(idx);
+    }
+}
+
+
+bool CTrackDB::getClosestPoint2Position(double &lon, double &lat, quint32& timestamp, double maxDelta)
+{
+    double delta = WPT_NOFLOAT;
+    const CTrack::pt_t * selTrkPt = 0;
+    double d, a1, a2;
+    projUV p1, p2;
+
+    p1.u = lon*DEG_TO_RAD;
+    p1.v = lat*DEG_TO_RAD;
+
+    foreach(CTrack * track, tracks)
+    {
+        QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
+
+        foreach(const CTrack::pt_t& trkpt, trkpts)
+        {
+            p2.u = trkpt.lon*DEG_TO_RAD;
+            p2.v = trkpt.lat*DEG_TO_RAD;
+            d = distance(p1, p2, a1, a2);
+
+            if(d < delta)
+            {
+                delta = d;
+                if(delta < maxDelta)
+                {
+                    selTrkPt = &trkpt;
+                }
+            }
+        }
+    }
+
+    if(selTrkPt)
+    {
+        lon         = selTrkPt->lon;
+        lat         = selTrkPt->lat;
+        timestamp   = selTrkPt->timestamp;
+        return true;
+    }
+
+    return false;
+}
+
+
+bool CTrackDB::getClosestPoint2Timestamp(quint32 timestamp, quint32 maxDelta, double& lon, double& lat)
+{
+    quint32 delta = std::numeric_limits<quint32>::max();
+    const CTrack::pt_t * selTrkPt = 0;
+
+    foreach(CTrack * track, tracks)
+    {
+        QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
+
+        foreach(const CTrack::pt_t& trkpt, trkpts)
+        {
+            quint32 delta_trkpt = (timestamp > trkpt.timestamp)?(timestamp - trkpt.timestamp):(trkpt.timestamp - timestamp);
+            if(delta_trkpt < delta)
+            {
+                delta = delta_trkpt;
+                if(delta < maxDelta)
+                {
+                    selTrkPt = &trkpt;
+                }
+            }
+        }
+    }
+
+    if(selTrkPt)
+    {
+        lon = selTrkPt->lon;
+        lat = selTrkPt->lat;
+        return true;
+    }
+
+    return false;
+}
+
+
+void CTrackDB::slotMapChanged()
+{
+    foreach(CTrack * track, tracks)
+    {
+        track->rebuild(false);
     }
 }

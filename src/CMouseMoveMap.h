@@ -44,7 +44,6 @@ class CMouseMoveMap : public IMouse
 
         void contextMenu(QMenu& menu);
 
-
     private slots:
         void slotEditWpt();
 #ifdef HAS_POWERDB
@@ -60,7 +59,8 @@ class CMouseMoveMap : public IMouse
         void slotCopyPositionTrack();
         void slotEditTrack();
         void slotSplitTrack();
-        void slotOpenGoogleMaps();	//TODO: GOOGLE MAPS
+                                 //TODO: GOOGLE MAPS
+        void slotOpenGoogleMaps();
 
         void slotCopyPosDegree();
         void slotCopyPosGrid();
@@ -79,7 +79,6 @@ class CMouseMoveMap : public IMouse
 
         /// the initial starting point of the transformation
         QPoint oldPoint;
-
 
 };
 #endif                           //CMOUSEMOVEMAP_H
