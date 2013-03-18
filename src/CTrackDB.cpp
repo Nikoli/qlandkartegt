@@ -1128,6 +1128,32 @@ void CTrackDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             p.setPen(Qt::red);
             p.drawLine(focus + QPoint(0,-20),focus + QPoint(0,20));
             p.drawLine(focus + QPoint(-20,0),focus + QPoint(20,0));
+
+            QString str = (*track)->getFocusInfo();
+            //-----------------------------------------------------------------------------------------------------------
+            if (str != "")
+            {
+                QFont           f = CResources::self().getMapFont();
+                QFontMetrics    fm(f);
+                QRect           r1 = fm.boundingRect(QRect(0,0,300,0), Qt::AlignLeft|Qt::AlignTop, str);
+
+                r1.moveTopLeft(focus + QPoint(15,15));
+
+                QRect           r2 = r1;
+                r2.setWidth(r1.width() + 20);
+                r2.moveLeft(r1.left() - 10);
+                r2.setHeight(r1.height() + 10);
+                r2.moveTop(r1.top() - 5);
+
+                p.setPen(QPen(CCanvas::penBorderBlue));
+                p.setBrush(CCanvas::brushBackWhite);
+                PAINT_ROUNDED_RECT(p,r2);
+
+                p.setFont(CResources::self().getMapFont());
+                p.setPen(Qt::darkBlue);
+                p.drawText(r1, Qt::AlignLeft|Qt::AlignTop,str);
+            }
+
         }
 
         QString val, unit;
@@ -1390,6 +1416,8 @@ void CTrackDB::setPointOfFocusByDist(double distance)
     QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
     QList<CTrack::pt_t>::iterator trkpt = trkpts.begin();
 
+    int idx  = -1;
+    double d = WPT_NOFLOAT;
     while(trkpt != trkpts.end())
     {
         if(trkpt->flags & CTrack::pt_t::eDeleted)
@@ -1397,13 +1425,14 @@ void CTrackDB::setPointOfFocusByDist(double distance)
             ++trkpt; continue;
         }
 
-        if(distance < trkpt->distance)
+        if(fabs(distance - trkpt->distance) < d)
         {
-            emit sigPointOfFocus(trkpt->idx);
-            return;
+            d   = fabs(distance - trkpt->distance);
+            idx = trkpt->idx;
         }
         ++trkpt;
     }
+    emit sigPointOfFocus(idx);
 }
 
 
@@ -1418,6 +1447,8 @@ void CTrackDB::setPointOfFocusByTime(quint32 timestamp)
     QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
     QList<CTrack::pt_t>::iterator trkpt = trkpts.begin();
 
+    int idx = -1;
+    int d   = 0x7FFFFFFF;
     while(trkpt != trkpts.end())
     {
         if(trkpt->flags & CTrack::pt_t::eDeleted)
@@ -1425,13 +1456,15 @@ void CTrackDB::setPointOfFocusByTime(quint32 timestamp)
             ++trkpt; continue;
         }
 
-        if(timestamp < trkpt->timestamp)
+        quint32 timestamp_diff = (timestamp > trkpt->timestamp)?(timestamp - trkpt->timestamp):(trkpt->timestamp - timestamp);
+        if(timestamp_diff < d)
         {
-            emit sigPointOfFocus(trkpt->idx);
-            return;
+            d   = timestamp_diff;
+            idx = trkpt->idx;
         }
         ++trkpt;
     }
+    emit sigPointOfFocus(idx);
 }
 
 

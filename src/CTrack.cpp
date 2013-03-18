@@ -138,6 +138,37 @@ QDataStream& operator >>(QDataStream& s, CTrack& track)
                 }
                 break;
             }
+
+            case CTrack::eTrkPts2:
+            {
+                QDataStream s1(&entry->data, QIODevice::ReadOnly);
+                s1.setVersion(QDataStream::Qt_4_5);
+
+                quint32 nTrkPts1 = 0;
+
+                s1 >> nTrkPts1;
+                if(nTrkPts1 != nTrkPts)
+                {
+                    QMessageBox::warning(0, QObject::tr("Corrupt track ..."), QObject::tr("Number of trackpoints is not equal the number of training data trackpoints."), QMessageBox::Ignore,QMessageBox::Ignore);
+                    break;
+                }
+
+                QList<CTrack::pt_t>::iterator pt1 = track.track.begin();
+                while (pt1 != track.track.end())
+                {
+                    quint32 dummy;
+                    s1 >> pt1->timestamp_msec;
+                    s1 >> dummy;
+                    s1 >> dummy;
+                    s1 >> dummy;
+                    s1 >> dummy;
+                    s1 >> dummy;
+
+                    pt1++;
+                }
+                break;
+            }
+
             case CTrack::eTrain:
             {
                 QDataStream s1(&entry->data, QIODevice::ReadOnly);
@@ -345,6 +376,31 @@ QDataStream& operator <<(QDataStream& s, CTrack& track)
     }
 
     entries << entryTrkPts;
+
+    //---------------------------------------
+    // prepare trackpoint data 2
+    //---------------------------------------
+    trk_head_entry_t entryTrkPts2;
+    entryTrkPts2.type = CTrack::eTrkPts2;
+    QDataStream s8(&entryTrkPts2.data, QIODevice::WriteOnly);
+    s8.setVersion(QDataStream::Qt_4_5);
+
+    trkpt = trkpts.begin();
+
+    s8 << (quint32)trkpts.size();
+    while(trkpt != trkpts.end())
+    {
+        s8 << trkpt->timestamp_msec;
+        s8 << quint32(0);
+        s8 << quint32(0);
+        s8 << quint32(0);
+        s8 << quint32(0);
+        s8 << quint32(0);
+        ++trkpt;
+    }
+
+    entries << entryTrkPts2;
+
 
     //---------------------------------------
     // prepare trainings data
@@ -631,6 +687,7 @@ CTrack::CTrack(QObject * parent)
 , visiblePointCount(0)
 , cntMedianFilterApplied(0)
 , replaceOrigData(true)
+, stateSelect(e1stSel)
 {
     ref = 1;
 
@@ -650,7 +707,6 @@ CTrack::~CTrack()
 
 }
 
-
 void CTrack::setHighlight(bool yes)
 {
     highlight = yes;
@@ -663,16 +719,18 @@ void CTrack::setHighlight(bool yes)
 
 void CTrack::replaceElevationByLocal(bool replaceOrignalData)
 {
-    //    qDebug() << "CTrack::replaceElevationByLocal()";
-    IMap& map       = CMapDB::self().getDEM();
-    const int size = track.size();
-    for(int i = 0; i<size; i++)
+    IMap& map = CMapDB::self().getDEM();
+
+    QList<CTrack::pt_t>::iterator trkpt, end;
+    setupIterators(trkpt, end);
+    while(trkpt != end)
     {
-        track[i].ele    = map.getElevation(track[i].lon * DEG_TO_RAD, track[i].lat * DEG_TO_RAD);
+        trkpt->ele = map.getElevation(trkpt->lon * DEG_TO_RAD, trkpt->lat * DEG_TO_RAD);
         if(replaceOrignalData)
         {
-            track[i]._ele   = track[i].ele;
+            trkpt->_ele   = trkpt->ele;
         }
+        trkpt++;
     }
     rebuild(false);
     emit sigChanged();
@@ -686,20 +744,22 @@ void CTrack::replaceElevationByRemote(bool replaceOrignalData)
 
     replaceOrigData = replaceOrignalData;
 
-    int idx = 0;
-    const int size = track.size();
+    QList<CTrack::pt_t>::iterator trkpt, end;
+    setupIterators(trkpt, end);
 
     reply2idx.clear();
 
-    while(idx < size)
+    while(trkpt != end)
     {
-        int s = (size - idx) > 20 ? 20 : (size - idx);
+        int s = (end - trkpt) > 20 ? 20 : (end - trkpt);
+        int idx = trkpt->idx;
 
         QStringList lats, lngs;
         for(int i=0; i < s; i++)
         {
-            lats << QString::number(track[idx + i].lat,'f', 8);
-            lngs << QString::number(track[idx + i].lon,'f', 8);
+            lats << QString::number(trkpt->lat,'f', 8);
+            lngs << QString::number(trkpt->lon,'f', 8);
+            trkpt++;
         }
 
         QUrl url("http://ws.geonames.org");
@@ -971,10 +1031,10 @@ void CTrack::rebuild(bool reindex)
 
         ++visiblePointCount;
 
-        int dt = -1;
+        double dt = -1;
         if(pt1->timestamp != 0x00000000 && pt1->timestamp != 0xFFFFFFFF)
         {
-            dt = pt2->timestamp - pt1->timestamp;
+            dt = pt2->timestamp + double(pt2->timestamp_msec)/1000 - pt1->timestamp - double(pt1->timestamp_msec)/1000;
         }
 
         projXY p1,p2;
@@ -1049,55 +1109,142 @@ void CTrack::rebuild(bool reindex)
 }
 
 
-void CTrack::setPointOfFocus(int idx, bool eraseSelection, bool moveMap)
+void CTrack::setPointOfFocus(int idx, type_select_e typeSelect, bool moveMap)
 {
     // reset previous selections
-    QList<CTrack::pt_t>& trkpts           = track;
-    QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
-    while(trkpt != trkpts.end())
+    QList<CTrack::pt_t>::iterator trkpt   = track.begin();
+
+    if(typeSelect == e3Way)
     {
-        trkpt->flags &= ~CTrack::pt_t::eFocus;
-        if(eraseSelection)
+        switch(stateSelect)
         {
-            trkpt->flags &= ~CTrack::pt_t::eSelected;
+            case eNoSel:
+                while(trkpt != track.end())
+                {
+                    trkpt->flags &= ~CTrack::pt_t::eFocus;
+                    trkpt->flags &= ~CTrack::pt_t::eSelected;
+                    ++trkpt;
+                }
+                stateSelect = e1stSel;
+                break;
+
+            case e1stSel:
+                while(trkpt != track.end())
+                {
+                    trkpt->flags &= ~CTrack::pt_t::eFocus;
+                    trkpt->flags &= ~CTrack::pt_t::eSelected;
+                    ++trkpt;
+                }
+
+                if(idx < track.count())
+                {
+                    track[idx].flags |= CTrack::pt_t::eFocus;
+                    track[idx].flags |= CTrack::pt_t::eSelected;
+                }
+                stateSelect = e2ndSel;
+                break;
+
+            case e2ndSel:
+                while(trkpt != track.end())
+                {
+                    if(trkpt->flags & CTrack::pt_t::eFocus)
+                    {
+                        break;
+                    }
+                    ++trkpt;
+                }
+
+                int inc = (trkpt->idx < idx) ? +1 : -1;
+                while(trkpt != track.end())
+                {
+                    if(!(trkpt->flags & CTrack::pt_t::eDeleted))
+                    {
+                        trkpt->flags |= CTrack::pt_t::eSelected;
+                    }
+
+                    if(trkpt->idx == idx)
+                    {
+                        trkpt->flags |= CTrack::pt_t::eFocus;
+                        break;
+                    }
+                    trkpt += inc;
+                }
+                stateSelect = eNoSel;
+                break;
         }
-        ++trkpt;
     }
-    if(idx < track.count())
+    else
     {
-        trkpts[idx].flags |= CTrack::pt_t::eFocus;
-        trkpts[idx].flags |= CTrack::pt_t::eSelected;
-
-        if(moveMap)
+        // erase all flags
+        while(trkpt != track.end())
         {
-            theMainWindow->getCanvas()->move(trkpts[idx].lon, trkpts[idx].lat);
+            trkpt->flags &= ~CTrack::pt_t::eFocus;
+            if(typeSelect == eErase)
+            {
+                trkpt->flags &= ~CTrack::pt_t::eSelected;
+            }
+            ++trkpt;
         }
 
+        // set flags for selected point
+        if(idx < track.count())
+        {
+            track[idx].flags |= CTrack::pt_t::eFocus;
+            track[idx].flags |= CTrack::pt_t::eSelected;
+        }
+    }
+
+    // move map to point under focus
+    if(moveMap && idx < track.count())
+    {
+        theMainWindow->getCanvas()->move(track[idx].lon, track[idx].lat);
     }
     emit sigChanged();
 }
 
-
-CTrack::pt_t * CTrack::getPointOfFocus(double dist)
+void CTrack::getPointOfFocus(QList<CTrack::pt_t>& points)
 {
-    QList<CTrack::pt_t>::const_iterator trkpt = track.begin();
-    quint32 idx = 0;
-    while(trkpt != track.end())
+    foreach(const pt_t& trkpt, track)
     {
-        if(trkpt->flags & CTrack::pt_t::eDeleted)
+        if(trkpt.flags & pt_t::eFocus)
         {
-            ++trkpt; continue;
+            points << trkpt;
         }
+    }
+}
 
-        if(dist < trkpt->distance)
+void CTrack::setupIterators(QList<pt_t>::iterator& begin, QList<pt_t>::iterator& end)
+{
+    QList<pt_t>& trkpts     = getTrackPoints();
+    QList<pt_t>::iterator i = trkpts.begin();
+
+    begin = trkpts.begin();
+    end   = trkpts.end();
+
+    int cnt = 0;
+
+    while(i != trkpts.end())
+    {
+        if(i->flags & pt_t::eFocus)
         {
-            return &track[idx];
+            cnt++;
+            if(begin == track.begin())
+            {
+                begin = i;
+            }
+            else
+            {
+                end = i;
+            }
         }
-        idx = trkpt->idx;
-        ++trkpt;
+        i++;
     }
 
-    return 0;
+    if(cnt < 2)
+    {
+        begin = trkpts.begin();
+        end   = trkpts.end();
+    }
 }
 
 
@@ -1277,12 +1424,12 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
             str += "\n";
 #ifndef WIN32
             str += tr("%5 %4 %1:%2:%3 (%6%)").arg(t1hh, 2, 10, QChar('0')).arg(t1mm, 2, 10, QChar('0')).arg(t1ss, 2, 10, QChar('0')).arg(QChar(0x21A4)).arg(QChar(0x2690)).arg(t1p);
-            str += tr(" | (%6%) %1:%2:%3 %4 %5").arg(t2hh, 2, 10, QChar('0')).arg(t2mm, 2, 10, QChar('0')).arg(t2ss, 2, 10, QChar('0')).arg(QChar(0x21A6)).arg(QChar(0x2691)).arg(t2p);
+            str += tr(" .. (%6%) %1:%2:%3 %4 %5").arg(t2hh, 2, 10, QChar('0')).arg(t2mm, 2, 10, QChar('0')).arg(t2ss, 2, 10, QChar('0')).arg(QChar(0x21A6)).arg(QChar(0x2691)).arg(t2p);
 #else
             //Unicode character 0x2690 "WHITE FLAG" is not supported for Windows
             str += tr("%4 %1:%2:%3 (%5%)").arg(t1hh, 2, 10, QChar('0')).arg(t1mm, 2, 10, QChar('0')).arg(t1ss, 2, 10, QChar('0')).arg(QChar(0x21A4)).arg(t1p);
             //Unicode character 0x2691 "BLACK FLAG" is not supported for Windows
-            str += tr(" | (%5%) %1:%2:%3 %4").arg(t2hh, 2, 10, QChar('0')).arg(t2mm, 2, 10, QChar('0')).arg(t2ss, 2, 10, QChar('0')).arg(QChar(0x21A6)).arg(t2p);
+            str += tr(" .. (%5%) %1:%2:%3 %4").arg(t2hh, 2, 10, QChar('0')).arg(t2mm, 2, 10, QChar('0')).arg(t2ss, 2, 10, QChar('0')).arg(QChar(0x21A6)).arg(t2p);
 #endif
         }
 
@@ -1299,10 +1446,10 @@ QString CTrack::getTrkPtInfo1(pt_t& trkpt)
 #endif
     IUnit::self().meter2distance(getTotalDistance() - trkpt.distance, val, unit);
 #ifndef WIN32
-    str += tr(" | (%3%) %1%2 %4 %5").arg(val).arg(unit).arg((getTotalDistance() - trkpt.distance) * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A6)).arg(QChar(0x2691));
+    str += tr(" .. (%3%) %1%2 %4 %5").arg(val).arg(unit).arg((getTotalDistance() - trkpt.distance) * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A6)).arg(QChar(0x2691));
 #else
     //Unicode character 0x2691 "BLACK FLAG" is not supported for Windows
-    str += tr(" | (%3%) %1%2 %4").arg(val).arg(unit).arg((getTotalDistance() - trkpt.distance) * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A6));
+    str += tr(" .. (%3%) %1%2 %4").arg(val).arg(unit).arg((getTotalDistance() - trkpt.distance) * 100.0 / getTotalDistance(),0,'f',0).arg(QChar(0x21A6));
 #endif
 
     // elevation of point
@@ -1432,6 +1579,43 @@ QString CTrack::getTrkPtInfo2(pt_t& trkpt)
     return str;
 }
 
+QString CTrack::getFocusInfo()
+{
+    double tmp;
+    QString str, val, unit;
+    QList<pt_t> focus;
+    getPointOfFocus(focus);
+
+    if(focus.size() < 2)
+    {
+        return str;
+    }
+
+    const pt_t& p1 = focus.first();
+    const pt_t& p2 = focus.last();
+
+    tmp = p2.distance - p1.distance;
+    IUnit::self().meter2distance(tmp, val, unit);
+    str += QString("%3 %1%2\n").arg(val).arg(unit).arg(QChar(0x21A6));
+    if(p1.timestamp != 0x00000000 && p1.timestamp != 0xFFFFFFFF)
+    {
+        quint32 t  = p2.timestamp - p1.timestamp;
+        quint32 hh = t / 3600;
+        quint32 mm = (t - hh * 3600) / 60;
+        quint32 ss = (t - hh * 3600 - mm * 60);
+
+        str += QString("%4 %1:%2:%3\n").arg(hh,2,10,QChar('0')).arg(mm,2,10,QChar('0')).arg(ss,2,10,QChar('0')).arg(QChar(0x231a));
+    }
+    tmp = p2.ascend - p1.ascend;
+    IUnit::self().meter2elevation(tmp, val, unit);
+    str += QString("%3 %1%2\n").arg(val).arg(unit).arg(QChar(0x2197));
+    tmp = p1.descend - p2.descend;
+    IUnit::self().meter2elevation(tmp, val, unit);
+    str += QString("%3 %1%2").arg(val).arg(unit).arg(QChar(0x2198));
+
+
+    return str;
+}
 
 void CTrack::setDoScaleWpt2Track(Qt::CheckState state)
 {
@@ -1558,44 +1742,49 @@ void CTrack::slotScaleWpt2Track()
 }
 
 
-void CTrack::medianFilter(quint32 len, QProgressDialog& progress)
+void CTrack::medianFilter(qint32 len, QProgressDialog& progress)
 {
     cntMedianFilterApplied = (len - 5) >> 1;
 
     QList<float> window;
-    for(quint32 i = 0; i<len; i++)
+    for(qint32 i = 0; i<len; i++)
     {
         window << 0.0;
     }
 
-    QList<CTrack::pt_t>& trkpts = getTrackPoints();
+    QList<CTrack::pt_t>::iterator trkpt, end;
+    setupIterators(trkpt, end);
+
     QList<float> ele;
 
     if(cntMedianFilterApplied)
     {
-        foreach(const CTrack::pt_t& pt, trkpts)
+        while(trkpt != end)
         {
-            ele << pt.ele;
+            ele << trkpt->ele;
+            trkpt++;
         }
     }
     else
     {
-        foreach(const CTrack::pt_t& pt, trkpts)
+        while(trkpt != end)
         {
-            ele << pt._ele;
+            ele << trkpt->_ele;
+            trkpt++;
         }
     }
 
+    setupIterators(trkpt, end);
     for(int i = (len>>1); i < (ele.size()-(len>>1)); i++)
     {
         // apply median filter over all trackpoints
-        for(quint32 n = 0; n < len; n++)
+        for(qint32 n = 0; n < len; n++)
         {
             window[n] = ele[i - (len>>1) + n];
         }
 
         qSort(window);
-        trkpts[i].ele = window[(len>>1)];
+        trkpt[i].ele = window[(len>>1)];
 
         progress.setValue(i);
         qApp->processEvents();
@@ -1610,9 +1799,10 @@ void CTrack::medianFilter(quint32 len, QProgressDialog& progress)
 void CTrack::offsetElevation(double offset)
 {
 
-    QList<pt_t>& trkpts                 = getTrackPoints();
-    QList<pt_t>::iterator trkpt   = trkpts.begin();
-    while(trkpt != trkpts.end())
+    QList<CTrack::pt_t>::iterator trkpt, end;
+    setupIterators(trkpt, end);
+
+    while(trkpt != end)
     {
         if(trkpt->ele != WPT_NOFLOAT)
         {
@@ -1623,11 +1813,125 @@ void CTrack::offsetElevation(double offset)
     }
 }
 
+void CTrack::changeStartTime(QDateTime& time)
+{
+
+    qint32 offset = time.toUTC().toTime_t() - getStartTimestamp().toTime_t();
+
+    QList<CTrack::pt_t>::iterator trkpt, end;
+    setupIterators(trkpt, end);
+
+    while(trkpt != end)
+    {
+        if(trkpt->ele != WPT_NOFLOAT)
+        {
+            trkpt->timestamp += offset;
+        }
+
+        trkpt++;
+    }
+}
+
+void CTrack::changeSpeed(double speed)
+{
+    double deltaD;
+    double t1;
+    double dT = 0, dTsec, dTmsec;
+    double d1;
+    QList<CTrack::pt_t>::iterator trkpt, end,trkpt1, trkpt2;
+
+    trkpt   = getTrackPoints().begin();
+    end     = getTrackPoints().end();
+    setupIterators(trkpt1, trkpt2);
+
+    t1 = trkpt->timestamp + double(trkpt->timestamp_msec)/1000;
+    d1 = trkpt->distance;
+    while(trkpt != trkpt1)
+    {
+        if(!(trkpt->flags & pt_t::eDeleted))
+        {
+            t1 = trkpt->timestamp + double(trkpt->timestamp_msec)/1000;
+            d1 = trkpt->distance;
+        }
+        trkpt++;
+    }
+
+    while(trkpt != trkpt2)
+    {
+
+        if(trkpt->flags & pt_t::eDeleted)
+        {
+            trkpt++;
+            continue;
+        }
+
+        deltaD   = trkpt->distance - d1;
+
+        t1 = t1 + deltaD/speed;
+        dT = t1 - trkpt->timestamp - double(trkpt->timestamp_msec)/1000;
+
+        trkpt->timestamp        = floor(t1);
+        trkpt->timestamp_msec   = (t1 - floor(t1)) * 1000;
+
+        d1 = trkpt->distance;
+        trkpt++;
+    }
+
+    dTsec  = floor(dT);
+    dTmsec = dT - floor(dT);
+    while(trkpt != end)
+    {
+        trkpt->timestamp        += dTsec;
+        trkpt->timestamp_msec   += dTmsec;
+        trkpt++;
+    }
+}
+
+bool CTrack::unifyTimestamps(quint32 delta)
+{
+    QList<CTrack::pt_t>::iterator trkpt, end;
+    trkpt   = getTrackPoints().begin();
+    end     = getTrackPoints().end();
+
+    if(delta > 0)
+    {
+        quint32 timestamp = trkpt->timestamp;
+
+        if(timestamp == 0 || timestamp == 0xFFFFFFFF)
+        {
+            QMessageBox::warning(0,tr("Error..."),tr("This track has no valid start timestamp. Use the 'Date/Time' track filter to set one."), QMessageBox::Abort, QMessageBox::Abort);
+            return false;
+        }
+
+        while(trkpt != end)
+        {
+            trkpt->timestamp        = timestamp;
+            trkpt->timestamp_msec   = 0;
+
+            timestamp += delta;
+            trkpt++;
+        }
+
+    }
+    else
+    {
+        while(trkpt != end)
+        {
+            trkpt->timestamp        = 0xFFFFFFFF;
+            trkpt->timestamp_msec   = 0;
+            trkpt++;
+        }
+    }
+
+    return true;
+}
+
 void CTrack::reset()
 {
-    QList<CTrack::pt_t>& trkpts           = getTrackPoints();
-    QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
-    while(trkpt != trkpts.end())
+    QList<CTrack::pt_t>::iterator trkpt, end;
+    setupIterators(trkpt, end);
+
+    while(trkpt != end)
     {
         trkpt->flags &= ~CTrack::pt_t::eDeleted;
         trkpt->lon = trkpt->_lon;
@@ -1640,9 +1944,6 @@ void CTrack::reset()
     }
 
     cntMedianFilterApplied = 0;
-
-    rebuild(true);
-    slotScaleWpt2Track();
 }
 
 

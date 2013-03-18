@@ -30,7 +30,9 @@ class CDlgDeviceExportPath : public QDialog, private Ui::IDlgDeviceExportPath
 {
     Q_OBJECT;
     public:
-        CDlgDeviceExportPath(const QString &what, QDir &dir, QString &subdir, QWidget *parent);
+        enum mode_e{eDirectory, eFilePrefix};
+
+        CDlgDeviceExportPath(const QString &what, QDir &dir, QString &subdir, mode_e mode, QWidget *parent);
         virtual ~CDlgDeviceExportPath();
 
     private slots:

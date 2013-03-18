@@ -502,7 +502,7 @@ void CTrackEditWidget::slotSetTrack(CTrack * t)
 #ifdef GPX_EXTENSIONS
     for(int i=0; i < eMaxColumn+num_of_ext-1; ++i)
 #else
-        for(int i=0; i < eMaxColumn; ++i)
+    for(int i=0; i < eMaxColumn; ++i)
 #endif
     {
         treePoints->resizeColumnToContents(i);
@@ -520,12 +520,16 @@ void CTrackEditWidget::slotUpdate()
     int i;
 
     if (track->hasTraineeData())
+    {
         traineeGraph->setEnabled(true);
+    }
     else
     {
         traineeGraph->setEnabled(false);
         if (!trackStatTrainee.isNull())
+        {
             delete trackStatTrainee;
+        }
     }
 
 #ifdef GPX_EXTENSIONS
@@ -566,6 +570,10 @@ void CTrackEditWidget::slotUpdate()
     CFDateFormatterSetFormat(df, CFSTR("EEE MMM d HH:mm:ss yyyy"));
 #endif
 
+    treePoints->setUpdatesEnabled(false);
+    treePoints->blockSignals(true);
+    treePoints->model()->blockSignals(true);
+
     while(trkpt != trkpts.end())
     {
         CTrackTreeWidgetItem * item;
@@ -599,9 +607,9 @@ void CTrackEditWidget::slotUpdate()
         {
             //item->setFlags((item->flags() & ~Qt::ItemIsEnabled) | Qt::ItemIsTristate);
 #ifdef GPX_EXTENSIONS
-            for(i = 0; i < eMaxColumn+num_of_ext; ++i)
+            for(i = 0; i < (eMaxColumn + num_of_ext); ++i)
 #else
-                for(i = 0; i < eMaxColumn; ++i)
+            for(i = 0; i < eMaxColumn; ++i)
 #endif
             {
                 item->setForeground(i,QBrush(Qt::gray));
@@ -611,9 +619,9 @@ void CTrackEditWidget::slotUpdate()
         {
             //item->setFlags(item->flags() | Qt::ItemIsEnabled | Qt::ItemIsTristate);
 #ifdef GPX_EXTENSIONS
-            for(i = 0; i < eMaxColumn+num_of_ext; ++i)
+            for(i = 0; i < (eMaxColumn + num_of_ext); ++i)
 #else
-                for(i = 0; i < eMaxColumn; ++i)
+            for(i = 0; i < eMaxColumn; ++i)
 #endif
             {
                 item->setForeground(i,QBrush(Qt::black));
@@ -629,12 +637,16 @@ void CTrackEditWidget::slotUpdate()
         if(trkpt->flags & CTrack::pt_t::eSelected)
         {
             if ( !item->isSelected() )
+            {
                 item->setSelected(true);
+            }
         }
         else
         {
             if ( item->isSelected() )
+            {
                 item->setSelected(false);
+            }
         }
 
         // point number
@@ -740,9 +752,12 @@ void CTrackEditWidget::slotUpdate()
         //--------------------------------------------------------------------------------------------------
 
         trkpt->flags.setChanged(false);
-
         ++trkpt;
     }
+
+    treePoints->model()->blockSignals(false);
+    treePoints->blockSignals(false);
+    treePoints->setUpdatesEnabled(true);
 
     // adjust column sizes to fit
     treePoints->header()->setResizeMode(0,QHeaderView::Interactive);
@@ -754,7 +769,6 @@ void CTrackEditWidget::slotUpdate()
         treePoints->scrollToItem(focus);
     }
     treePoints->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    treePoints->setUpdatesEnabled(true);
 }
 
 
@@ -795,7 +809,7 @@ void CTrackEditWidget::slotPointSelection(QTreeWidgetItem * item)
     if(track.isNull()) return;
 
     originator = true;
-    track->setPointOfFocus(item->data(0,Qt::UserRole).toInt(), false, true);
+    track->setPointOfFocus(item->data(0,Qt::UserRole).toInt(), CTrack::eNoErase, true);
     originator = false;
 }
 
@@ -1209,17 +1223,15 @@ void CTrackEditWidget::slotReset()
 {
     if(track.isNull()) return;
     track->reset();
+    track->rebuild(true);
     track->slotScaleWpt2Track();
-    emit CTrackDB::self().sigModified();
-    emit CTrackDB::self().sigModified(track->getKey());
+    CTrackDB::self().emitSigModified();
 }
 
 
 void CTrackEditWidget::slotDelete()
 {
     if(track.isNull()) return;
-    originator = true;
-
     if(QMessageBox::warning(0,tr("Remove track points ...")
         ,tr("You are about to remove hidden track points permanently. If you press 'yes', all information will be lost.")
         ,QMessageBox::Yes|QMessageBox::No) == QMessageBox::No)
@@ -1227,22 +1239,16 @@ void CTrackEditWidget::slotDelete()
         return;
     }
 
-    QList<CTrack::pt_t>& trkpts           = track->getTrackPoints();
-    QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
-    while(trkpt != trkpts.end())
-    {
+    QList<CTrack::pt_t>& trkpts = track->getTrackPoints();
+    QList<CTrack::pt_t>::iterator trkpt, end;
+    track->setupIterators(trkpt, end);
 
+    originator = true;
+    while(trkpt != end && trkpt != trkpts.end())
+    {
         if(trkpt->flags & CTrack::pt_t::eDeleted)
         {
-            if ( trkpt->editItem )
-            {
-                int idx = treePoints->indexOfTopLevelItem((CTrackTreeWidgetItem *)trkpt->editItem.data());
-                if ( idx != -1 )
-                {
-                    treePoints->takeTopLevelItem(idx);
-                }
-                delete (CTrackTreeWidgetItem *)trkpt->editItem.data();
-            }
+            delete trkpt->editItem;
             trkpt = trkpts.erase(trkpt);
         }
         else
@@ -1325,8 +1331,8 @@ void CTrackEditWidget::slotPointOfFocus(const int idx)
             textStages->slotHighlightArea(QString("stage%1").arg(cnt));
             if(trackStatProfileDist)
             {
-                double x = track->getTrackPoints()[idx].distance;
-                trackStatProfileDist->getPlot()->slotHighlightSection(x1,x);
+//                double x = track->getTrackPoints()[idx].distance;
+                trackStatProfileDist->getPlot()->slotHighlightSection(x1,x2);
             }
             return;
         }
@@ -1341,8 +1347,8 @@ void CTrackEditWidget::slotPointOfFocus(const int idx)
 
         if(trackStatProfileDist && track)
         {
-            double x = track->getTrackPoints()[idx].distance;
-            trackStatProfileDist->getPlot()->slotHighlightSection(x1,x);
+//            double x = track->getTrackPoints()[idx].distance;
+            trackStatProfileDist->getPlot()->slotHighlightSection(x1,track->getTrackPoints().last().distance);
         }
 
     }

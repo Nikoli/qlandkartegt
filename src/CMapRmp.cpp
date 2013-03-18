@@ -19,6 +19,8 @@
 #include "CMapRmp.h"
 #include "CSettings.h"
 #include "CMainWindow.h"
+#include "CCanvas.h"
+#include "CDlgMapRMPConfig.h"
 
 #include <QtGui>
 
@@ -56,6 +58,11 @@ CMapRmp::scale_t CMapRmp::scales[] =
 ,{0.05,  1.4000e-04 }
 };
 
+bool qSortLevels(CMapRmp::level_t& l1, CMapRmp::level_t& l2)
+{
+    return l1.tlm.tileHeight > l2.tlm.tileHeight;
+}
+
 
 CMapRmp::CMapRmp(const QString &key, const QString &fn, CCanvas *parent)
     : IMap(eRaster,key,parent)
@@ -65,6 +72,7 @@ CMapRmp::CMapRmp(const QString &key, const QString &fn, CCanvas *parent)
     , yref2(90)
     , xscale(1.0)
     , yscale(-1.0)
+    , tileCnt(0)
 
 {
     int i;
@@ -78,6 +86,7 @@ CMapRmp::CMapRmp(const QString &key, const QString &fn, CCanvas *parent)
     filename = fn;
     QFileInfo fi(fn);
     name = fi.baseName();
+
     readFile(filename, "", "");
 
     // find submaps in same directory
@@ -86,7 +95,7 @@ CMapRmp::CMapRmp(const QString &key, const QString &fn, CCanvas *parent)
 
     if(!files.isEmpty() && !files.first().provider.isEmpty() && !files.first().product.isEmpty())
     {
-        qDebug() << "load maps with:" << files.first().provider << files.first().product;
+//        qDebug() << "load maps with:" << files.first().provider << files.first().product;
         foreach(const QString& subMap, subMaps)
         {
             if(dir.absoluteFilePath(subMap) == filename)
@@ -99,6 +108,7 @@ CMapRmp::CMapRmp(const QString &key, const QString &fn, CCanvas *parent)
 
     // setup projection
     pjsrc = pj_init_plus("+proj=merc +ellps=WGS84 +datum=WGS84 +units=m +no_defs +towgs84=0,0,0");
+    //pjsrc = pj_init_plus("+init=epsg:4326");
     oSRS.importFromProj4(getProjection());
 
     // setip total boundaries
@@ -110,8 +120,8 @@ CMapRmp::CMapRmp(const QString &key, const QString &fn, CCanvas *parent)
     convertRad2M(xref1, yref1);
     convertRad2M(xref2, yref2);
 
-    qDebug() << "xref1:" << xref1 << "yref1:" << yref1;
-    qDebug() << "xref2:" << xref2 << "yref2:" << yref2;
+//    qDebug() << "xref1:" << xref1 << "yref1:" << yref1;
+//    qDebug() << "xref2:" << xref2 << "yref2:" << yref2;
 
     SETTINGS;
     cfg.beginGroup("magellan/maps");
@@ -155,8 +165,11 @@ void CMapRmp::readFile(const QString& filename, const QString &provider, const Q
     qint32 tmp32;
     quint64 offset;
     QByteArray buffer(30,0);
+    QString tmpInfo;
 
-    qDebug() << "++++++++" << filename << "++++++++";
+//    qDebug() << "++++++++" << filename << "++++++++";
+
+    tmpInfo  += "<h1>" + QFileInfo(filename).baseName() + "</h1>";
 
     QFile file(filename);
     if(!file.open(QIODevice::ReadOnly))
@@ -187,31 +200,33 @@ void CMapRmp::readFile(const QString& filename, const QString &provider, const Q
 
     mapFile.filename = filename;
     readDirectory(stream, mapFile);
-    readCVGMap(stream, mapFile);
+    readCVGMap(stream, mapFile, tmpInfo);
+    readCopyright(stream, mapFile, tmpInfo);
 
     // test for secondary maps
     if(files.size() > 1)
     {
         if(mapFile.provider != provider)
         {
-            qDebug() << "------- do not load";
+//            qDebug() << "------- do not load";
             files.pop_back();
             return;
         }
         if(mapFile.product != product)
         {
-            qDebug() << "------- do not load";
+//            qDebug() << "------- do not load";
             files.pop_back();
             return;
         }
     }
 
+    info += tmpInfo;
+
     // read all information about the levels
-    QStringList keys = mapFile.levels.keys();
-    qSort(keys);
-    foreach(const QString& key, keys)
+    for(int i = 0; i < mapFile.levels.count(); i++)
     {
-        readLevel(stream, mapFile.levels[key], mapFile.lon1, mapFile.lat1, mapFile.lon2, mapFile.lat2);
+
+        readLevel(stream, mapFile.levels[i], mapFile.lon1, mapFile.lat1, mapFile.lon2, mapFile.lat2);
 
         if(mapFile.lon1 < xref1) xref1  = mapFile.lon1;
         if(mapFile.lat1 > yref1) yref1  = mapFile.lat1;
@@ -219,6 +234,8 @@ void CMapRmp::readFile(const QString& filename, const QString &provider, const Q
         if(mapFile.lat2 < yref2) yref2  = mapFile.lat2;
 
     }
+
+    qSort(mapFile.levels.begin(), mapFile.levels.end(), qSortLevels);
 
     mapFile.bbox = QRectF(QPointF(mapFile.lon1, mapFile.lat1), QPointF(mapFile.lon2, mapFile.lat2));
     file.close();
@@ -247,25 +264,25 @@ void CMapRmp::readDirectory(QDataStream& stream, file_t& file)
 
         if(entry.extension == "tlm")
         {
-            level_t& level = file.levels[entry.name];
+            level_t& level = file.levelByName(entry.name);
             level.tlm = entry;
         }
 
         if(entry.extension == "a00")
         {
-            level_t& level = file.levels[entry.name];
+            level_t& level = file.levelByName(entry.name);
             level.a00 = entry;
         }
     }
 
-    foreach(const dir_entry_t& entry, file.directory)
-    {
-        qDebug() << entry.name << "." << entry.extension << hex << entry.offset << entry.length;
-    }
+//    foreach(const dir_entry_t& entry, file.directory)
+//    {
+//        qDebug() << entry.name << "." << entry.extension << hex << entry.offset << entry.length;
+//    }
 
 }
 
-void CMapRmp::readCVGMap(QDataStream& stream, file_t& file)
+void CMapRmp::readCVGMap(QDataStream& stream, file_t& file, QString& tmpInfo)
 {
     foreach(const dir_entry_t& entry, file.directory)
     {
@@ -277,6 +294,8 @@ void CMapRmp::readCVGMap(QDataStream& stream, file_t& file)
             stream.readRawData(buffer.data(), buffer.size());
             QStringList tokens = QString(buffer).split("\015\012");
             QRegExp re("(.*)\\s*=\\s*(.*)");
+
+            tmpInfo += "<p><table>";
 
             foreach(const QString& token, tokens)
             {
@@ -293,9 +312,35 @@ void CMapRmp::readCVGMap(QDataStream& stream, file_t& file)
                     {
                         file.provider = val;
                     }
+
+                    if(!val.isEmpty())
+                    {
+                        tmpInfo += "<tr>";
+                        tmpInfo += "<td style='background-color: blue; color: white;'>" + tok + "</td>";
+                        tmpInfo += "<td>" + val + "</td>";
+                        tmpInfo += "</tr>";
+                    }
                 }
             }
+
+            tmpInfo += "</table></p>";
             return;
+        }
+    }
+}
+
+void CMapRmp::readCopyright(QDataStream& stream, file_t &file, QString &tmpInfo)
+{
+    foreach(const dir_entry_t& entry, file.directory)
+    {
+        if(entry.name == "cprt_txt" && entry.extension == "txt")
+        {
+            QByteArray buffer(entry.length, 0);
+
+            stream.device()->seek(entry.offset);
+            stream.readRawData(buffer.data(), buffer.size());
+
+            tmpInfo += "<p>" + QString(buffer) + "</p>";
         }
     }
 }
@@ -321,16 +366,18 @@ void CMapRmp::readLevel(QDataStream& stream, level_t& level, double& lon1, doubl
 
     level.tlm.bbox = QRectF(QPointF(tileLeft, tileTop), QPointF(tileRight, tileBottom));
 
-    qDebug() << "--------------";
-    qDebug() << level.tlm.name;
-    qDebug() << level.tlm.tileCount << level.tlm.tileXSize << level.tlm.tileYSize;
-    qDebug() << level.tlm.tileHeight << level.tlm.tileWidth << level.tlm.bbox.topLeft() << level.tlm.bbox.bottomRight();
+//    qDebug() << "--------------";
+//    qDebug() << level.tlm.name;
+//    qDebug() << level.tlm.tileCount << level.tlm.tileXSize << level.tlm.tileYSize;
+//    qDebug() << level.tlm.tileHeight << level.tlm.tileWidth << level.tlm.bbox.topLeft() << level.tlm.bbox.bottomRight();
 
 
     //start 1st node
     stream.device()->seek(level.tlm.offset + 256);
     stream >> tmp32 >> tmp32 >> firstBlockOffset; //(tlm.offset + 256 + firstBlockOffset)
     stream.device()->seek(level.tlm.offset + 256 + firstBlockOffset);
+
+//    qDebug() << "first block" << hex << quint32(stream.device()->pos());
 
     readTLMNode(stream, level.tlm);
 
@@ -339,6 +386,7 @@ void CMapRmp::readLevel(QDataStream& stream, level_t& level, double& lon1, doubl
     stream >> tmp32;
     if(tmp32)
     {
+//        qDebug() << "previous block" << hex << quint32(level.tlm.offset + 256 + tmp32);
         otherNodes << (level.tlm.offset + 256 + tmp32);
     }
 
@@ -347,6 +395,7 @@ void CMapRmp::readLevel(QDataStream& stream, level_t& level, double& lon1, doubl
         stream >> tmp32;
         if(tmp32)
         {
+//            qDebug() << "next block" << hex << quint32(level.tlm.offset + 256 + tmp32);
             otherNodes << (level.tlm.offset + 256 + tmp32);
         }
     }
@@ -366,7 +415,11 @@ void CMapRmp::readTLMNode(QDataStream& stream, tlm_t& tlm)
     quint32 tmp32, tilesSubtree;
     quint16 lastNode;
 
+    tileCnt = 1;
+    blockCnt++;
+
     stream >> tilesSubtree >> node.nTiles >> lastNode;
+    //qDebug() << tilesSubtree << node.nTiles << lastNode;
 
     tileLeft    =  180.0;
     tileTop     = -90.0;
@@ -383,10 +436,15 @@ void CMapRmp::readTLMNode(QDataStream& stream, tlm_t& tlm)
         lon =   x * tlm.tileWidth - 180.0;
         lat = -(y * tlm.tileHeight - 90.0);
 
+//        qDebug() << i << lon << lat << x << y << tlm.tileWidth << tlm.tileHeight;
+
         tile.bbox = QRectF(lon, lat, tlm.tileWidth, -tlm.tileHeight);
+
 
         if(i < node.nTiles)
         {
+            tile.t = tileCnt++;
+            tile.b = blockCnt;
             if(tile.bbox.left()   < tileLeft)   tileLeft   = tile.bbox.left();
             if(tile.bbox.top()    > tileTop)    tileTop    = tile.bbox.top();
             if(tile.bbox.right()  > tileRight)  tileRight  = tile.bbox.right();
@@ -523,7 +581,7 @@ void CMapRmp::zoom(qint32& level)
     if(zoomidx > MAX_IDX_ZOOM) zoomidx = MAX_IDX_ZOOM;
     zoomFactor = scales[zoomidx].qlgtScale;
 
-    qDebug() << "zoom:" << zoomFactor << level;
+//    qDebug() << "zoom:" << zoomFactor << level;
 
     emit sigChanged();
 }
@@ -558,24 +616,30 @@ void CMapRmp::getArea_n_Scaling(projXY& p1, projXY& p2, float& my_xscale, float&
 }
 
 
-const QString CMapRmp::zlevel2idx(quint32 zl, const file_t& file)
+int CMapRmp::zlevel2idx(quint32 zl, const file_t& file)
 {
-    QString keyLevel;
+    double delta = 1000;
+    int idx = -1;
     double actScale = scales[zl].tileYScale;
 
-    QStringList keys = file.levels.keys();
-    qSort(keys);
-    foreach(const QString& key, keys)
+    for(int i = 0; i < file.levels.size(); i++)
     {
-        const level_t& level = file.levels[key];
+        const level_t& level = file.levels[i];
 
-        if(actScale <= level.tlm.tileHeight)
+//        qDebug() << actScale << level.tlm.tileWidth << level.tlm.tileHeight << level.name;
+        if(fabs(actScale - level.tlm.tileHeight) < delta)
         {
-            keyLevel = key;
+            delta = fabs(actScale - level.tlm.tileHeight);
+            idx = i;
         }
-
     }
-    return keyLevel;
+
+    if(actScale > (file.levels[idx].tlm.tileHeight * 6))
+    {
+        return -1;
+    }
+
+    return idx;
 }
 
 void CMapRmp::draw(QPainter& p)
@@ -635,9 +699,9 @@ void CMapRmp::draw()
             continue;
         }
 
-        QString key = zlevel2idx(zoomidx, mapFile);
+        int idx = zlevel2idx(zoomidx, mapFile);
 
-        if(key.isEmpty())
+        if(idx == -1)
         {
             double u1 = mapFile.lon1 * DEG_TO_RAD;
             double v1 = mapFile.lat1 * DEG_TO_RAD;
@@ -660,7 +724,7 @@ void CMapRmp::draw()
             continue;
         }
 
-        const level_t& level = mapFile.levels[key];
+        const level_t& level = mapFile.levels[idx];
 
         QFile file(mapFile.filename);
         file.open(QIODevice::ReadOnly);
@@ -701,8 +765,21 @@ void CMapRmp::draw()
                 }
 
                 p.drawImage(u1 + 0.5,v1 + 0.5,img.scaled(u2 - u1  + 0.5, v2 - v1 + 0.5,Qt::IgnoreAspectRatio,Qt::SmoothTransformation));
+
+//                p.setPen(QPen(Qt::black,3));
+//                p.drawRect(QRectF(u1,v1,u2-u1,v2-v1));
+//                CCanvas::drawText(QString("%1/%2").arg(tile.b).arg(tile.t),p,QPoint(u1 + (u2-u1)/2, v1 + (v2-v1)/2));
+
             }
         }
         file.close();
     }
+}
+
+void CMapRmp::config()
+{
+
+    CDlgMapRMPConfig * dlg = new CDlgMapRMPConfig(this);
+    dlg->show();
+
 }

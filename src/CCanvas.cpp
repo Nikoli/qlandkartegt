@@ -830,7 +830,7 @@ void CCanvas::mouseMoveEventCoord(QMouseEvent * e)
         GPS_Math_Deg_To_Str(x,y, str);
         info += str + " ";
                                  //add plain degrees
-        //         info += QString(", %1\260 %2\260 ").arg(y,0,'f',7).arg(x,0,'f',7);
+        //info += QString(", %1\260 %2\260 ").arg(y,0,'f',7).arg(x,0,'f',7);
     }
     //     qDebug() << "------" << info;
     theMainWindow->setPositionInfo(info);
@@ -902,7 +902,7 @@ void CCanvas::slotHighlightTrack(CTrack * track)
     if(track && CResources::self().showTrackProfilePreview())
     {
         QPolygonF lineElev;
-        QPointF   focusElev;
+        QList<QPointF> focusElev;
         float basefactor = IUnit::self().basefactor;
 
         profile->clear();
@@ -923,7 +923,7 @@ void CCanvas::slotHighlightTrack(CTrack * track)
 
             if(trkpt->flags & CTrack::pt_t::eFocus)
             {
-                focusElev  = QPointF(trkpt->distance, trkpt->ele * basefactor);
+                focusElev << QPointF(trkpt->distance, trkpt->ele * basefactor);
             }
 
             trkpt++;

@@ -100,6 +100,8 @@ Section "QLandkarte GT PN" QLandkarteGT-PN
     File Files\map2gcm.exe
     File Files\map2rmap.exe
     File Files\cache2gtiff.exe
+    File Files\map2rmp.exe
+    File Files\map2jnx.exe
     File Files\*.ico
     File Files\qlandkartegt_*.qm
     File Files\qt_??.qm
@@ -151,7 +153,7 @@ Section "QLandkarte GT PN" QLandkarteGT-PN
   fileWrite $0 "SET PATH=$INSTDIR;$INSTDIR\gdal\python\osgeo;$INSTDIR\proj\apps;$INSTDIR\gdal\apps;$INSTDIR\curl;%PATH%$\r$\n"
   fileWrite $0 "SET GDAL_DATA=$INSTDIR\gdal-data$\r$\n"
   fileWrite $0 "SET GDAL_DRIVER_PATH=$INSTDIR\gdal\plugins$\r$\n"
-  fileWrite $0 "SET PYTHONPATH=$INSTDIR\gdal\python\osgeo$\r$\n"
+  fileWrite $0 "SET PYTHONPATH=$INSTDIR\gdal\python;%PYTHONPATH%$\r$\n"
   fileWrite $0 "SET PROJ_LIB=$INSTDIR\proj\SHARE$\r$\n"
   fileClose $0
 

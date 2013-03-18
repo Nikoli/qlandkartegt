@@ -203,8 +203,8 @@ CGeoDB::CGeoDB(QTabWidget * tb, QWidget * parent)
     actDelDir           = contextMenuFolder->addAction(QPixmap(":/icons/iconDelete16x16.png"),tr("Delete"),this,SLOT(slotDelFolder()));
     actCopyDir          = contextMenuFolder->addAction(QPixmap(":/icons/editcopy.png"), tr("Copy"), this, SLOT(slotCopyFolder()));
     actMoveDir          = contextMenuFolder->addAction(QPixmap(":/icons/iconWptMove16x16.png"), tr("Move"), this, SLOT(slotMoveFolder()));
-    actArchiveDir       = contextMenuFolder->addAction(QPixmap(":/icons/iconArchive16x16.png"), tr("Archive"), this, SLOT(slotArchiveFolder(bool)));
-    actArchiveDir->setCheckable(true);
+    actLockDir          = contextMenuFolder->addAction(QPixmap(":/icons/iconLock16x16.png"), tr("Lock"), this, SLOT(slotLockFolder(bool)));
+    actLockDir->setCheckable(true);
 
     contextMenuItem     = new QMenu(this);
     actCopyItem         = contextMenuItem->addAction(QPixmap(":/icons/editcopy.png"), tr("Copy"), this, SLOT(slotCopyItems()));
@@ -297,7 +297,7 @@ void CGeoDB::initDB()
         "icon           TEXT NOT NULL,"
         "name           TEXT NOT NULL,"
         "comment        TEXT,"
-        "archived       BOOLEAN DEFAULT FALSE"
+        "locked       BOOLEAN DEFAULT FALSE"
         ")"))
     {
         qDebug() << query.lastQuery();
@@ -668,7 +668,7 @@ void CGeoDB::migrateDB(int version)
 
                 PROGRESS_SETUP(tr("Migrating database from version 8 to 9."), 1);
 
-                if(!query.exec("ALTER TABLE folders ADD COLUMN archived BOOLEAN DEFAULT FALSE"))
+                if(!query.exec("ALTER TABLE folders ADD COLUMN locked BOOLEAN DEFAULT FALSE"))
                 {
                     qDebug() << query.lastQuery();
                     qDebug() << query.lastError();
@@ -965,7 +965,7 @@ void CGeoDB::queryChildrenFromDB(QTreeWidgetItem * parent, int levels)
 
         // get child folder's properties
         QSqlQuery query2(db);
-        query2.prepare("SELECT icon, name, comment, type, archived FROM folders WHERE id = :id ORDER BY name");
+        query2.prepare("SELECT icon, name, comment, type, locked FROM folders WHERE id = :id ORDER BY name");
         query2.bindValue(":id", childId);
         if(!query2.exec())
         {
@@ -982,7 +982,7 @@ void CGeoDB::queryChildrenFromDB(QTreeWidgetItem * parent, int levels)
 
         if(query2.value(4).toBool())
         {
-            item->setIcon(eCoName, QIcon(":/icons/iconFolderBlueArchive16x16.png"));
+            item->setIcon(eCoName, QIcon(":/icons/iconFolderBlueLock16x16.png"));
         }
         else
         {
@@ -1263,7 +1263,7 @@ void CGeoDB::updateFolderById(quint64 id)
     QList<QTreeWidgetItem*> items = treeDatabase->findItems("*", Qt::MatchWildcard|Qt::MatchRecursive, eCoName);
 
     QSqlQuery query(db);
-    query.prepare("SELECT icon, name, comment, type, archived FROM folders WHERE id=:id");
+    query.prepare("SELECT icon, name, comment, type, locked FROM folders WHERE id=:id");
     query.bindValue(":id", id);
     QUERY_EXEC(;);
     query.next();
@@ -1284,7 +1284,7 @@ void CGeoDB::updateFolderById(quint64 id)
 
             if(query.value(4).toBool())
             {
-                item->setIcon(eCoName, QIcon(":/icons/iconFolderBlueArchive16x16.png"));
+                item->setIcon(eCoName, QIcon(":/icons/iconFolderBlueLock16x16.png"));
             }
             else
             {
@@ -2467,7 +2467,7 @@ void CGeoDB::slotContextMenuDatabase(const QPoint& pos)
             actShowDiary->setVisible(false);
             actDelDiary->setVisible(false);
             actExportProject->setVisible(false);
-            actArchiveDir->setVisible(false);
+            actLockDir->setVisible(false);
 
             if(item == itemDatabase)
             {
@@ -2487,15 +2487,21 @@ void CGeoDB::slotContextMenuDatabase(const QPoint& pos)
                 {
 
                     QSqlQuery query(db);
-                    query.prepare("SELECT archived FROM folders WHERE id=:id");
+                    query.prepare("SELECT locked FROM folders WHERE id=:id");
                     query.bindValue(":id", item->data(eCoName, eUrDBKey));
                     QUERY_EXEC();
 
+                    bool locked = false;
                     if(query.next())
                     {
-                        actArchiveDir->setVisible(true);
-                        actArchiveDir->setChecked(query.value(0).toBool());
+                        locked = query.value(0).toBool();
+                        actLockDir->setVisible(true);
+                        actLockDir->setChecked(locked);
                     }
+
+                    actDelDir->setVisible(!locked);
+                    actAddDir->setVisible(!locked);
+                    actEditDir->setVisible(!locked);
                 }
 
                 if(item->data(eCoName, eUrType).toInt() == eFolder2)
@@ -2539,7 +2545,6 @@ void CGeoDB::slotContextMenuDatabase(const QPoint& pos)
             contextMenuItem->exec(p);
         }
     }
-
 }
 
 
@@ -3622,7 +3627,7 @@ bool CGeoDB::setProjectDiaryData(quint64 id, CDiary& diary)
     return true;
 }
 
-void CGeoDB::slotArchiveFolder(bool yes)
+void CGeoDB::slotLockFolder(bool yes)
 {
     QTreeWidgetItem * item = treeDatabase->currentItem();
     if(item == 0) return;
@@ -3630,8 +3635,8 @@ void CGeoDB::slotArchiveFolder(bool yes)
     quint64 itemId = item->data(eCoName, eUrDBKey).toULongLong();
 
     QSqlQuery query(db);
-    query.prepare("UPDATE folders SET archived=:archived WHERE id=:id");
-    query.bindValue(":archived", yes);
+    query.prepare("UPDATE folders SET locked=:locked WHERE id=:id");
+    query.bindValue(":locked", yes);
     query.bindValue(":id", itemId);
 
     QUERY_EXEC(return);

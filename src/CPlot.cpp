@@ -137,8 +137,7 @@ void CPlot::setLimits()
     m_pData->setLimits();
 }
 
-
-void CPlot::newLine(const QPolygonF& line, const QPointF& focus, const QString& label)
+void CPlot::newLine(const QPolygonF& line, const QList<QPointF>& focus, const QString& label)
 {
     m_pData->lines.clear();
 
@@ -153,12 +152,46 @@ void CPlot::newLine(const QPolygonF& line, const QPointF& focus, const QString& 
     l.points    = line;
     l.label     = label;
 
-    m_pData->point1.point = focus;
+    m_pData->focus = focus;
     m_pData->badData = false;
     m_pData->lines << l;
     setSizes();
     m_pData->x().setScale( rectGraphArea.width() );
     m_pData->y().setScale( rectGraphArea.height() );
+
+    idxHighlight1 = -1;
+    idxHighlight2 = -1;
+
+    if(m_pData->focus.size() > 1)
+    {
+        int idx     = 0;
+        double d    = WPT_NOFLOAT;
+        double x    = m_pData->focus.first().x();
+        QPolygonF& line = m_pData->lines[0].points;
+
+        foreach(const QPointF& point, line)
+        {
+            if(fabs(x - point.x()) < d)
+            {
+                d = fabs(x - point.x());
+                idxHighlight1 = idx;
+            }
+            idx++;
+        }
+
+        idx = 0;
+        d   = WPT_NOFLOAT;
+        x   = m_pData->focus.last().x();
+        foreach(const QPointF& point, line)
+        {
+            if(fabs(x - point.x()) < d)
+            {
+                d = fabs(x - point.x());
+                idxHighlight2 = idx;
+            }
+            idx++;
+        }
+    }
 
     needsRedraw = true;
     update();
@@ -452,13 +485,24 @@ void CPlot::draw(QPainter& p)
                 p.drawText(r1, Qt::AlignLeft|Qt::AlignTop|Qt::TextWordWrap,str);
             }
 
+
+            x   = posMouse.x();
             str = track->getTrkPtInfo2(*selTrkPt);
-            if(!str.isEmpty())
+            if(!str.isEmpty() && m_pData->focus.isEmpty())
             {
                 QFont           f = CResources::self().getMapFont();
                 QFontMetrics    fm(f);
                 QRect           r1 = fm.boundingRect(QRect(0,0,1,1), Qt::AlignLeft|Qt::AlignTop, str);
-                r1.moveTopLeft(rectTrackInfo.topLeft());
+                r1.moveCenter(QPoint(x, size().height() - fontHeight/2));
+                if(r1.left() < left)
+                {
+                    r1.moveLeft(left);
+                }
+                if(r1.right() > right)
+                {
+                    r1.moveRight(right);
+                }
+
                 CCanvas::drawText(str, p, r1);
             }
         }
@@ -502,6 +546,7 @@ void CPlot::draw()
     }
 
     p.setFont(CResources::self().getMapFont());
+    drawTags(p);
     p.setClipping(true);
     p.setClipRect(rectGraphArea);
     drawData(p);
@@ -518,7 +563,6 @@ void CPlot::draw()
     drawYTic(p);
     p.setPen(QPen(Qt::black,2));
     p.drawRect(rectGraphArea);
-    drawTags(p);
 
     drawLegend(p);
 }
@@ -808,7 +852,7 @@ void CPlot::drawData(QPainter& p)
     if((idxHighlight1 >= 0) && (idxHighlight2 >= 0) && mode != eIcon)
     {
         QPolygonF background;
-        QPolygonF line              = lines[0].points.mid(idxHighlight1, idxHighlight2 - idxHighlight1);
+        QPolygonF line              = lines[0].points.mid(idxHighlight1, idxHighlight2 - idxHighlight1 + 1);
         QPolygonF::iterator point   = line.begin();
 
         ptx = left   + xaxis.val2pt( point->x() );
@@ -834,9 +878,15 @@ void CPlot::drawData(QPainter& p)
         p.setPen(Qt::NoPen);
         p.setBrush(QColor(255,0,0,150));
         p.drawPolygon(background);
+
+        p.setPen(QPen(Qt::darkRed,5));
+        p.drawPolyline(background.mid(1,line.size()));
         p.restore();
+
+
     }
 
+    if(m_pData->focus.size() < 2)
     {
         QPolygonF& marks                = m_pData->marks.points;
         QPolygonF::const_iterator point = marks.begin();
@@ -853,14 +903,62 @@ void CPlot::drawData(QPainter& p)
             ++point;
         }
     }
+    else if(m_pData->focus.size() > 1 && mode != eIcon)
+    {
+        CTrack * trk = CTrackDB::self().highlightedTrack();
+        if(trk != 0)
+        {
+            QString str = trk->getFocusInfo();
+            if (str != "")
+            {
+                QPointF&        focus = m_pData->focus.last();
+                QFont           f = CResources::self().getMapFont();
+                QFontMetrics    fm(f);
+                QRect           r1 = fm.boundingRect(QRect(0,0,300,0), Qt::AlignLeft|Qt::AlignTop, str);
 
-    if(!m_pData->point1.point.isNull())
+                ptx = left   + xaxis.val2pt( focus.x() );
+                pty = bottom - yaxis.val2pt( focus.y() );
+
+                if((r1.width() + 15 + ptx) > right)
+                {
+                    ptx = ptx - 15 - r1.width();
+                }
+                else
+                {
+                    ptx = ptx + 15;
+                }
+
+                if(r1.height() + pty > bottom)
+                {
+                    pty = pty - r1.height();
+                }
+
+
+                r1.moveTopLeft(QPoint(ptx, pty));
+
+                QRect r2 = r1;
+                r2.setWidth(r1.width() + 20);
+                r2.moveLeft(r1.left() - 10);
+                r2.setHeight(r1.height() + 10);
+                r2.moveTop(r1.top() - 5);
+
+                p.save();
+                p.setPen(QPen(CCanvas::penBorderBlue));
+                p.setBrush(CCanvas::brushBackWhite);
+                PAINT_ROUNDED_RECT(p,r2);
+
+                p.setFont(CResources::self().getMapFont());
+                p.setPen(Qt::darkBlue);
+                p.drawText(r1, Qt::AlignLeft|Qt::AlignTop,str);
+                p.restore();
+            }
+        }
+    }
+
+    foreach(const QPointF& point, m_pData->focus)
     {
         p.setPen(QPen(Qt::red,2));
-        ptx = left   + xaxis.val2pt( m_pData->point1.point.x() );
-        pty = bottom - yaxis.val2pt( m_pData->point1.point.y() );
-
-        p.drawLine(rectGraphArea.left(),pty,rectGraphArea.right(),pty);
+        ptx = left   + xaxis.val2pt( point.x() );
         p.drawLine(ptx,rectGraphArea.top(),ptx,rectGraphArea.bottom());
     }
 }
@@ -1269,11 +1367,16 @@ void CPlot::slotPointOfFocus(const int idx)
 void CPlot::slotHighlightSection(double x1, double x2)
 {
     int idx = 0;
+    // no stages if focus is active
+    if(!m_pData || !m_pData->focus.isEmpty())
+    {
+        return;
+    }
 
     idxHighlight1 = -1;
     idxHighlight2 = -1;
 
-    if(m_pData && m_pData->lines.isEmpty())
+    if(m_pData->lines.isEmpty())
     {
         return;
     }

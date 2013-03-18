@@ -49,6 +49,7 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     connect(comboMeterFeet2, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
     connect(comboMeterFeet3, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
     connect(comboMeterFeet4, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
+    connect(comboMeterFeet5, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(slotComboMeterFeet(const QString &)));
 
     connect(toolAddHidePoints1, SIGNAL(clicked()), this, SLOT(slotAddFilterHidePoints1()));
     connect(toolAddHidePoints2, SIGNAL(clicked()), this, SLOT(slotAddFilterHidePoints2()));
@@ -57,10 +58,14 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     connect(toolAddSplit2, SIGNAL(clicked()), this, SLOT(slotAddFilterSplit2()));
     connect(toolAddSplit3, SIGNAL(clicked()), this, SLOT(slotAddFilterSplit3()));
     connect(toolAddSplit4, SIGNAL(clicked()), this, SLOT(slotAddFilterSplit4()));
+    connect(toolAddSplit5, SIGNAL(clicked()), this, SLOT(slotAddFilterSplit5()));
     connect(toolReset, SIGNAL(clicked()), this, SLOT(slotAddFilterReset()));
     connect(toolDelete, SIGNAL(clicked()), this, SLOT(slotAddFilterDelete()));
-    connect(toolAddReplaceEle, SIGNAL(clicked()), this, SLOT(slotAddReplaceElevation()));
-    connect(toolAddOffsetEle, SIGNAL(clicked()), this, SLOT(slotAddOffsetElevation()));
+    connect(toolAddReplaceEle, SIGNAL(clicked()), this, SLOT(slotAddFilterReplaceElevation()));
+    connect(toolAddOffsetEle, SIGNAL(clicked()), this, SLOT(slotAddFilterOffsetElevation()));
+    connect(toolAddTime1, SIGNAL(clicked()), this, SLOT(slotAddFilterTime1()));
+    connect(toolAddTime2, SIGNAL(clicked()), this, SLOT(slotAddFilterTime2()));
+    connect(toolAddTime3, SIGNAL(clicked()), this, SLOT(slotAddFilterTime3()));
 
     connect(toolResetNow, SIGNAL(clicked()), this, SLOT(slotResetNow()));
     connect(toolHidePoints1Now, SIGNAL(clicked()), this, SLOT(slotHidePoints1Now()));
@@ -73,6 +78,10 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     connect(toolSplit2Now, SIGNAL(clicked()), this, SLOT(slotSplit2Now()));
     connect(toolSplit3Now, SIGNAL(clicked()), this, SLOT(slotSplit3Now()));
     connect(toolSplit4Now, SIGNAL(clicked()), this, SLOT(slotSplit4Now()));
+    connect(toolSplit5Now, SIGNAL(clicked()), this, SLOT(slotSplit5Now()));
+    connect(toolTime1Now, SIGNAL(clicked()), this, SLOT(slotTime1Now()));
+    connect(toolTime2Now, SIGNAL(clicked()), this, SLOT(slotTime2Now()));
+    connect(toolTime3Now, SIGNAL(clicked()), this, SLOT(slotTime3Now()));
 
     // ----------- read in GUI configuration -----------
     SETTINGS;
@@ -82,10 +91,12 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
         comboMeterFeet2->setCurrentIndex((int)FEET_INDEX);
         comboMeterFeet3->setCurrentIndex((int)FEET_INDEX);
         comboMeterFeet4->setCurrentIndex((int)FEET_INDEX);
+        comboMeterFeet5->setCurrentIndex((int)FEET_INDEX);
         spinDistance1->setSuffix("ft");
         spinSplit3->setSuffix("ft");
         spinSplit4->setSuffix("ft");
         spinOffset1->setSuffix("ft");
+        spinSpeed1->setSuffix("mph");
     }
     else
     {
@@ -93,10 +104,12 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
         comboMeterFeet2->setCurrentIndex((int)METER_INDEX);
         comboMeterFeet3->setCurrentIndex((int)METER_INDEX);
         comboMeterFeet4->setCurrentIndex((int)METER_INDEX);
+        comboMeterFeet5->setCurrentIndex((int)METER_INDEX);
         spinDistance1->setSuffix("m");
         spinSplit3->setSuffix("m");
         spinSplit4->setSuffix("m");
         spinOffset1->setSuffix("m");
+        spinSpeed1->setSuffix("km/h");
     }
 
     // Filter: Hide points 1
@@ -126,6 +139,14 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     radioEleFromRemote->setChecked(cfg.value("trackfilter/ReplaceElevation/fromRemote", radioEleFromRemote->isChecked()).toBool());
     editGeonamesOrgUsername->setText(cfg.value("geonames/username", "").toString());
 
+    // Filter: Time1
+    dateTime1->setDateTime(cfg.value("trackFilter/Time1/time", QDateTime::currentDateTime()).toDateTime());
+
+    // Filter: Time 2
+    spinSpeed1->setValue(cfg.value("trackfilter/Time2/speed",spinSpeed1->value()).toInt());
+
+    // Filter: Time 3
+    spinTime1->setValue(cfg.value("trackfilter/Time3/delta",spinTime1->value()).toInt());
 
     // register current track
     slotHighlightTrack(CTrackDB::self().highlightedTrack());
@@ -154,8 +175,6 @@ CTrackFilterWidget::CTrackFilterWidget(QWidget *parent)
     contextMenuStoredFilter->addAction(QIcon(":/icons/iconEdit16x16.png"), tr("Edit name..."), this, SLOT(slotStoredFilterEdit()));
     contextMenuStoredFilter->addAction(QIcon(":/icons/iconClear16x16.png"), tr("Delete"), this, SLOT(slotStoredFilterDelete()));
 
-    // remove later
-    scrollArea_4->setEnabled(false);
 }
 
 
@@ -190,6 +209,15 @@ CTrackFilterWidget::~CTrackFilterWidget()
     cfg.setValue("trackfilter/ReplaceElevation/fromRemote", radioEleFromRemote->isChecked());
     cfg.setValue("geonames/username", editGeonamesOrgUsername->text());
 
+    // Filter: Time 1
+    cfg.setValue("trackFilter/Time1/time", dateTime1->dateTime());
+
+    // Filter: Time 2
+    cfg.setValue("trackfilter/Time2/speed",spinSpeed1->value());
+
+    // Filter: Time 3
+    cfg.setValue("trackfilter/Time3/delta",spinTime1->value());
+
     cfg.setValue("trackfilter/Split/asTrack", radioSplitTracks->isChecked());
     cfg.setValue("trackfilter/Split/asStages", radioSplitStages->isChecked());
 
@@ -197,6 +225,20 @@ CTrackFilterWidget::~CTrackFilterWidget()
     saveFilterList(QDir::home().filePath(CONFIGDIR ".track_filter_current.filter"));
 }
 
+void CTrackFilterWidget::showFilterPartMessage(bool show)
+{
+    if(show)
+    {
+        labelFilterPartIcon->show();
+        labelFilterPartMessage->show();
+    }
+    else
+    {
+        labelFilterPartIcon->hide();
+        labelFilterPartMessage->hide();
+    }
+
+}
 
 void CTrackFilterWidget::saveFilterList(const QString& filename)
 {
@@ -261,16 +303,38 @@ void CTrackFilterWidget::setTrackEditWidget(CTrackEditWidget * w)
     trackEditWidget = w;
 }
 
+void CTrackFilterWidget::slotUpdate()
+{
+    QList<CTrack::pt_t> focus;
+    track->getPointOfFocus(focus);
+
+    bool isSubSection = focus.size() > 1;
+    showFilterPartMessage(isSubSection);
+
+    groupSplit1->setEnabled(!isSubSection);
+    groupSplit2->setEnabled(!isSubSection);
+    groupSplit3->setEnabled(!isSubSection);
+    groupSplit4->setEnabled(!isSubSection);
+    groupSplit5->setEnabled(!isSubSection);
+    groupTime3->setEnabled(!isSubSection);
+}
 
 void CTrackFilterWidget::slotHighlightTrack(CTrack * trk)
 {
+    if(!track.isNull())
+    {
+        disconnect(track, SIGNAL(sigChanged()), this, SLOT(slotUpdate()));
+    }
+
     track = trk;
     if(!track.isNull())
     {
         // todo add track dependend setup
+        connect(track, SIGNAL(sigChanged()), this, SLOT(slotUpdate()));
+        slotUpdate();
     }
-}
 
+}
 
 void CTrackFilterWidget::slotComboMeterFeet(const QString &text)
 {
@@ -289,6 +353,10 @@ void CTrackFilterWidget::slotComboMeterFeet(const QString &text)
     else if(sender() == comboMeterFeet4)
     {
         spinOffset1->setSuffix(text);
+    }
+    else if(sender() == comboMeterFeet5)
+    {
+        spinSpeed1->setSuffix(text);
     }
 }
 
@@ -380,15 +448,17 @@ void CTrackFilterWidget::readGuiHidePoints1(QByteArray& args, double& d, double&
     QDataStream stream(&args, QIODevice::WriteOnly);
 
     d =  spinDistance1->value();
+    a = spinAzimuthDelta1->value();
+
     if(spinDistance1->suffix() == "ft")
     {
-        d *= 0.3048f;
+        stream << quint32(eHidePoints1) << (d * 0.3048f) << a;
     }
-
-    a = spinAzimuthDelta1->value();
-    stream << quint32(eHidePoints1) << d << a;
+    else
+    {
+        stream << quint32(eHidePoints1) << d << a;
+    }
 }
-
 
 void CTrackFilterWidget::slotAddFilterHidePoints2()
 {
@@ -483,8 +553,15 @@ void CTrackFilterWidget::readGuiSplit3(QByteArray& args, double& val)
 {
     QDataStream stream(&args, QIODevice::WriteOnly);
 
-    val = spinSplit3->value();
-    stream << quint32(eSplit3) << val;
+    val = spinSplit3->value();    
+    if(spinSplit3->suffix() == "ft")
+    {
+        stream << quint32(eSplit3) << (val * 0.3048f);
+    }
+    else
+    {
+        stream << quint32(eSplit3) << val;
+    }
 }
 
 
@@ -498,13 +575,96 @@ void CTrackFilterWidget::slotAddFilterSplit4()
     addFilter(name, ":/icons/editcut.png", args);
 }
 
-
 void CTrackFilterWidget::readGuiSplit4(QByteArray& args, double& val)
 {
     QDataStream stream(&args, QIODevice::WriteOnly);
 
-    val = spinSplit4->value();
-    stream << quint32(eSplit4) << val;
+    val = spinSplit4->value();    
+    if(spinSplit4->suffix() == "ft")
+    {
+        stream << quint32(eSplit4) << (val * 0.3048f);
+    }
+    else
+    {
+        stream << quint32(eSplit4) << val;
+    }
+}
+
+void CTrackFilterWidget::slotAddFilterSplit5()
+{
+    QByteArray args;
+
+    readGuiSplit5(args);
+    QString name = groupSplit5->title();
+    addFilter(name, ":/icons/editcut.png", args);
+}
+
+void CTrackFilterWidget::readGuiSplit5(QByteArray& args)
+{
+    QDataStream stream(&args, QIODevice::WriteOnly);
+    stream << quint32(eSplit5);
+}
+
+void CTrackFilterWidget::slotAddFilterTime1()
+{
+    QByteArray args;
+    QDateTime  time;
+
+    readGuiTime1(args, time);
+    QString name = groupTime1->title() + QString(" (%1)").arg(time.toString("dd.MM.yyyy HH:mm:ss"));
+    addFilter(name, ":/icons/iconTime16x16.png", args);
+}
+
+void CTrackFilterWidget::readGuiTime1(QByteArray& args, QDateTime& time)
+{
+    QDataStream stream(&args, QIODevice::WriteOnly);
+
+    time = dateTime1->dateTime();
+    stream << quint32(eTime1) << time;
+}
+
+void CTrackFilterWidget::slotAddFilterTime2()
+{
+    QByteArray args;
+    double speed;
+
+    readGuiTime2(args, speed);
+    QString name = groupTime2->title() + QString(" (%1%2)").arg(speed).arg(spinSpeed1->suffix());
+    addFilter(name, ":/icons/iconTime16x16.png", args);
+}
+
+void CTrackFilterWidget::readGuiTime2(QByteArray& args, double& speed)
+{
+    QDataStream stream(&args, QIODevice::WriteOnly);
+
+    speed = spinSpeed1->value();
+
+    if(spinSpeed1->suffix() == "mph")
+    {
+        stream << quint32(eTime2) << (speed * 1.609347);
+    }
+    else
+    {
+        stream << quint32(eTime2) << speed;
+    }
+}
+
+void CTrackFilterWidget::slotAddFilterTime3()
+{
+    QByteArray args;
+    quint32 delta;
+
+    readGuiTime3(args, delta);
+    QString name = groupTime3->title() + QString(" (%1sec)").arg(delta);
+    addFilter(name, ":/icons/iconTime16x16.png", args);
+}
+
+void CTrackFilterWidget::readGuiTime3(QByteArray& args, quint32& delta)
+{
+    QDataStream stream(&args, QIODevice::WriteOnly);
+
+    delta = spinTime1->value();
+    stream << quint32(eTime3) << delta;
 }
 
 
@@ -512,7 +672,7 @@ void CTrackFilterWidget::slotAddFilterReset()
 {
     QByteArray args;
 
-    QString name = groupReset->title();
+    QString name = tr("Reset");
     readGuiReset(args);
     addFilter(name, ":/icons/editundo.png", args);
 }
@@ -542,7 +702,7 @@ void CTrackFilterWidget::readGuiDelete(QByteArray& args)
 }
 
 
-void CTrackFilterWidget::slotAddReplaceElevation()
+void CTrackFilterWidget::slotAddFilterReplaceElevation()
 {
     QByteArray args;
     quint32 type;
@@ -565,7 +725,7 @@ void CTrackFilterWidget::readGuiReplaceEle(QByteArray& args, quint32& type)
     stream << quint32(eReplaceElevation) << type << editGeonamesOrgUsername->text();
 }
 
-void CTrackFilterWidget::slotAddOffsetElevation()
+void CTrackFilterWidget::slotAddFilterOffsetElevation()
 {
     QByteArray args;
 
@@ -864,6 +1024,84 @@ void CTrackFilterWidget::slotSplit4Now()
     postProcessTrack();
 }
 
+void CTrackFilterWidget::slotSplit5Now()
+{
+    if(track.isNull()) return;
+
+    quint32 type;
+    QByteArray args;
+    readGuiSplit5(args);
+
+    QDataStream stream(&args, QIODevice::ReadOnly);
+    stream >> type;
+
+    QList<CTrack*> tracks;
+    tracks << track;
+
+    filterSplit5Tracks(stream, tracks);
+
+    postProcessTrack();
+}
+
+void CTrackFilterWidget::slotTime1Now()
+{
+    if(track.isNull()) return;
+
+    quint32    type;
+    QDateTime  time;
+    QByteArray args;
+    readGuiTime1(args, time);
+
+    QDataStream stream(&args, QIODevice::ReadOnly);
+    stream >> type;
+
+    QList<CTrack*> tracks;
+    tracks << track;
+
+    filterTime1(stream, tracks);
+
+    postProcessTrack();
+}
+
+void CTrackFilterWidget::slotTime2Now()
+{
+    if(track.isNull()) return;
+
+    quint32    type;
+    double     speed;
+    QByteArray args;
+    readGuiTime2(args, speed);
+
+    QDataStream stream(&args, QIODevice::ReadOnly);
+    stream >> type;
+
+    QList<CTrack*> tracks;
+    tracks << track;
+
+    filterTime2(stream, tracks);
+
+    postProcessTrack();
+}
+
+void CTrackFilterWidget::slotTime3Now()
+{
+    if(track.isNull()) return;
+
+    quint32    type;
+    quint32    delta;
+    QByteArray args;
+    readGuiTime3(args, delta);
+
+    QDataStream stream(&args, QIODevice::ReadOnly);
+    stream >> type;
+
+    QList<CTrack*> tracks;
+    tracks << track;
+
+    filterTime3(stream, tracks);
+
+    postProcessTrack();
+}
 
 void CTrackFilterWidget::slotSaveFilter()
 {
@@ -977,6 +1215,18 @@ void CTrackFilterWidget::slotApplyFilter()
                 cancelled = filterOffsetElevation(args, tracks);
                 break;
 
+            case eTime1:
+                cancelled = filterTime1(args, tracks);
+                break;
+
+            case eTime2:
+                cancelled = filterTime2(args, tracks);
+                break;
+
+            case eTime3:
+                cancelled = filterTime3(args, tracks);
+                break;
+
             default:
                 qDebug() << "unknown filter" << type;
                 cancelled = true;
@@ -1013,16 +1263,17 @@ bool CTrackFilterWidget::filterHidePoints1(QDataStream& args, QList<CTrack*>& tr
     foreach(CTrack * trk, tracks)
     {
 
-        QList<CTrack::pt_t>& trkpts = trk->getTrackPoints();
-        int npts = trkpts.count();
+        //QList<CTrack::pt_t>& trkpts = trk->getTrackPoints();
+        //int npts = trk->getTrackPoints().count();
 
-        QProgressDialog progress(groupReducePoints1->title(), tr("Abort filter"), 0, npts, this);
+        QProgressDialog progress(groupReducePoints1->title(), tr("Abort filter"), 0, tracks.size(), this);
         progress.setWindowTitle(groupReducePoints1->title());
         progress.setWindowModality(Qt::WindowModal);
 
-        QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
+        QList<CTrack::pt_t>::iterator trkpt, end;
+        trk->setupIterators(trkpt, end);
 
-        int i               = 1;
+        int i               = 0;
         double lastEle      = trkpt->ele;
         double lastAzimuth  = trkpt->azimuth;
         double deltaAzimuth = 0;
@@ -1032,7 +1283,7 @@ bool CTrackFilterWidget::filterHidePoints1(QDataStream& args, QList<CTrack*>& tr
         p1.v = DEG_TO_RAD * trkpt->lat;
         ++trkpt;
 
-        while(trkpt != trkpts.end())
+        while(trkpt != end)
         {
             p2.u = DEG_TO_RAD * trkpt->lon;
             p2.v = DEG_TO_RAD * trkpt->lat;
@@ -1074,7 +1325,6 @@ bool CTrackFilterWidget::filterHidePoints1(QDataStream& args, QList<CTrack*>& tr
             {
                 p1 = p2;
                 progress.setValue(i);
-                qApp->processEvents();
                 if(deltaAzimuth >= minAzimuthDelta)
                 {
                     lastAzimuth = trkpt->azimuth;
@@ -1083,13 +1333,13 @@ bool CTrackFilterWidget::filterHidePoints1(QDataStream& args, QList<CTrack*>& tr
                 lastEle = trkpt->ele;
             }
             ++trkpt;
-            ++i;
             if (progress.wasCanceled())
             {
                 return true;
             }
         }
         trk->rebuild(false);
+        progress.setValue(++i);
     }
 
     return false;
@@ -1108,9 +1358,11 @@ bool CTrackFilterWidget::filterHidePoints2(QDataStream& args, QList<CTrack*>& tr
 
     foreach(CTrack * trk, tracks)
     {
+
         // convert track points into a vector of pointDP (Douglas-Peucker points)
-        QList<CTrack::pt_t>& trkpts = trk->getTrackPoints();
-        int npts    = trkpts.count();
+        QList<CTrack::pt_t>::iterator trkpt, end;
+        trk->setupIterators(trkpt, end);
+        int npts    = (end - trkpt);
         int idx     = 0;
         QVector<pointDP> line(npts);
 
@@ -1118,44 +1370,42 @@ bool CTrackFilterWidget::filterHidePoints2(QDataStream& args, QList<CTrack*>& tr
         projPJ pjsrc   = pj_init_plus("+proj=longlat +a=6378137.0000 +b=6356752.3142 +towgs84=0,0,0,0,0,0,0,0 +units=m  +no_defs");
         projPJ pjtar   = pj_init_plus("+proj=merc +a=6378137.0000 +b=6356752.3142 +towgs84=0,0,0,0,0,0,0,0 +units=m  +no_defs");
 
-        foreach(const CTrack::pt_t& pt, trkpts)
+        while(trkpt != end)
         {
             pointDP& point = line[idx];
 
-            point.x = pt.lon * DEG_TO_RAD;
-            point.y = pt.lat * DEG_TO_RAD;
-            point.z = pt.ele;
+            point.x = trkpt->lon * DEG_TO_RAD;
+            point.y = trkpt->lat * DEG_TO_RAD;
+            point.z = trkpt->ele;
 
             pj_transform(pjsrc, pjtar, 1, 0, &point.x, &point.y, 0);
 
-            idx++;
+            idx++;trkpt++;
         }
 
         pj_free(pjsrc);
         pj_free(pjtar);
 
         progress.setValue(prog++);
-        qApp->processEvents();
 
         GPS_Math_DouglasPeucker(line, d);
 
         progress.setValue(prog++);
-        qApp->processEvents();
 
         // now read back the the "used" flags
-        idx = 0;
+        trk->setupIterators(trkpt, end);
         foreach(const pointDP& pt, line)
         {
             if(pt.used)
             {
-                trkpts[idx].flags &= ~CTrack::pt_t::eDeleted;
+                trkpt->flags &= ~CTrack::pt_t::eDeleted;
             }
             else
             {
-                trkpts[idx].flags |= CTrack::pt_t::eDeleted;
+                trkpt->flags |= CTrack::pt_t::eDeleted;
             }
 
-            idx++;
+            idx++;trkpt++;
         }
 
         trk->rebuild(false);
@@ -1165,7 +1415,7 @@ bool CTrackFilterWidget::filterHidePoints2(QDataStream& args, QList<CTrack*>& tr
             return true;
         }
         progress.setValue(prog++);
-        qApp->processEvents();
+
     }
 
     return false;
@@ -1221,7 +1471,6 @@ bool CTrackFilterWidget::filterSplit1Stages(QDataStream &args, QList<CTrack *> &
         foreach(const CTrack::pt_t& trkpt, trkpts)
         {
             progress.setValue(totalCnt++);
-            qApp->processEvents();
 
             if(++trkptCnt >= chunk)
             {
@@ -1268,7 +1517,6 @@ bool CTrackFilterWidget::filterSplit1Tracks(QDataStream &args, QList<CTrack *> &
         foreach(const CTrack::pt_t& trkpt, trkpts)
         {
             progress.setValue(totalCnt++);
-            qApp->processEvents();
 
             *newTrack << trkpt;
             if(++trkptCnt >= chunk)
@@ -1309,14 +1557,13 @@ bool CTrackFilterWidget::filterSplit2Stages(QDataStream &args, QList<CTrack *> &
         int trkCnt      = 1;
         int chunk       = val;
 
-        QProgressDialog progress(groupSplit1->title(), tr("Abort filter"), 0, npts, this);
-        progress.setWindowTitle(groupSplit1->title());
+        QProgressDialog progress(groupSplit2->title(), tr("Abort filter"), 0, npts, this);
+        progress.setWindowTitle(groupSplit2->title());
         progress.setWindowModality(Qt::WindowModal);
 
         foreach(const CTrack::pt_t& trkpt, trkpts)
         {
             progress.setValue(totalCnt++);
-            qApp->processEvents();
 
             if(++trkptCnt >= chunk)
             {
@@ -1362,7 +1609,6 @@ bool CTrackFilterWidget::filterSplit2Tracks(QDataStream &args, QList<CTrack *> &
         foreach(const CTrack::pt_t& trkpt, trkpts)
         {
             progress.setValue(totalCnt++);
-            qApp->processEvents();
 
             *newTrack << trkpt;
             if(++trkptCnt >= chunk)
@@ -1403,14 +1649,13 @@ bool CTrackFilterWidget::filterSplit3Stages(QDataStream &args, QList<CTrack *> &
         int trkCnt      = 1;
         double offset   = 0;
 
-        QProgressDialog progress(groupSplit1->title(), tr("Abort filter"), 0, npts, this);
-        progress.setWindowTitle(groupSplit1->title());
+        QProgressDialog progress(groupSplit3->title(), tr("Abort filter"), 0, npts, this);
+        progress.setWindowTitle(groupSplit3->title());
         progress.setWindowModality(Qt::WindowModal);
 
         foreach(const CTrack::pt_t& trkpt, trkpts)
         {
             progress.setValue(totalCnt++);
-            qApp->processEvents();
 
             if((trkpt.distance - offset) >= val)
             {
@@ -1443,8 +1688,8 @@ bool CTrackFilterWidget::filterSplit3Tracks(QDataStream &args, QList<CTrack *> &
         int trkCnt      = 1;
         double offset   = 0;
 
-        QProgressDialog progress(groupSplit2->title(), tr("Abort filter"), 0, npts, this);
-        progress.setWindowTitle(groupSplit2->title());
+        QProgressDialog progress(groupSplit3->title(), tr("Abort filter"), 0, npts, this);
+        progress.setWindowTitle(groupSplit3->title());
         progress.setWindowModality(Qt::WindowModal);
 
         CTrack * newTrack = new CTrack(&CTrackDB::self());
@@ -1455,7 +1700,6 @@ bool CTrackFilterWidget::filterSplit3Tracks(QDataStream &args, QList<CTrack *> &
         foreach(const CTrack::pt_t& trkpt, trkpts)
         {
             progress.setValue(totalCnt++);
-            qApp->processEvents();
 
             *newTrack << trkpt;
             if((trkpt.distance - offset) >= val)
@@ -1497,14 +1741,13 @@ bool CTrackFilterWidget::filterSplit4Stages(QDataStream &args, QList<CTrack *> &
         int trkCnt      = 1;
         double offset   = 0;
 
-        QProgressDialog progress(groupSplit1->title(), tr("Abort filter"), 0, npts, this);
-        progress.setWindowTitle(groupSplit1->title());
+        QProgressDialog progress(groupSplit4->title(), tr("Abort filter"), 0, npts, this);
+        progress.setWindowTitle(groupSplit4->title());
         progress.setWindowModality(Qt::WindowModal);
 
         foreach(const CTrack::pt_t& trkpt, trkpts)
         {
             progress.setValue(totalCnt++);
-            qApp->processEvents();
 
             if((trkpt.ascend - offset) >= val)
             {
@@ -1537,8 +1780,8 @@ bool CTrackFilterWidget::filterSplit4Tracks(QDataStream &args, QList<CTrack *> &
         int trkCnt      = 1;
         double offset   = 0;
 
-        QProgressDialog progress(groupSplit2->title(), tr("Abort filter"), 0, npts, this);
-        progress.setWindowTitle(groupSplit2->title());
+        QProgressDialog progress(groupSplit4->title(), tr("Abort filter"), 0, npts, this);
+        progress.setWindowTitle(groupSplit4->title());
         progress.setWindowModality(Qt::WindowModal);
 
         CTrack * newTrack = new CTrack(&CTrackDB::self());
@@ -1549,7 +1792,6 @@ bool CTrackFilterWidget::filterSplit4Tracks(QDataStream &args, QList<CTrack *> &
         foreach(const CTrack::pt_t& trkpt, trkpts)
         {
             progress.setValue(totalCnt++);
-            qApp->processEvents();
 
             *newTrack << trkpt;
             if((trkpt.ascend - offset) >= val)
@@ -1576,6 +1818,64 @@ bool CTrackFilterWidget::filterSplit4Tracks(QDataStream &args, QList<CTrack *> &
     return false;
 }
 
+bool CTrackFilterWidget::filterSplit5Tracks(QDataStream &args, QList<CTrack *> &tracks)
+{
+    QList<CTrack *> newTracks;
+
+    foreach(CTrack * trk, tracks)
+    {
+        const QList<CTrack::wpt_t>& wpts = trk->getStageWaypoints();
+        if(wpts.isEmpty())
+        {
+            continue;
+        }
+
+        QList<CTrack::pt_t>& trkpts = trk->getTrackPoints();
+        int npts        = trkpts.count();
+        int totalCnt    = 0;
+        int trkCnt      = 1;
+
+        QProgressDialog progress(groupSplit5->title(), tr("Abort filter"), 0, npts, this);
+        progress.setWindowTitle(groupSplit5->title());
+        progress.setWindowModality(Qt::WindowModal);
+
+
+        CTrack * newTrack = new CTrack(&CTrackDB::self());
+        newTrack->setName(trk->getName() + QString("_%1").arg(trkCnt++));
+        newTrack->setColor(trk->getColorIdx());
+        newTracks << newTrack;
+
+        QList<CTrack::wpt_t>::const_iterator wpt = wpts.begin();
+        foreach(const CTrack::pt_t& trkpt, trkpts)
+        {
+            progress.setValue(totalCnt++);
+
+            *newTrack << trkpt;
+
+            if(trkpt == wpt->trkpt)
+            {
+                wpt++;
+
+                CTrackDB::self().addTrack(newTrack, true);
+                newTrack = new CTrack(&CTrackDB::self());
+                newTrack->setName(trk->getName() + QString("_%1").arg(trkCnt++));
+                newTrack->setColor(trk->getColorIdx());
+
+                newTracks << newTrack;
+            }
+
+            if(progress.wasCanceled())
+            {
+                return true;
+            }
+
+        }
+        CTrackDB::self().addTrack(newTrack, true);
+    }
+
+    tracks = newTracks;
+    return false;
+}
 
 bool CTrackFilterWidget::filterReset(QDataStream &args, QList<CTrack *> &tracks)
 {
@@ -1623,6 +1923,49 @@ bool CTrackFilterWidget::filterOffsetElevation(QDataStream &args, QList<CTrack *
     foreach(CTrack * trk, tracks)
     {
         trk->offsetElevation(offset);
+    }
+
+    return false;
+}
+
+bool CTrackFilterWidget::filterTime1(QDataStream &args, QList<CTrack *> &tracks)
+{
+    QDateTime time;
+    args >> time;
+
+    foreach(CTrack * trk, tracks)
+    {
+        trk->changeStartTime(time);
+    }
+
+    return false;
+}
+
+bool CTrackFilterWidget::filterTime2(QDataStream &args, QList<CTrack *> &tracks)
+{
+    double speed;
+    args >> speed;
+
+    foreach(CTrack * trk, tracks)
+    {
+        trk->changeSpeed(speed/3.6);
+    }
+
+    return false;
+}
+
+bool CTrackFilterWidget::filterTime3(QDataStream &args, QList<CTrack *> &tracks)
+{
+
+    quint32 delta;
+    args >> delta;
+
+    foreach(CTrack * trk, tracks)
+    {
+        if(!trk->unifyTimestamps(delta))
+        {
+            return false;
+        }
     }
 
     return false;

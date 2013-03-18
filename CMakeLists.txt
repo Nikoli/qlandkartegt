@@ -7,7 +7,7 @@ set(APPLICATION_NAME ${PROJECT_NAME})
 
 set(APPLICATION_VERSION_MAJOR "1")
 set(APPLICATION_VERSION_MINOR "6")
-set(APPLICATION_VERSION_PATCH "0.pre.PN-1.0.0")
+set(APPLICATION_VERSION_PATCH "0.PN-1.0.0")
 
 add_definitions(-DVER_MAJOR=${APPLICATION_VERSION_MAJOR} -DVER_MINOR=${APPLICATION_VERSION_MINOR} -DVER_STEP=${APPLICATION_VERSION_PATCH})
 
@@ -71,6 +71,7 @@ add_subdirectory(3rdparty/getopt)
 add_subdirectory(3rdparty/map2gcm)
 add_subdirectory(3rdparty/map2rmap)
 add_subdirectory(3rdparty/map2rmp)
+add_subdirectory(3rdparty/map2jnx)
 add_subdirectory(3rdparty/cache2gtiff)
 find_package(QtSoap)
 if (NOT QTSOAP_FOUND)

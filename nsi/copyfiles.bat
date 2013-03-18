@@ -6,7 +6,7 @@ rem http://technet.microsoft.com/en-us/library/bb491035.aspx
 rem http://vlaurie.com/computers2/Articles/environment.htm
 
 rem Section 1.) Define path to Qt, MSVC, .... installations
-set QLGTI_QT_PATH="C:\QtSDK\Desktop\Qt\4.8.0\msvc2010"
+set QLGTI_QT_PATH="C:\QtSDK\Desktop\Qt\4.8.3\msvc2010"
 set QLGTI_VCREDIST_PATH="C:\Dokumente und Einstellungen\cad\Eigene Dateien\QLGT-PN\qlandkartegt-pn-1.0.0\Win32"
 set QLGTI_LIBEXIF_PATH="E:\qlgt\tools\libexif"
 set QLGTI_GDAL_PATH="%CD%\..\Win32\gdal\bin"
@@ -68,6 +68,8 @@ copy %QLGTI_BUILD_PATH%\bin\Release\qlandkartegt-pn.exe
 copy %QLGTI_BUILD_PATH%\bin\Release\map2gcm.exe
 copy %QLGTI_BUILD_PATH%\bin\Release\map2rmap.exe
 copy %QLGTI_BUILD_PATH%\bin\Release\cache2gtiff.exe
+copy %QLGTI_BUILD_PATH%\bin\Release\map2rmp.exe
+copy %QLGTI_BUILD_PATH%\bin\Release\map2jnx.exe
 copy %QLGTI_BUILD_PATH%\src\*.qm
 copy ..\..\src\icons\GlobeWin.ico
 copy ..\*.ico

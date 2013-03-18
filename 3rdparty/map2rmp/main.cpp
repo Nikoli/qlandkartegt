@@ -18,6 +18,7 @@
 **********************************************************************************************/
 
 #include "CFileGenerator.h"
+#include "argv.h"
 
 #include <gdal_priv.h>
 #include <stdio.h>
@@ -39,7 +40,12 @@ int main(int argc, char ** argv)
 {
     int quality                 = -1;
     int subsampling             = -1;
+    bool intermediateLevels     = false;
     int skip_next_arg           =  0;
+
+    QString provider;
+    QString product;
+    QString copyright;
 
 
     QStringList input;
@@ -49,11 +55,20 @@ int main(int argc, char ** argv)
 
     if(argc < 2)
     {
-        fprintf(stderr,"\nusage: map2rpm -q <1..100> -s <411|422|444>  <file1> <file2> ... <fileN> <outputfile>\n");
+        fprintf(stderr,"\nusage: map2rpm -p <string> -n <string> -c <string> -q <1..100> -s <411|422|444> -i  <file1> <file2> ... <fileN> <outputfile>\n");
         fprintf(stderr,"\n");
+        fprintf(stderr,"  -p    The map provider as string (mandatory)\n");
+        fprintf(stderr,"  -n    The map name as string (mandatory)\n");
+        fprintf(stderr,"  -c    The copyright notice (optional)\n");
         fprintf(stderr,"  -q    The JPEG quality from 1 to 100. Default is 75\n");
         fprintf(stderr,"  -s    The chroma subsampling. Default is 411\n");
+        fprintf(stderr,"  -i    Add intermediate levels (optional)\n");
         fprintf(stderr,"\n");
+        fprintf(stderr,"NOTE: The projection of all input files must be EPSG4326. You can use GDAL to convert\n");
+        fprintf(stderr,"      your files. Use 'gdalinfo <file>' to find out the size in pixel of your file.\n");
+        fprintf(stderr,"      Use gdalwarp to reproject your file:\n");
+        fprintf(stderr,"\n");
+        fprintf(stderr,"      gdalwarp -t_srs \"+init=epsg:4326\" -ts <width in pixel> <height in pixel> <file> <outputfile>\n");
         fprintf(stderr,"\n");
         exit(-1);
     }
@@ -83,16 +98,48 @@ int main(int argc, char ** argv)
                 skip_next_arg = 1;
                 continue;
             }
+            else if (towupper(argv[i][1]) == 'P')
+            {
+                provider = get_argv(i + 1, argv);
+                skip_next_arg = 1;
+                continue;
+            }
+            else if (towupper(argv[i][1]) == 'C')
+            {
+                copyright = get_argv(i + 1, argv);
+                skip_next_arg = 1;
+                continue;
+            }
+            else if (towupper(argv[i][1]) == 'N')
+            {
+                product = get_argv(i + 1, argv);
+                skip_next_arg = 1;
+                continue;
+            }
+            else if (towupper(argv[i][1]) == 'I')
+            {
+                intermediateLevels = true;
+                continue;
+            }
+
+
+
         }
 
         input << argv[i];
     }
 
-    CFileGenerator generator(input, argv[argc-1], quality, subsampling);
-    int res = generator.start();
+    if(product.isEmpty() || provider.isEmpty())
+    {
+        fprintf(stderr,"\nYou must give a provider and product name!\nCall map2rmp without arguments for help.\n\n");
+        exit(-1);
+    }
+
+    CFileGenerator generator(input, argv[argc-1], provider, product, copyright, quality, subsampling, intermediateLevels);
+    generator.start();
 
     GDALDestroyDriverManager();
     printf("\n");
 
-    return res;
+    return 0;
 }

@@ -72,7 +72,8 @@ class CTrack : public IItem
 
         virtual ~CTrack();
         int ref;
-        enum type_e {eEnd,eBase,eTrkPts,eTrain,eTrkExt1,eTrkGpxExt,eTrkShdw, eTrkShdw2};
+        enum type_e {eEnd,eBase,eTrkPts,eTrain,eTrkExt1,eTrkGpxExt,eTrkShdw, eTrkShdw2, eTrkPts2};
+        enum type_select_e{eErase, eNoErase, e3Way};
 
 #ifdef GPX_EXTENSIONS
         CGpxExtTr tr_ext;        //TODO: CGpxExtPt -> tr_ext
@@ -215,9 +216,9 @@ class CTrack : public IItem
         /// get the total time while moving around
         quint32 getTotalTimeMoving() const {return totalTimeMoving;}
         /// select tarckpoint by index
-        void setPointOfFocus(int idx, bool eraseSelection, bool moveMap);
+        void setPointOfFocus(int idx, type_select_e typeSelect, bool moveMap);
         /// set point of focus to a point with a given distance from start
-        pt_t * getPointOfFocus(double dist);
+        void getPointOfFocus(QList<pt_t>& points);
         ///
         QDateTime getStartTimestamp();
         ///
@@ -229,6 +230,7 @@ class CTrack : public IItem
         /// get information string for a particular trackpoint
         QString getTrkPtInfo1(pt_t& trkpt);
         QString getTrkPtInfo2(pt_t& trkpt);
+        QString getFocusInfo();
         /// get the bounding rectangular that fits the track
         QRectF getBoundingRectF();
         /// sort trackpoints by timestamp
@@ -264,7 +266,7 @@ class CTrack : public IItem
         const QList<wpt_t>& getStageWaypoints(){return waypoints;}
 
         /// smooth profile with a median filter
-        void medianFilter(quint32 len, QProgressDialog &progress);
+        void medianFilter(qint32 len, QProgressDialog &progress);
 
         /// reset all smoothed and purged data to it's original state
         void reset();
@@ -272,6 +274,15 @@ class CTrack : public IItem
         quint32 getMedianFilterCount() const {return cntMedianFilterApplied;}
 
         void offsetElevation(double offset);
+
+        void changeStartTime(QDateTime& time);
+
+        void changeSpeed(double speed);
+
+        bool unifyTimestamps(quint32 delta);
+
+        void setupIterators(QList<pt_t>::iterator& begin, QList<pt_t>::iterator& end);
+
 
         signals:
         void sigChanged();
@@ -305,9 +316,9 @@ class CTrack : public IItem
         bool highlight;
 
         /// total time covered by all track points
-        quint32 totalTime;
+        double totalTime;
         /// total time moving
-        quint32 totalTimeMoving;
+        double totalTimeMoving;
         /// total distance of track [m]
         double  totalDistance;
 
@@ -344,6 +355,9 @@ class CTrack : public IItem
         QList<wpt_t> waypoints;
 
         bool replaceOrigData;
+
+        enum state_select_e {eNoSel, e1stSel, e2ndSel};
+        state_select_e stateSelect;
 
 };
 

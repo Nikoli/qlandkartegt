@@ -152,7 +152,8 @@ set(qlandkarte_SRCS
     CDlgMapJNXConfig.cpp
     CDlgMapTmsConfig.cpp
     CDlgMapWmsConfig.cpp
-    CDlgNoMapConfig.cpp
+    CDlgMapRMPConfig.cpp
+    CDlgNoMapConfig.cpp    
     CDlgScreenshot.cpp
     CDlgTrackFilter.cpp
     CDlgSetupGarminIcons.cpp
@@ -168,6 +169,7 @@ set(qlandkarte_SRCS
     CGpx.cpp
     IDevice.cpp
     CDeviceQLandkarteM.cpp
+    CDeviceMagellan.cpp
     CDeviceGarmin.cpp
     CDeviceGarminBulk.cpp
     CDeviceNMEA.cpp
@@ -326,6 +328,7 @@ set(qlandkarte_HDRS
     CDlgMapJNXConfig.h
     CDlgMapTmsConfig.h
     CDlgMapWmsConfig.h
+    CDlgMapRMPConfig.h
     CDlgNoMapConfig.h
     CDlgScreenshot.h
     CDlgTrackFilter.h
@@ -342,6 +345,7 @@ set(qlandkarte_HDRS
     CGpx.h
     IDevice.h
     CDeviceQLandkarteM.h
+    CDeviceMagellan.h
     CDeviceGarmin.h
     CDeviceGarminBulk.h
     CDeviceNMEA.h
@@ -450,6 +454,7 @@ SET(qlandkarte_UIS
     IDlgMapJNXConfig.ui
     IDlgMapTmsConfig.ui
     IDlgMapWmsConfig.ui
+    IDlgMapRMPConfig.ui
     IDlgNoMapConfig.ui
     IDlgScreenshot.ui
     IDlgTrackFilter.ui
