@@ -738,7 +738,6 @@ void CTrack::replaceElevationByLocal(bool replaceOrignalData)
     emit sigChanged();
 }
 
-
 void CTrack::replaceElevationByRemote(bool replaceOrignalData)
 {
     SETTINGS;
@@ -1068,7 +1067,14 @@ void CTrack::rebuild(bool reindex)
             slope = 0.;
         }
 #ifdef HAS_POWERDB
-        pt2->correctedDistance = pt1->correctedDistance + sqrt(pt2->delta * pt2->delta + slope * slope);
+        // Two corrections are made
+        // 1. The average altitude is not at mean sea level / WGS-84 reference earth radius
+        // Correction factor is average altitude divided by earth's radius. This correction is really small and usually insignificant
+        double f = 1.0;
+        if ((pt1->ele != WPT_NOFLOAT) && (pt2->ele != WPT_NOFLOAT))
+            f = (0.5 * (pt1->ele + pt2->ele)) / (6378137.0 /  2.0);
+        // 2. Altitude difference between the two points, this can be significant for steep slopes
+        pt2->correctedDistance = pt1->correctedDistance + sqrt(pow(pt2->delta * (1+f), 2.0) + pow(slope, 2.0));
 #endif
 
         pt2->slope    = atan(slope / pt2->delta) * 360 / (2*M_PI);
