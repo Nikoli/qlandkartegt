@@ -121,6 +121,13 @@ class CTrack : public IItem
             double azimuth;
             /// secondary data: the total distance of all visible points up to this point
             float distance;
+#ifdef HAS_POWERDB
+            /**
+            * the total distance of the track in [m] applying a correction for alitude differences (taken from DEM) between points
+            * Obviously this calculation will be more precise if the trackpoints are closer together
+            */
+            float correctedDistance;
+#endif
             /// secondary data: the total ascend of all visible points up to this point
             float ascend;
             /// secondary data: the total descend of all visible points up to this point
@@ -211,6 +218,13 @@ class CTrack : public IItem
         QPolygon& getPolyline() {return polyline;}
         /// get the total distance of the track in [m]
         double getTotalDistance() const {return totalDistance;}
+#ifdef HAS_POWERDB
+        /**
+        * the total distance of the track in [m] applying a correction for alitude differences (taken from DEM) between points
+        * Obviously this calculation will be more precise if the trackpoints are closer together
+        */
+        double getCorrectedDistance() const { return correctedDistance;}
+#endif
         /// get the total time covered by the track in seconds
         quint32 getTotalTime() const {return totalTime;}
         /// get the total time while moving around
@@ -324,6 +338,10 @@ class CTrack : public IItem
         double totalTimeMoving;
         /// total distance of track [m]
         double  totalDistance;
+#ifdef HAS_POWERDB
+        /// total corrected distance of track [m]
+        double correctedDistance;
+#endif
 
         /// total ascend in [m]
         double totalAscend;

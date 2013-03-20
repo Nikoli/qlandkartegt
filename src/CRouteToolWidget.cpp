@@ -702,11 +702,13 @@ void CRouteToolWidget::slotToTrack()
     {
         CRoute * route = CRouteDB::self().getRouteByKey(item->data(Qt::UserRole).toString());
 
-        QVector<CRoute::pt_t>& rtepts = route->getSecRtePoints().isEmpty() ? route->getPriRtePoints() : route->getSecRtePoints();
+#ifndef HAS_POWERDB
+        QVector<CRoute::pt_t>& rtepts = route->getSecRtePoints().isEmpty() ? route->getPriRtePoints() : route->getSecRtePoints();       
 
         double dist, d, delta = 10.0, a1 , a2;
         projXY pt1, pt2, ptx;
         CTrack::pt_t pt;
+#endif
         CDlgConvertToTrack::EleMode_e eleMode;
 
         CDlgConvertToTrack dlg(0);
@@ -715,6 +717,10 @@ void CRouteToolWidget::slotToTrack()
             return;
         }
 
+#ifdef HAS_POWERDB
+        CTrack * track = route->convertToTrack(dlg.getDelta());
+        eleMode = dlg.getEleMode();
+#else
         CTrack * track  = new CTrack(&CTrackDB::self());
         track->setName(route->getName());
 
@@ -789,7 +795,7 @@ void CRouteToolWidget::slotToTrack()
                 pt1 = pt2;
             }
         }
-
+#endif
         if(eleMode == CDlgConvertToTrack::eLocal)
         {
             track->replaceElevationByLocal(true);

@@ -30,6 +30,9 @@
 #include <proj_api.h>
 
 class QDomDocument;
+#ifdef HAS_POWERDB
+class CTrack;
+#endif
 
 class CRoute : public IItem
 {
@@ -97,6 +100,10 @@ class CRoute : public IItem
         quint32 getTime(){return ttime;}
 
         void setCalcPending(){calcRoutePending = true;}
+
+#ifdef HAS_POWERDB
+        CTrack* convertToTrack(const double delta = 10.0);
+#endif
 
         signals:
         void sigChanged();

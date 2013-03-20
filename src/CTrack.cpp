@@ -957,6 +957,9 @@ void CTrack::rebuild(bool reindex)
     totalTime       = 0;
     totalTimeMoving = 0;
     totalDistance   = 0;
+#ifdef HAS_POWERDB
+    correctedDistance = 0;
+#endif
     totalAscend     = 0;
     totalDescend    = 0;
     avgspeed0       = 0;
@@ -1064,6 +1067,9 @@ void CTrack::rebuild(bool reindex)
         {
             slope = 0.;
         }
+#ifdef HAS_POWERDB
+        pt2->correctedDistance = pt1->correctedDistance + sqrt(pt2->delta * pt2->delta + slope * slope);
+#endif
 
         pt2->slope    = atan(slope / pt2->delta) * 360 / (2*M_PI);
         if (qAbs(pt2->slope )>100)
@@ -1093,6 +1099,10 @@ void CTrack::rebuild(bool reindex)
 
         t2              = pt2->timestamp;
         totalDistance   = pt2->distance;
+#ifdef HAS_POWERDB
+        correctedDistance = pt2->correctedDistance;
+        qDebug() << "Total distance: " << totalDistance << ", corrected: " << correctedDistance;
+#endif
 
         avgspeed0       = A * pt2->speed + (1.0 - A) * avgspeed1;
         avgspeed1       = avgspeed0;

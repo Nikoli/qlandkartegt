@@ -22,6 +22,10 @@
 #include "GeoMath.h"
 #include "CRouteDB.h"
 #include "IUnit.h"
+#ifdef HAS_POWERDB
+#include "CTrack.h"
+#include "CTrackDB.h"
+#endif
 
 #include <QtGui>
 #include <QtXml>
@@ -603,3 +607,89 @@ void CRoute::reset()
 
     emit sigChanged();
 }
+
+#ifdef HAS_POWERDB
+// Note: Moved here from CRouteToolWidget.cpp
+CTrack* CRoute::convertToTrack(const double _delta)
+{
+    QVector<CRoute::pt_t>& rtepts = getSecRtePoints().isEmpty() ? getPriRtePoints() : getSecRtePoints();
+    CTrack * track  = new CTrack(&CTrackDB::self());
+    track->setName(getName());
+
+    double a1, a2, d;
+    projXY pt1, pt2, ptx;
+    CTrack::pt_t pt;
+    double delta = _delta;
+
+    if(delta == -1)
+    {
+
+        for(int i = 0; i < rtepts.count(); ++i)
+        {
+            pt2 = rtepts[i];
+            pt.lon = pt2.u;
+            pt.lat = pt2.v;
+            pt._lon = pt.lon;
+            pt._lat = pt.lat;
+            *track << pt;
+        }
+    }
+    else
+    {
+        if((getDistance() / delta) > (MAX_TRACK_SIZE - rtepts.count()))
+        {
+            delta = getDistance() / (MAX_TRACK_SIZE - rtepts.count());
+        }
+
+        // 1st point
+        pt1 = rtepts.first();
+        pt.lon = pt1.u;
+        pt.lat = pt1.v;
+        pt._lon = pt.lon;
+        pt._lat = pt.lat;
+        *track << pt;
+
+        pt1.u = pt1.u * DEG_TO_RAD;
+        pt1.v = pt1.v * DEG_TO_RAD;
+
+        // all other points
+        for(int i = 1; i < rtepts.count(); ++i)
+        {
+            pt2 = rtepts[i];
+
+            pt2.u = pt2.u * DEG_TO_RAD;
+            pt2.v = pt2.v * DEG_TO_RAD;
+
+            // all points from pt1 -> pt2, with 10m steps
+            dist = ::distance(pt1, pt2, a1, a2);
+            a1 *= DEG_TO_RAD;
+
+            d = delta;
+            while(d < dist)
+            {
+                ptx = GPS_Math_Wpt_Projection(pt1, d, a1);
+                pt.lon = ptx.u * RAD_TO_DEG;
+                pt.lat = ptx.v * RAD_TO_DEG;
+                pt._lon = pt.lon;
+                pt._lat = pt.lat;
+
+                *track << pt;
+
+                d += delta;
+            }
+
+            // and finally the next point
+            pt.lon = pt2.u * RAD_TO_DEG;
+            pt.lat = pt2.v * RAD_TO_DEG;
+            pt._lon = pt.lon;
+            pt._lat = pt.lat;
+
+            *track << pt;
+
+            pt1 = pt2;
+        }
+    }
+
+    return track;
+}
+#endif
