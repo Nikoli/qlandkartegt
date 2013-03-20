@@ -50,6 +50,10 @@ void CMouseAddPowerLine::mousePressEvent(QMouseEvent * e)
     {
         if(!selWpt.isNull())
         {
+            // This happens if the user closes a file and opens a new one...
+            if (CWptDB::self().getWptByKey(prevWpt) == NULL)
+                prevWpt = "";
+
             if (prevWpt == "")
             {
                 prevWpt = selWpt->getKey();
