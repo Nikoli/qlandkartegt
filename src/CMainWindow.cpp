@@ -1133,8 +1133,11 @@ void CMainWindow::slotSaveData()
 #ifdef HAS_POWERDB
 void CMainWindow::slotSaveData()
 {
-    // Save data without asking for new filename
-    saveData(wksFile, ""); // No filter given: Default to using existing file extension
+    if (wksFile == "")
+        slotSaveDataAs();
+    else
+        // Save data without asking for new filename
+        saveData(wksFile, ""); // No filter given: Default to using existing file extension
 }
 #endif
 
