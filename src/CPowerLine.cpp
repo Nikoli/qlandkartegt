@@ -23,11 +23,8 @@
 #include "CWptDB.h"
 #include "IMap.h"
 #include "CTrack.h"
+#include "CRoute.h"
 #include "GeoMath.h"
-
-//#include "IUnit.h"
-//#include "config.h"
-//#include "GeoMath.h"
 
 #include <QDateTime>
 #include <QDebug>
@@ -120,9 +117,7 @@ const QLine CPowerLine::getLine(QPoint& middle, double& angle) const {
 } // getLine()
 
 const double CPowerLine::getDistance() const {
-  double a1, a2;
   projXY pt1, pt2;
-  double dist;
 
   CWpt* wpt1 = CWptDB::self().getWptByKey(keyFirst);
   CWpt* wpt2 = CWptDB::self().getWptByKey(keySecond);
@@ -131,10 +126,17 @@ const double CPowerLine::getDistance() const {
   pt1.v = wpt1->lat * DEG_TO_RAD;
   pt2.u = wpt2->lon * DEG_TO_RAD;
   pt2.v = wpt2->lat * DEG_TO_RAD;
-  dist = distance(pt1,pt2,a1,a2);
-  //qDebug() << "Elevations: " << wpt1->ele << ", " << wpt2->ele;
-  return sqrt(pow(dist, 2.0) + pow(double(wpt1->ele - wpt2->ele),2.0));
-  // TODO: Is this geomathematically correct?
+
+  // create route then track and find distance for spacing poles at 30m (which is a good average, changing it to 25m or 50m doesn't
+  // make a lot of difference in the distance calculation anyway)
+  CRoute* route = new CRoute(NULL);
+  route->addPosition(wpt1->lon, wpt1->lat, "");
+  route->addPosition(wpt2->lon, wpt2->lat, "");
+  CTrack* track = route->convertToTrack(30.0);
+  // Conversion of waypoints to a route looses the altitude data. But the new intermediate points need to receive their
+  // altitude from the DEM anyway
+  track->replaceElevationByLocal(true);
+  return track->getCorrectedDistance();
 }
 
 void CPowerLine::setColor(unsigned i)
