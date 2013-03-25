@@ -1390,6 +1390,7 @@ void CMainWindow::slotPrint()
     QPrinter::Orientation orientation = cfg.value("print/orientation","landscape").toString() == "landscape" ?
                 QPrinter::Landscape : QPrinter::Portrait;
     printer.setOrientation(orientation);
+    printer.setPaperSize(QPrinter::PaperSize(cfg.value("print/lastsize", "A4").toInt()));
     QFileInfo outFile(cfg.value("print/lastfile","").toString());
 
 #ifdef HAS_POWERDB
@@ -1415,6 +1416,7 @@ void CMainWindow::slotPrint()
 
     outFile.setFile(printer.outputFileName());
     cfg.setValue("print/lastfile", outFile.absoluteFilePath());
+    cfg.setValue("print/lastsize", printer.paperSize());
     cfg.setValue("print/orientation", printer.orientation() == QPrinter::Landscape ? "landscape" : "portrait");
 
     canvas->print(printer);
