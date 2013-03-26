@@ -959,6 +959,7 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
     QList<QRect> blockAreas;
     QFontMetrics fm(CResources::self().getMapFont());
     // end added by AD
+    QList<double> iconScaling;
 
     QMap<QString,CWpt*>::const_iterator wpt = wpts.begin();
     while(wpt != wpts.end())
@@ -981,6 +982,7 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
                 scale = log10(consumers + 5.0)/log10(8.0);
 
             icon = icon.scaled(icon.size() * scale);
+            iconScaling << scale;
 #endif
             QPixmap back = QPixmap(icon.size());
 #ifdef HAS_POWERDB
@@ -1026,6 +1028,11 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             // added by AD
             blockAreas << QRect(u - o , v - o, icon.width(), icon.height());
         }
+#ifdef HAS_POWERDB
+        else {
+            iconScaling << 1.0;
+        }
+#endif
 
         if(!(*wpt)->buddies.isEmpty())
         {
@@ -1051,6 +1058,9 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 
     // added by AD
     // draw the labels
+#ifdef HAS_POWERDB
+    QList<double>::const_iterator scale_it = iconScaling.begin();
+#endif
     wpt = wpts.begin();
     while(wpt != wpts.end())
     {
@@ -1061,6 +1071,9 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         if(rect.contains(QPoint(u,v)))
         {
             QPixmap icon = (*wpt)->getIcon();
+#ifdef HAS_POWERDB
+            double scale = *scale_it;
+#endif
 
             if(showNames)
             {
@@ -1081,12 +1094,15 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
                     if (wpt_data.consumers > 0.0)
                         name = tr("%1F-").arg(wpt_data.consumers) + name;
                 }
+                int height = icon.height() * scale;
+#else
+                int height = icon.height();
 #endif
                 QRect textArea = fm.boundingRect(name);
                 bool intersects;
 
                 // try above
-                textArea.moveCenter(QPoint(u, v - (icon.height() >> 1) - textArea.height()));
+                textArea.moveCenter(QPoint(u, v - (height >> 1) - textArea.height()));
                 intersects = false;
                 for (int k = 0; k < blockAreas.size() && !intersects; ++k)
                 {
@@ -1096,7 +1112,7 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
                 if (intersects)
                 {
                     // try below
-                    textArea.moveCenter(QPoint(u, v + ((icon.height() + textArea.height()) >> 1)));
+                    textArea.moveCenter(QPoint(u, v + ((height + textArea.height()) >> 1)));
                     intersects = false;
                     for (int k = 0; k < blockAreas.size() && !intersects; ++k)
                     {
@@ -1106,7 +1122,7 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
                     if (intersects)
                     {
                         // try right
-                        textArea.moveCenter(QPoint(u + ((icon.height() + textArea.height() + textArea.width()) >> 1),
+                        textArea.moveCenter(QPoint(u + ((height + textArea.height() + textArea.width()) >> 1),
                             v - (textArea.height() >> 2)));
                         intersects = false;
                         for (int k = 0; k < blockAreas.size() && !intersects; ++k)
@@ -1117,7 +1133,7 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
                         if (intersects)
                         {
                             // try left
-                            textArea.moveCenter(QPoint(u - ((icon.height() + (textArea.height() >> 1) + textArea.width()) >> 1),
+                            textArea.moveCenter(QPoint(u - ((height + (textArea.height() >> 1) + textArea.width()) >> 1),
                                 v - (textArea.height() >> 2)));
                             intersects = false;
                             for (int k = 0; k < blockAreas.size() && !intersects; ++k)
@@ -1138,6 +1154,9 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             }
         }
         ++wpt;
+#ifdef HAS_POWERDB
+        ++scale_it;
+#endif
     }
     // end added by AD
 
