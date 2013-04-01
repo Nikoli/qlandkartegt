@@ -542,7 +542,7 @@ void CPowerDB::addWpt(CWpt* wpt) {
 void CPowerDB::delWpt(const QString& key) {
   QSqlQuery query(*db);
 
-  qDebug() << "Deleting waypoint: " << key;
+  //qDebug() << "Deleting waypoint: " << key;
   query.prepare("DELETE FROM wpts WHERE key=:key");
   query.bindValue(":key", key);
   QUERY_EXEC(return);
@@ -847,7 +847,7 @@ CPowerLine* CPowerDB::newPowerLine(const QString& first, const QString& second, 
 void CPowerDB::delPowerLine(const QString& key) {
   QSqlQuery query(*db);
 
-  qDebug() << "Deleting power line: " << key;
+  //qDebug() << "Deleting power line: " << key;
   query.prepare("DELETE FROM lines WHERE key=:key");
   query.bindValue(":key", key);
   QUERY_EXEC(return);
@@ -1059,7 +1059,7 @@ CPowerNW* CPowerDB::getPowerNWByName(const QString& name)
   QUERY_EXEC(return NULL;);
 
   if (query.next()) {
-      qDebug() << "CPowerDB::getPowerNWByName() query successful, result " << query.value(0).toString();
+      //qDebug() << "CPowerDB::getPowerNWByName() query successful, result " << query.value(0).toString();
       // TODO: Check for multiple results?
       return getPowerNWByKey(query.value(0).toString());
   } else {
@@ -1157,7 +1157,7 @@ void CPowerDB::delPowerNW(const QString& key) {
 
   QSqlQuery query(*db);
 
-  qDebug() << "Deleting power network: " << key;
+  //qDebug() << "Deleting power network: " << key;
   query.prepare("DELETE FROM networks WHERE key=:key");
   query.bindValue(":key", key);
   QUERY_EXEC(return);
@@ -1263,7 +1263,7 @@ CPowerNW* CPowerDB::highlightedPowerNW() {
 
 void CPowerDB::highlightPowerNW(const QString& key)
 {
-    qDebug() << "highlightPowerNW " << key;
+    //qDebug() << "highlightPowerNW " << key;
     if(CPowerDB::self().isHighlightedPowerNW(key))
     {
         return;
@@ -1296,7 +1296,7 @@ void CPowerDB::highlightPowerNW(const QString& key)
 
 void CPowerDB::highlightPowerLine(const QString& key, const bool single)
 {
-    qDebug() << "CPowerDB::highlightPowerLine() for " << key;
+    //qDebug() << "CPowerDB::highlightPowerLine() for " << key;
 
     if(CPowerDB::self().isHighlightedPowerLine(key) & 2)
     {
@@ -1414,6 +1414,13 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         QPoint middle;
         double angle;
         QLine qline = l->getLine(middle, angle);
+        /*
+        // Offset to draw multiple parallel lines
+        double dx = -sin(angle / 180.0 * M_PI);
+        double dy = cos(angle / 180.0 * M_PI);
+        QPoint parOffset(floor(dx + 0.5), floor(dy + 0.5));
+        */
+
         bool p1visible = rect.contains(qline.p1());
         bool p2visible = rect.contains(qline.p2());
 
@@ -1455,18 +1462,40 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         else
         {
             // draw normal power line
-            QPen pen1(Qt::white,3);
+            int numLines = l->getNumPhases();
+            /*
+            // Draw multiple parallel lines - but screen display results are not good
+            QList<QLine> lines;
+            if ((numLines == 1) || (numLines == 3)) {
+                lines << qline;
+                if (numLines == 3) {
+                    lines << QLine(qline.p1() + 2 * parOffset, qline.p2() + 2 * parOffset);
+                    lines << QLine(qline.p1() - 2 * parOffset, qline.p2() - 2 * parOffset);
+                }
+            } else if (numLines == 3) {
+                lines << QLine(qline.p1() + parOffset, qline.p2() + parOffset);
+                lines << QLine(qline.p1() - parOffset, qline.p2() - parOffset);
+            }
+            */
+
+            // White background
+            //QPen pen1(Qt::white, 2 * numLines + 1);
+            QPen pen1(Qt::white, 2 * numLines);
             pen1.setCapStyle(Qt::RoundCap);
             pen1.setJoinStyle(Qt::RoundJoin);
 
+            // The line itself
             QPen pen2(l->getColor(),1);
             pen2.setCapStyle(Qt::RoundCap);
             pen2.setJoinStyle(Qt::RoundJoin);
+            pen2.setWidth(2 * (numLines-1) + 1);
 
             p.setPen(pen1);
             drawLine(qline, p);
             p.setPen(pen2);
             drawLine(qline, p);
+            //foreach (QLine lin, lines)
+            //    drawLine(lin, p);
 
             // Draw electric info on lines
             if (printView & 2)
@@ -1486,17 +1515,20 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         QPoint middle;
         double angle;
         QLine qline = (*hlit)->getLine(middle, angle);
+        int numLines = (*hlit)->getNumPhases();
 
         // draw skunk line
         QPen pen1(((*hlit)->highlighted == 1 ? QColor(255,255,255,128) : QColor(0,0,128,128)),6);
         pen1.setCapStyle(Qt::RoundCap);
         pen1.setJoinStyle(Qt::RoundJoin);
+        pen1.setWidth(2 * numLines);
 
         QColor color = (*hlit)->getColor();
         color.setAlpha(128);
         QPen pen2(color,4);
         pen2.setCapStyle(Qt::RoundCap);
         pen2.setJoinStyle(Qt::RoundJoin);
+        pen2.setWidth(2 * (numLines-1) + 3);
 
         p.setPen(pen1);
         drawLine(qline, p);

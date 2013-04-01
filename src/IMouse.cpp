@@ -278,7 +278,6 @@ void IMouse::drawSelWpt(QPainter& p)
 #ifdef HAS_POWERDB
     if (!(selLine == NULL))
     {
-        qDebug() << "IMouse: highlightPowerLine: " << selLine->getKey();
         CPowerDB::self().highlightPowerLine(selLine->getKey());
 
         QString         str = selLine->getInfo();
@@ -473,7 +472,6 @@ void IMouse::mouseMoveEventWpt(QMouseEvent * e)
     if (!selWpt.isNull())
     {
         if (oldLine != NULL) {
-            qDebug() << "unhighlight power line 2";
             CPowerDB::self().unHighlightPowerLine(oldLine->getKey());
         }
     }
@@ -591,7 +589,6 @@ void IMouse::mouseMoveEventWpt(QMouseEvent * e)
         }
     } else {
         if (selLine == NULL) {
-            qDebug() << "Line unselected";
             CPowerDB::self().unHighlightPowerLine(oldLine->getKey());
             canvas->update();
         }

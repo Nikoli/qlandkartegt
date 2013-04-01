@@ -470,13 +470,13 @@ void CCanvas::draw(QPainter& p)
     CRouteDB::self().draw(p, rect(), needsRedraw);
     CTrackDB::self().draw(p, rect(), needsRedraw);
     COverlayDB::self().draw(p, rect(), needsRedraw);
+#ifdef HAS_POWERDB
+    CPowerDB::self().draw(p, rect(), needsRedraw);
+#endif
     CLiveLogDB::self().draw(p, rect(), needsRedraw);
     CWptDB::self().draw(p, rect(), needsRedraw);
     CSearchDB::self().draw(p, rect(), needsRedraw);
     CGridDB::self().draw(p, rect(), needsRedraw);
-#ifdef HAS_POWERDB
-    CPowerDB::self().draw(p, rect(), needsRedraw);
-#endif
 
     drawRefPoints(p);
     drawScale(p);
