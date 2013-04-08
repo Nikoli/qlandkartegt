@@ -975,11 +975,11 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 #ifdef HAS_POWERDB
             // Scale waypoint by amount of consumers so that places with heavy load become obvious
             double consumers = CPowerDB::self().getElectricData((*wpt)->getKey()).consumers;
-            double scale = 1.0;
+            double scale;
             if (consumers < 5.0)
-                scale = 0.8 + consumers / 2.5;
+                scale = 0.8 + consumers / 5;
             else
-                scale = log10(consumers + 5.0)/log10(8.0);
+                scale = 1.4 * log10(consumers + 5.0)/log10(5.0);
 
             icon = icon.scaled(icon.size() * scale);
             iconScaling << scale;

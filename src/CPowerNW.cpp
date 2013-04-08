@@ -418,8 +418,8 @@ QString CPowerNW::getInfo()
     }*/
     
     CWpt* ph_wpt = CWptDB::self().getWptByKey(ph);
-    str += (ph_wpt != NULL ? tr("\nPowerhouse: '") + ph_wpt->getName() + "'\n" + tr("Voltage: %1V").arg(voltage)
-                           : tr("\nVoltage: %1V").arg(voltage));
+    str += (ph_wpt != NULL ? "\n" + tr("Powerhouse: '") + ph_wpt->getName() + "'\n" + tr("Voltage: %1V").arg(voltage)
+                           : "\n" + tr("Voltage: %1V").arg(voltage));
     //        + ", " + tr("watts per consumer: %1W").arg(watts);
 
     if(description.count())

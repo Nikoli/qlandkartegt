@@ -109,11 +109,15 @@ class CPowerDB : public QObject
         
         void highlightPowerLine(const QString& key, const bool single = true);
         void highlightPowerLines(const QStringList& keys);
+        void flagPowerLine(const QString& key);
+        void flagPowerLines(const QStringList& keys);
         void highlightPowerNW(const QString& key);
         
         /// unset the highlight flag
         void unHighlightPowerLine(const QString& key);
         void unHighlightPowerLines();
+        void unFlagPowerLine(const QString& key);
+        void unFlagPowerLines();
         /// get the value of the highlight flag
         unsigned isHighlightedPowerLine(const QString& key);
         bool isHighlightedPowerNW(const QString& key);

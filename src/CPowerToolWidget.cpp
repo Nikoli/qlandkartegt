@@ -48,7 +48,7 @@ if(!query.exec())\
 // Current calculated from resistance of the load as U_rated²/P_rated * PF
 // Assuming balanced three-phase system
 // Approximation of single-phase loads in three-phase systems, which assumes that
-// all single-phase loads are balanced on the three-phase node the originate from,
+// all single-phase loads are balanced on the three-phase node they originate from,
 // including the single-phase line resistances!
 #define CALCMETHOD 2
 
@@ -667,8 +667,6 @@ void getPhaseLoads(CPowerDB::wpt_eElectric& e, const QString& fromLine, const do
     ph3 = (sum > 0.1) ? load * nom3 / sum : 0.0;
 }
 
-const int tabLength = 8; // TODO: Make this OS-independent!
-
 void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_key, const double wpc,
                                     const QString& fromLine, QStringList& loads,
                                     double& ph1, double& ph2, double& ph3)
@@ -678,6 +676,7 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
 
     QStringList lines = getOriginatingPowerLines(wpt_key, nw_key, fromLine);
     QString line_key;
+    int phases = 1; // sanity check of single-phase/three-phase mixup
 
     foreach (line_key, lines)
     {
@@ -691,12 +690,36 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
             getNodeLoads(l->keyFirst, nw_key, wpc, line_key, loads, newph1, newph2, newph3);
         }
 
+        // TODO: getPowerOnPhase() does not take into account that the power on the phase might be out of balance
         ph1 += newph1 + l->getPowerOnPhase(1);
         ph2 += newph2 + l->getPowerOnPhase(2);
         ph3 += newph3 + l->getPowerOnPhase(3);
+
+        // Get an estimation of how unbalanced the load is on this line
+        // TODO: The threshold of 30% imbalance is arbitrary.
+        if (l->getNumPhases() > 1) {
+            double averageLoad = (newph1 + newph2 + newph3) / 3.0;
+            if ((fabs(newph1 - averageLoad)/averageLoad > 0.3) ||
+                (fabs(newph2 - averageLoad)/averageLoad > 0.3) ||
+                (fabs(newph3 - averageLoad)/averageLoad > 0.3)) {
+                CPowerDB::self().flagPowerLine(l->getKey());
+            } else {
+                CPowerDB::self().unFlagPowerLine(l->getKey());
+            }
+        }
+
+        if (phases < l->getNumPhases())
+            phases = l->getNumPhases();
     }
 
+    // Check for miraculous increase of phases...
+    CPowerLine * lfrom = CPowerDB::self().getPowerLineByKey(fromLine);
+    if (phases > lfrom->getNumPhases())
+        CPowerDB::self().flagPowerLine(fromLine);
+
     CWpt* wpt = CWptDB::self().getWptByKey(wpt_key);
+    if (wpt == NULL)
+        return; // Happens when clearing the database
     CPowerDB::wpt_eElectric wpt_data = CPowerDB::self().getElectricData(wpt_key);
     double thisph1, thisph2, thisph3;
     getPhaseLoads(wpt_data, fromLine, wpc, thisph1, thisph2, thisph3);
@@ -706,11 +729,6 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
 
     QString wptname = wpt->getName();
     wptname.truncate(16);
-
-    /*if (wptname.length() <= tabLength)
-        wptname += "\t\t";
-    else if (wptname.length() <= 2 * tabLength)
-        wptname += "\t";*/
 
     loads += "<TR VALIGN=TOP>"
              "<TD WIDTH=20%><P><B>" + wptname + "</B></P></TD>"
@@ -954,6 +972,13 @@ void CPowerToolWidget::calcPowerNW(const QString& key) {
         }
 #endif
         qDebug() << "Calculated voltage for nw " << nw->getName();
+
+        // Check phase balance (this highlights imbalanced lines)
+        // TODO: Integrate this into the calculation to avoid double calculation time
+        QStringList loads;
+        double ph1, ph2, ph3;
+
+        getNodeLoads(nw->ph, key, nw->watts, "", loads, ph1, ph2, ph3);
     } else {
         QMessageBox::warning(NULL, "No powerhouse", "Please define a powerhouse waypoint for this network");
     }

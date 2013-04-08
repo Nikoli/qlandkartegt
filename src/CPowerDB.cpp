@@ -952,12 +952,47 @@ void CPowerDB::unHighlightPowerLine(const QString& key) {
 
 }
 
+void CPowerDB::unFlagPowerLine(const QString& key) {
+
+    QSqlQuery query(*db);
+
+    query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=4) AND (key=:key)");
+    query.bindValue(":key", key);
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=5) AND (key=:key)");
+    query.bindValue(":key", key);
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=2 WHERE (highlighted=6) AND (key=:key)");
+    query.bindValue(":key", key);
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=3 WHERE (highlighted=7) AND (key=:key)");
+    query.bindValue(":key", key);
+    QUERY_EXEC(return);
+
+    emit sigChanged(true);
+}
+
 void CPowerDB::unHighlightPowerLines() {
     QSqlQuery query(*db);
 
     query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=2)");
     QUERY_EXEC(return);
     query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=3)");
+    QUERY_EXEC(return);
+
+    emit sigChanged(true);
+}
+
+void CPowerDB::unFlagPowerLines() {
+    QSqlQuery query(*db);
+
+    query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=4)");
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=5)");
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=2 WHERE (highlighted=6)");
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=3 WHERE (highlighted=7)");
     QUERY_EXEC(return);
 
     emit sigChanged(true);
@@ -1030,7 +1065,8 @@ CPowerNW* CPowerDB::getPowerNWByKey(const QString& key)
     result->powerfactor = query.value(8).toDouble();
     if (query.value(9).toDouble() > 0.01) // Is always ZERO in some buggy situations!!!
         result->ratedVoltage = query.value(9).toDouble();
-    result->minVoltage = query.value(10).toDouble();
+    if (query.value(10).toDouble() > 0.01)
+        result->minVoltage = query.value(10).toDouble();
   } else {
       qDebug() << "No network, using default values";
     // No such network
@@ -1328,12 +1364,49 @@ void CPowerDB::highlightPowerLine(const QString& key, const bool single)
 
 }
 
+void CPowerDB::flagPowerLine(const QString& key)
+{
+    //qDebug() << "CPowerDB::flagPowerLine() for " << key;
+
+    if(CPowerDB::self().isHighlightedPowerLine(key) & 4)
+    {
+        return;
+    }
+
+    QSqlQuery query(*db);
+
+    query.prepare("UPDATE lines SET highlighted=4 WHERE (highlighted=0) AND (key=:key)");
+    query.bindValue(":key", key);
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=5 WHERE (highlighted=1) AND (key=:key)");
+    query.bindValue(":key", key);
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=6 WHERE (highlighted=2) AND (key=:key)");
+    query.bindValue(":key", key);
+    QUERY_EXEC(return);
+    query.prepare("UPDATE lines SET highlighted=7 WHERE (highlighted=3) AND (key=:key)");
+    query.bindValue(":key", key);
+    QUERY_EXEC(return);
+
+    emit sigChanged(true);
+
+}
+
 void CPowerDB::highlightPowerLines(const QStringList& keys)
 {
     unHighlightPowerLines();
 
     foreach (QString key, keys) {
         highlightPowerLine(key, false);
+    }
+}
+
+void CPowerDB::flagPowerLines(const QStringList& keys)
+{
+    unFlagPowerLines();
+
+    foreach (QString key, keys) {
+        flagPowerLine(key);
     }
 }
 
@@ -1518,22 +1591,32 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         int numLines = (*hlit)->getNumPhases();
 
         // draw skunk line
-        QPen pen1(((*hlit)->highlighted == 1 ? QColor(255,255,255,128) : QColor(0,0,128,128)),6);
+        QPen pen1;
+        if ((*hlit)->highlighted == 1)
+            // Line is highlighted as part of the whole network
+            pen1.setColor(QColor(255,255,255,128));
+        else if ((*hlit)->highlighted & 4)
+            // Line is flagged
+            pen1.setColor(Qt::magenta);
+        else
+            // Line is highlighted
+            pen1.setColor(QColor(0,0,128,128));
+        pen1.setWidth(2 * (numLines-1) + 5);
         pen1.setCapStyle(Qt::RoundCap);
         pen1.setJoinStyle(Qt::RoundJoin);
-        pen1.setWidth(2 * numLines);
 
         QColor color = (*hlit)->getColor();
         color.setAlpha(128);
-        QPen pen2(color,4);
+        QPen pen2(color, 2 * (numLines-1) + 3);
         pen2.setCapStyle(Qt::RoundCap);
         pen2.setJoinStyle(Qt::RoundJoin);
-        pen2.setWidth(2 * (numLines-1) + 3);
 
         p.setPen(pen1);
         drawLine(qline, p);
-        p.setPen(pen2);
-        drawLine(qline, p);
+        if (!((*hlit)->highlighted & 4)) {
+            p.setPen(pen2);
+            drawLine(qline, p);
+        }
 
         // Draw electric info on lines
         if (printView & 2)

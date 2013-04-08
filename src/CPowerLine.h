@@ -92,7 +92,7 @@ class CPowerLine : public IItem
         const int firstPhase() const;
         const int secondPhase() const;
 
-        unsigned highlighted; // 0: none, 1: network, 2: line, 3: both
+        unsigned highlighted; // Bit 0: network, Bit 1: line, Bit 2: flagged (e.g. phase imbalance)
         bool m_hide;
         
     private:

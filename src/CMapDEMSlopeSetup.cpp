@@ -69,6 +69,9 @@ void CMapDEMSlopeSetup::paintEvent(QPaintEvent * e)
 
 void CMapDEMSlopeSetup::registerDEMMap(CMapDEM * map)
 {
+    if (map == NULL)
+        return; // Happens on destruction of CMapDEM
+
     dem = map;
     if(dem.isNull())
     {
