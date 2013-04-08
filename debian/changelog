@@ -1,3 +1,14 @@
+qlandkartegt-pn (1.1.4f~precise) precise; urgency=low
+
+  * Fixed bug that didn't ask for filename when saving file for the first time
+  * Fixed bug that crashed QLGT when creating a power line after closing another file
+  * Added improved calculation of line lengths taking into account altitude
+    and elevation differences
+  * Adjust line width to number of phases
+  * Highlight phases where the current imbalance on the phases is greater than 30%
+
+ -- Jan Rheinländer <jrheinlaender@users.sourceforge.net>  Mon, 25 Mar 2013 08:00:00 +0430
+
 qlandkartegt-pn (1.1.3~precise) precise; urgency=low
 
   * Fixed bug that did not show .qdb files under "All supported files"
