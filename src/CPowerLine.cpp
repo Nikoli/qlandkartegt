@@ -195,17 +195,35 @@ const int CPowerLine::secondPhase() const {
 
 void CPowerLine::recalc()
 {
+    // Line impedance calculation see Harvey, p. 299
+    // Assumptions: Equal spacing of cables on the poles, seven-strand cable, 
+    //              reactance from capacitive effect can be ignored for overhead cables,
+    //		    phase and neutral have the same diameter in unbalanced systems
+    // Effect of line impedance on the total power factor and losses incurred by connecting
+    // the cables are ignored
+    double d = 0.3; // 30 cm spacing between cables on the pole
+    double D = sqrt(4.0 / M_PI * crossSection/7.0); // diameter of each cable strand in [mm]
+    double r = 3.0 * D/2.0 / 1000.0; // effective cable radius in [m]
+    double L = length * (5 + 46 * log10(d/r)) * 1E-8; // inductance in Henry
+    double X_L = 2.0 * M_PI * 50.0 * L; // reactance due to inductive effect in Ohm
+    
     double rphase = length / (conductivity * crossSection); // resistance of one phase
+    double zphase = sqrt(X_L*X_L + rphase*rphase); // impedance of one phase
+    //qDebug() << "Cable: " << crossSection << "mm², Length: " << length << "m , r: " << r << "m, L: " << L << "H, X_L: " << X_L << "Ohm"
+    //         << ", R: " << rphase << "Ohm" << ", Z: " << zphase << "Ohm";
+    //qDebug() << "Percentage of increase of resistance: " << (zphase/rphase - 1.0) * 100.0;
     double rneutral = length / (conductivity * crossSection); // resistance of neutral line
+    double zneutral = sqrt(X_L*X_L + rneutral*rneutral);
+    
     // TODO: Neutral cross-section might be different for
     // two-phase case and unbalanced three-phase case
 
     if (getNumPhases() == 1)
-        resistance = rphase + rneutral; // because current goes there and back
+        resistance = zphase + zneutral; // because current goes there and back
     else if (getNumPhases() == 2)
-        resistance =  rphase/2  + rneutral; // two single phases, current divided one way there but united on way back in neutral
+        resistance =  zphase/2  + zneutral; // two single phases, current divided one way there but united on way back in neutral
     else
-        resistance  = rphase/3; // three-phase system, if balanced then no current on neutral
+        resistance  = zphase/3; // three-phase system, if balanced then no current on neutral
 
     drop = resistance * current;
 }
