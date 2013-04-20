@@ -697,25 +697,18 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
 
         // Get an estimation of how unbalanced the load is on this line
         // TODO: The threshold of 30% imbalance is arbitrary.
-        if (l->getNumPhases() > 1) {
+        if (l->getNumPhases() == 3) {
             double averageLoad = (newph1 + newph2 + newph3) / 3.0;
             if ((fabs(newph1 - averageLoad)/averageLoad > 0.3) ||
                 (fabs(newph2 - averageLoad)/averageLoad > 0.3) ||
                 (fabs(newph3 - averageLoad)/averageLoad > 0.3)) {
                 CPowerDB::self().flagPowerLine(l->getKey());
-            } else {
-                CPowerDB::self().unFlagPowerLine(l->getKey());
             }
         }
 
         if (phases < l->getNumPhases())
             phases = l->getNumPhases();
-    }
-
-    // Check for miraculous increase of phases...
-    CPowerLine * lfrom = CPowerDB::self().getPowerLineByKey(fromLine);
-    if (phases > lfrom->getNumPhases())
-        CPowerDB::self().flagPowerLine(fromLine);
+    }   
 
     CWpt* wpt = CWptDB::self().getWptByKey(wpt_key);
     if (wpt == NULL)
@@ -726,6 +719,19 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
     ph1 += thisph1;
     ph2 += thisph2;
     ph3 += thisph3;
+
+    // Check for miraculous increase of phases...
+    CPowerLine * lfrom = CPowerDB::self().getPowerLineByKey(fromLine);
+    if (phases > lfrom->getNumPhases()) {
+        CPowerDB::self().flagPowerLine(fromLine);
+    } else {
+        // Check for multi-phase line going to less than 3 consumers at the end of the line
+        if ((lines.size() == 0) && (double(lfrom->getNumPhases()) > ceil(wpt_data.consumers)) && (wpt_data.load == 0.0)) {
+            CPowerDB::self().flagPowerLine(fromLine);
+        } else {
+            CPowerDB::self().unFlagPowerLine(fromLine);
+        }
+    }
 
     QString wptname = wpt->getName();
     wptname.truncate(16);
