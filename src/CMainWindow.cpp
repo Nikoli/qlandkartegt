@@ -1399,7 +1399,8 @@ void CMainWindow::slotPrint()
         if (QFileInfo(wksFile).fileName() == "")
             printer.setOutputFileName(outFile.filePath());
         else
-            printer.setOutputFileName(outFile.path() + "/" + QFileInfo(wksFile).baseName() + ".ps");
+            //printer.setOutputFileName(outFile.path() + "/" + QFileInfo(wksFile).baseName() + ".ps");
+            printer.setOutputFileName(QFileInfo(wksFile).absolutePath() + "/" + QFileInfo(wksFile).baseName() + ".ps");
     }
     printer.setOutputFormat(QPrinter::PostScriptFormat);
     // Note: This does not show up in the print options dialog, but if the user doesn't use that dialog it has effect
