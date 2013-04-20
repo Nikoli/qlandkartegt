@@ -941,10 +941,8 @@ void CPowerDB::unHighlightPowerLine(const QString& key) {
 
     QSqlQuery query(*db);
 
-    query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=2) AND (key=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=3) AND (key=:key)");
+    // Reset bit 2
+    query.prepare("UPDATE lines SET highlighted=(highlighted & ~2) WHERE (key=:key)");
     query.bindValue(":key", key);
     QUERY_EXEC(return);
 
@@ -956,16 +954,8 @@ void CPowerDB::unFlagPowerLine(const QString& key) {
 
     QSqlQuery query(*db);
 
-    query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=4) AND (key=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=5) AND (key=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=2 WHERE (highlighted=6) AND (key=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=3 WHERE (highlighted=7) AND (key=:key)");
+    // Reset bit 3
+    query.prepare("UPDATE lines SET highlighted=(highlighted & ~4) WHERE (key=:key)");
     query.bindValue(":key", key);
     QUERY_EXEC(return);
 
@@ -975,9 +965,7 @@ void CPowerDB::unFlagPowerLine(const QString& key) {
 void CPowerDB::unHighlightPowerLines() {
     QSqlQuery query(*db);
 
-    query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=2)");
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=3)");
+    query.prepare("UPDATE lines SET highlighted=(highlighted & ~2)");
     QUERY_EXEC(return);
 
     emit sigChanged(true);
@@ -986,13 +974,7 @@ void CPowerDB::unHighlightPowerLines() {
 void CPowerDB::unFlagPowerLines() {
     QSqlQuery query(*db);
 
-    query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=4)");
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=5)");
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=2 WHERE (highlighted=6)");
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=3 WHERE (highlighted=7)");
+    query.prepare("UPDATE lines SET highlighted=(highlighted & ~4)");
     QUERY_EXEC(return);
 
     emit sigChanged(true);
@@ -1342,18 +1324,13 @@ void CPowerDB::highlightPowerLine(const QString& key, const bool single)
     QSqlQuery query(*db);
 
     if (single) {
-        // Unhighlight other highlighted lines
-        query.prepare("UPDATE lines SET highlighted=0 WHERE (highlighted=2) AND (key!=:key)");
-        query.bindValue(":key", key);
-        QUERY_EXEC(return);
-        query.prepare("UPDATE lines SET highlighted=1 WHERE (highlighted=3) AND (key!=:key)");
+        // Unhighlight other highlighted lines (reset bit 2)
+        query.prepare("UPDATE lines SET highlighted=(highlighted & ~2) WHERE (key!=:key)");
         query.bindValue(":key", key);
         QUERY_EXEC(return);
     }
-    query.prepare("UPDATE lines SET highlighted=2 WHERE (highlighted=0) AND (key=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=3 WHERE (highlighted=1) AND (key=:key)");
+    // set bit 2
+    query.prepare("UPDATE lines SET highlighted=(highlighted | 2) WHERE (key=:key)");
     query.bindValue(":key", key);
     QUERY_EXEC(return);
 
@@ -1375,16 +1352,8 @@ void CPowerDB::flagPowerLine(const QString& key)
 
     QSqlQuery query(*db);
 
-    query.prepare("UPDATE lines SET highlighted=4 WHERE (highlighted=0) AND (key=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=5 WHERE (highlighted=1) AND (key=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=6 WHERE (highlighted=2) AND (key=:key)");
-    query.bindValue(":key", key);
-    QUERY_EXEC(return);
-    query.prepare("UPDATE lines SET highlighted=7 WHERE (highlighted=3) AND (key=:key)");
+    // set bit 3
+    query.prepare("UPDATE lines SET highlighted=(highlighted | 4) WHERE (key=:key)");
     query.bindValue(":key", key);
     QUERY_EXEC(return);
 
