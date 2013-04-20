@@ -1379,24 +1379,6 @@ void CPowerDB::flagPowerLines(const QStringList& keys)
     }
 }
 
-const QList<QPointF> getIntersectionPoints(const QRect& r, const QLine& l)
-{
-    QList<QPoint> points;
-    points << r.topRight() << r.bottomRight() << r.bottomLeft() << r.topLeft();
-    QList<QPointF> result;
-    QPoint p1 = r.topLeft();
-
-    for (QList<QPoint>::const_iterator pt = points.begin(); pt != points.end(); pt++) {
-        QLineF line(p1, *pt);
-        QPointF p_inter;
-        if (line.intersect(l, &p_inter) == QLineF::BoundedIntersection)
-            result << p_inter;
-        p1 = *pt;
-    }
-
-    return result;
-}
-
 void CPowerDB::drawElectricText(QPainter& p, const CPowerLine* l, const QPoint &middle, const double angle)
 {    
     QString str;
@@ -1462,37 +1444,10 @@ void CPowerDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
         double dy = cos(angle / 180.0 * M_PI);
         QPoint parOffset(floor(dx + 0.5), floor(dy + 0.5));
         */
-
-        bool p1visible = rect.contains(qline.p1());
-        bool p2visible = rect.contains(qline.p2());
-
-        // Quick intersection test
-        if (p1visible && p2visible) {
-            // Line completely visible
-        } else {
-            // Exact intersection test
-            QList<QPointF> points = getIntersectionPoints(rect, qline);
-
-            if (points.empty()) {
-                // Line not visible at all
-                ++lit;
-                continue;
-            } else if (points.size() == 1) {
-                if (p1visible)
-                    points << qline.p1();
-                else if (p2visible)
-                    points << qline.p2();
-                else {
-                    // line touches at a corner
-                    ++lit;
-                    continue;
-                }
-            }
-
-            // Line only partially visible
-            QLineF visibleSegment(points.front(), points.back());
-            if (visibleSegment.length() > 50.0)
-                middle = ((visibleSegment.p1() + visibleSegment.p2())/2.0).toPoint();
+        middle = CPowerLine::getVisibleMiddle(middle, qline, rect);
+        if (middle == QPoint()) {
+            ++lit;
+            continue;
         }
 
         if (l->highlighted > 0)

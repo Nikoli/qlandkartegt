@@ -92,6 +92,12 @@ class CPowerLine : public IItem
         const int firstPhase() const;
         const int secondPhase() const;
 
+        /**
+          * Get the middle point of the line if it is inside rect.
+          * Otherwise, get a point close to the middle that is inside rect
+          **/
+        static const QPoint getVisibleMiddle(const QPoint& middle, const QLine& line, const QRect& rect);
+
         unsigned highlighted; // Bit 0: network, Bit 1: line, Bit 2: flagged (e.g. phase imbalance)
         bool m_hide;
         

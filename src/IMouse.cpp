@@ -276,9 +276,9 @@ void IMouse::drawSelWpt(QPainter& p)
     }
     
 #ifdef HAS_POWERDB
-    if (!(selLine == NULL))
+    if ((selLine != NULL) && (selLine_middle != QPoint()))
     {
-        CPowerDB::self().highlightPowerLine(selLine->getKey());
+        CPowerDB::self().highlightPowerLine(selLine->getKey());                
 
         QString         str = selLine->getInfo();
         QFont           f   = CResources::self().getMapFont();
@@ -508,7 +508,10 @@ void IMouse::mouseMoveEventWpt(QMouseEvent * e)
                 selLine = l;
 
                 // Find middle point of line (for displaying info)
-                selLine_middle = (QPoint(u1, v1) + QPoint(u2, v2))/2;
+                double angle;
+                QLine qline = l->getLine(selLine_middle, angle);
+                QRect r = theMainWindow->getCanvas()->rect();
+                selLine_middle = CPowerLine::getVisibleMiddle(selLine_middle, qline, r);
             }
         }
     }

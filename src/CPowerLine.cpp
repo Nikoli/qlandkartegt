@@ -263,3 +263,56 @@ const double CPowerLine::getPowerOnPhase(const int phase) {
     }
     return 0;
 }
+
+const QList<QPointF> getIntersectionPoints(const QRect& r, const QLine& l)
+{
+    QList<QPoint> points;
+    points << r.topRight() << r.bottomRight() << r.bottomLeft() << r.topLeft();
+    QList<QPointF> result;
+    QPoint p1 = r.topLeft();
+
+    for (QList<QPoint>::const_iterator pt = points.begin(); pt != points.end(); pt++) {
+        QLineF line(p1, *pt);
+        QPointF p_inter;
+        if (line.intersect(l, &p_inter) == QLineF::BoundedIntersection)
+            result << p_inter;
+        p1 = *pt;
+    }
+
+    return result;
+}
+
+const QPoint CPowerLine::getVisibleMiddle(const QPoint &middle, const QLine &line, const QRect &rect) {
+    bool p1visible = rect.contains(line.p1());
+    bool p2visible = rect.contains(line.p2());
+
+    // Quick intersection test
+    if (p1visible && p2visible) {
+        // Line completely visible
+        return middle;
+    } else {
+        // Exact intersection test
+        QList<QPointF> points = getIntersectionPoints(rect, line);
+
+        if (points.empty()) {
+            // Line not visible at all
+            return QPoint();
+        } else if (points.size() == 1) {
+            if (p1visible)
+                points << line.p1();
+            else if (p2visible)
+                points << line.p2();
+            else {
+                // line touches at a corner
+                return QPoint();
+            }
+        }
+
+        // Line only partially visible
+        QLineF visibleSegment(points.front(), points.back());
+        if (visibleSegment.length() > 50.0)
+            return ((visibleSegment.p1() + visibleSegment.p2())/2.0).toPoint();
+
+        return QPoint();
+    }
+}
