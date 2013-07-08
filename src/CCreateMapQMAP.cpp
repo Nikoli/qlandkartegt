@@ -27,6 +27,7 @@
 #include "config.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CCreateMapQMAP::CCreateMapQMAP(QWidget * parent)
 : QWidget(parent)

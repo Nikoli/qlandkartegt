@@ -38,11 +38,11 @@ CDlgConfig3D::~CDlgConfig3D()
 }
 
 
-void CDlgConfig3D::exec()
+int CDlgConfig3D::exec()
 {
     comboQuality->setCurrentIndex(comboQuality->findData(view3D.quality3D));
     checkElePov->setChecked(view3D.coupleElePOV);
-    QDialog::exec();
+    return QDialog::exec();
 }
 
 

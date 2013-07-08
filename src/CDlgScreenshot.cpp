@@ -24,6 +24,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CDlgScreenshot::CDlgScreenshot(QWidget * parent)
 : QDialog(parent)

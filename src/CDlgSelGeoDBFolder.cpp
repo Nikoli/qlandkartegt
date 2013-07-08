@@ -123,5 +123,5 @@ void CDlgSelGeoDBFolder::queryChildrenFromDB(QTreeWidgetItem * parent)
         queryChildrenFromDB(item);
     }
 
-    treeWidget->header()->setResizeMode(CGeoDB::eCoName,QHeaderView::ResizeToContents);
+    treeWidget->header()->setSectionResizeMode(CGeoDB::eCoName,QHeaderView::ResizeToContents);
 }

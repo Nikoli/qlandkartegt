@@ -86,12 +86,13 @@ void CSearchDB::search(const QString& str, hosts_t host)
 
 void CSearchDB::startGoogle(const QString& str)
 {
-    QUrl url("http://maps.google.com");
+    QUrl url("http://maps.google.com/maps/geo");
+    QUrlQuery query;
     tmpResult.setName(str);
-    url.setPath("/maps/geo");
-    url.addQueryItem("q",str);
-    url.addQueryItem("output","csv");
-    url.addQueryItem("key",google_api_key);
+    query.addQueryItem("q",str);
+    query.addQueryItem("output","csv");
+    query.addQueryItem("key",google_api_key);
+    url.setQuery(query);
 
     QNetworkRequest request;
     request.setUrl(url);

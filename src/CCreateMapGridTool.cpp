@@ -26,6 +26,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 #include <gdal.h>
 

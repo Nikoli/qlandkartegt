@@ -30,6 +30,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 #define N_LINES 7
 

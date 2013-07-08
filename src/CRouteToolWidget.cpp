@@ -33,6 +33,7 @@
 #include "CMainWindow.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtXml>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
@@ -915,13 +916,13 @@ void CRouteToolWidget::startMapQuest(CRoute& rte)
     QUrl url("http://www.mapquestapi.com");
     url.setPath("directions/v1/route");
 
-    QList< QPair<QByteArray, QByteArray> > queryItems;
-    queryItems << QPair<QByteArray, QByteArray>(QByteArray("key"), keyMapQuest);
-    queryItems << QPair<QByteArray, QByteArray>(QByteArray("ambiguities"), QByteArray("ignore"));
-    queryItems << QPair<QByteArray, QByteArray>(QByteArray("inFormat"), QByteArray("xml"));
-    queryItems << QPair<QByteArray, QByteArray>(QByteArray("outFormat"), QByteArray("xml"));
-    queryItems << QPair<QByteArray, QByteArray>(QByteArray("xml"), QUrl::toPercentEncoding(xmlstr));
-    url.setEncodedQueryItems(queryItems);
+    QUrlQuery query;
+    query.addQueryItem("key", keyMapQuest);
+    query.addQueryItem("ambiguities", "ignore");
+    query.addQueryItem("inFormat", "xml");
+    query.addQueryItem("outFormat", "xml");
+    query.addQueryItem("xml", QUrl::toPercentEncoding(xmlstr));
+    url.setQuery(query);
 
     //    qDebug() << url.toString();
 

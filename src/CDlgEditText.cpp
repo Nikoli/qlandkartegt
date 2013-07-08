@@ -20,6 +20,7 @@
 #include "CTextEditWidget.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CDlgEditText::CDlgEditText(QString& content, QWidget * parent)
 : QDialog(parent)

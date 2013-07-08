@@ -22,6 +22,7 @@
 #include "GeoMath.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CDlgImportImages::CDlgImportImages(QWidget *parent)
 : QDialog(parent)

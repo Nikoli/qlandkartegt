@@ -20,6 +20,7 @@
 
 #include <QtCore>
 #include <QtGui>
+#include <QtWidgets>
 #include <QRegExp>
 #include <gdal_priv.h>
 #include <proj_api.h>
@@ -61,27 +62,27 @@ static const QString text = QObject::tr(
 
 "");
 
-static void myMessageOutput(QtMsgType type, const char *msg)
+static void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     switch (type)
     {
         case QtDebugMsg:
             if (qlOpts->debug)
             {
-                puts(msg);
+                puts(msg.toLocal8Bit().data());
             }
             break;
 
         case QtWarningMsg:
-            fprintf(stderr, "Warning: %s\n", msg);
+            fprintf(stderr, "Warning: %s\n", msg.toLocal8Bit().data());
             break;
 
         case QtCriticalMsg:
-            fprintf(stderr, "Critical: %s\n", msg);
+            fprintf(stderr, "Critical: %s\n", msg.toLocal8Bit().data());
             break;
 
         case QtFatalMsg:
-            fprintf(stderr, "Fatal: %s\n", msg);
+            fprintf(stderr, "Fatal: %s\n", msg.toLocal8Bit().data());
             abort();
     }
 }
@@ -91,25 +92,26 @@ CAppOpts *qlOpts;
 
 static void processOptions()
 {
-    CGetOpt opts;                // uses qApp->argc() and qApp->argv()
-    bool dValue;
-    opts.addSwitch('d', "debug", &dValue);
-    bool hValue;
-    opts.addSwitch('h', "help", &hValue);
-    QString mValue;
-    opts.addOptionalOption('m', "monitor", &mValue, "0");
-    bool nValue;
-    opts.addSwitch('n', "no-splash", &nValue);
-    QStringList args;
-    opts.addOptionalArguments("files", &args);
-    QString config;
-    opts.addOptionalOption('c', "config", &config, "");
 
-    if (!opts.parse())
-    {
-        usage(std::cerr);
-        exit(1);
-    }
+    //CGetOpt opts;                // uses qApp->argc() and qApp->argv()
+    bool dValue = 1;
+    //opts.addSwitch('d', "debug", &dValue);
+    bool hValue = 0;
+    //opts.addSwitch('h', "help", &hValue);
+    QString mValue = 0;
+    //opts.addOptionalOption('m', "monitor", &mValue, "0");
+    bool nValue = 0;
+    //opts.addSwitch('n', "no-splash", &nValue);
+    QStringList args;
+    //opts.addOptionalArguments("files", &args);
+    QString config;
+    //opts.addOptionalOption('c', "config", &config, "");
+
+//    if (!opts.parse())
+//    {
+//        usage(std::cerr);
+//        exit(1);
+//    }
 
     if (hValue)
     {
@@ -135,6 +137,7 @@ static void processOptions()
         nValue,                  // bool nosplash
         config,                  // optional config file
         args);                   // arguments
+
 }
 
 
@@ -176,7 +179,7 @@ int main(int argc, char ** argv)
     processOptions();
 
 #ifndef WIN32
-    qInstallMsgHandler(myMessageOutput);
+    qInstallMessageHandler(myMessageOutput);
 #endif
 
 #ifdef WIN32

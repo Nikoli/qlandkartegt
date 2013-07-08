@@ -25,6 +25,7 @@
 #include "CWptDB.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CMouseSelWpt::CMouseSelWpt(CCanvas * canvas)
 : IMouse(canvas)
@@ -45,8 +46,8 @@ void CMouseSelWpt::mouseMoveEvent(QMouseEvent * e)
     if(!mousePressed) return;
 
     IMap& map = CMapDB::self().getMap();
-    double u = e->posF().x();
-    double v = e->posF().y();
+    double u = e->localPos().x();
+    double v = e->localPos().y();
     map.convertPt2Rad(u,v);
 
     point1 = QPointF(u,v);
@@ -81,8 +82,8 @@ void CMouseSelWpt::mouseMoveEvent(QMouseEvent * e)
 void CMouseSelWpt::mousePressEvent(QMouseEvent * e)
 {
     IMap& map = CMapDB::self().getMap();
-    double u = e->posF().x();
-    double v = e->posF().y();
+    double u = e->localPos().x();
+    double v = e->localPos().y();
     map.convertPt2Rad(u,v);
 
     center = QPointF(u,v);

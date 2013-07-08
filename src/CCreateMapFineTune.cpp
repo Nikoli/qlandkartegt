@@ -25,6 +25,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <gdal_priv.h>
 
 CCreateMapFineTune::CCreateMapFineTune(QWidget * parent)

@@ -27,6 +27,7 @@
 #include "COverlayDB.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 COverlayDistanceEditWidget::COverlayDistanceEditWidget(QWidget * parent, COverlayDistance * ovl)
 : QWidget(parent)
@@ -111,7 +112,7 @@ void COverlayDistanceEditWidget::slotChanged()
     }
 
     treeWidget->addTopLevelItems(items);
-    treeWidget->header()->setResizeMode(eNo,QHeaderView::ResizeToContents);
+    treeWidget->header()->setSectionResizeMode(eNo,QHeaderView::ResizeToContents);
 }
 
 

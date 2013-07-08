@@ -34,6 +34,7 @@
 #include <gdal_priv.h>
 
 #include <QtGui>
+#include <QtWidgets>
 
 CCreateMapGeoTiff * CCreateMapGeoTiff::m_self = 0;
 
@@ -351,7 +352,7 @@ void CCreateMapGeoTiff::slotAddRef()
 
     treeWidget->addTopLevelItem(pt.item);
 
-    treeWidget->header()->setResizeMode(0,QHeaderView::Interactive);
+    treeWidget->header()->setSectionResizeMode(0,QHeaderView::Interactive);
     for(int i=0; i < eMaxColumn - 1; ++i)
     {
         treeWidget->resizeColumnToContents(i);
@@ -380,7 +381,7 @@ void CCreateMapGeoTiff::addRef(double x, double y, double u, double v)
 
     treeWidget->addTopLevelItem(pt.item);
 
-    treeWidget->header()->setResizeMode(0,QHeaderView::Interactive);
+    treeWidget->header()->setSectionResizeMode(0,QHeaderView::Interactive);
     for(int i=0; i < eMaxColumn - 1; ++i)
     {
         treeWidget->resizeColumnToContents(i);
@@ -438,7 +439,7 @@ void CCreateMapGeoTiff::slotLoadRef()
         loadTAB(filename);
     }
 
-    treeWidget->header()->setResizeMode(0,QHeaderView::Interactive);
+    treeWidget->header()->setSectionResizeMode(0,QHeaderView::Interactive);
     for(int i=0; i < eMaxColumn - 1; ++i)
     {
         treeWidget->resizeColumnToContents(i);

@@ -24,12 +24,13 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 // Change this when changing comboMeterFeet
 enum meter_feet_index
 {
     METER_INDEX,
-    FEET_INDEX,
+    FEET_INDEX
 };
 
 CDlgTrackFilter::CDlgTrackFilter(CTrack &track, QWidget * parent)

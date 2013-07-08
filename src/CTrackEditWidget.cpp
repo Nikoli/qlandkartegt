@@ -39,6 +39,7 @@
 #include "CPlot.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 #include <tzdata.h>
 
@@ -767,7 +768,7 @@ void CTrackEditWidget::slotUpdate()
     treePoints->setUpdatesEnabled(true);
 
     // adjust column sizes to fit
-    treePoints->header()->setResizeMode(0,QHeaderView::Interactive);
+    treePoints->header()->setSectionResizeMode(0,QHeaderView::Interactive);
 
     // scroll to item of user focus
     if(focus)

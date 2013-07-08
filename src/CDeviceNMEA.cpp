@@ -18,6 +18,7 @@
 #include "CDeviceNMEA.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <proj_api.h>
 
 CDeviceNMEA::CDeviceNMEA(const QString& serialport,
@@ -168,15 +169,15 @@ bool CDeviceNMEA::isChecksumValid()
     int i = 1;
     int len = line.length();
 
-    if ( (len > 1) && (line.at(0).toAscii() == '$') )
+    if ( (len > 1) && (line.at(0).toLatin1() == '$') )
     {
         //calculate checksum
-        while ( (i < len-1) && (line.at(i).toAscii() != '*') )
+        while ( (i < len-1) && (line.at(i).toLatin1() != '*') )
         {
-            calc_checksum = calc_checksum ^ line.at(i).toAscii();
+            calc_checksum = calc_checksum ^ line.at(i).toLatin1();
             i++;
         }
-        if ( (len >= i+3) && (line.at(i).toAscii() == '*') )
+        if ( (len >= i+3) && (line.at(i).toLatin1() == '*') )
         {
             bool ok;
             nmea_checksum = line.mid(i+1,2).toUShort(&ok, 16);

@@ -24,6 +24,7 @@
 #include "CMainWindow.h"
 #include "CCanvas.h"
 #include <QtGui>
+#include <QtWidgets>
 
 bool IDevice::m_UploadAllWpt    = true;
 bool IDevice::m_DownloadAllWpt  = true;

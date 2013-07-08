@@ -46,6 +46,7 @@
 #endif
 
 #include <QtGui>
+#include <QtWidgets>
 
 #include "CMainWindow.h"
 #include "CDlgProxy.h"

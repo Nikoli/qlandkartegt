@@ -38,6 +38,7 @@
 #endif
 
 #include <QtGui>
+#include <QtWidgets>
 
 CMegaMenu * CMegaMenu::m_self = 0;
 
@@ -214,7 +215,7 @@ void CMegaMenu::initStyleOption(QStyleOptionMenuItem *option, const QAction *act
         QKeySequence seq = action->shortcut();
         if (!seq.isEmpty())
         {
-            textAndAccel += QLatin1Char('\t') + QString(seq);
+            textAndAccel += QLatin1Char('\t') + QString(seq.toString());
         }
     }
 

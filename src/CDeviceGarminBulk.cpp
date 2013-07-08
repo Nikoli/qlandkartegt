@@ -29,6 +29,7 @@
 #include "CDlgDeviceExportPath.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtXml>
 
 CDeviceGarminBulk::CDeviceGarminBulk(QObject * parent)

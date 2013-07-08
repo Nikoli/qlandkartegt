@@ -20,6 +20,7 @@
 #include "CResources.h"
 #include <stdlib.h>
 #include <QtGui>
+#include <QtWidgets>
 #include <limits>
 #include <tzdata.h>
 
@@ -1131,11 +1132,11 @@ const char * GPS_Timezone(double lon, double lat)
     }
     else if(mode == CResources::eTZLocal)
     {
-        return TimeStamp::defaultZone().toAscii();
+        return TimeStamp::defaultZone().toLocal8Bit();
     }
     else if(mode == CResources::eTZSelected)
     {
-        return CResources::self().getSelectedTimezone().toAscii();
+        return CResources::self().getSelectedTimezone().toLocal8Bit();
     }
 
     static QImage imgTimezone = QPixmap(":/pics/timezones.png").toImage();

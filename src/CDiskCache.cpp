@@ -69,7 +69,7 @@ CDiskCache::~CDiskCache()
 void CDiskCache::store(const QString& key, QImage& img)
 {
     QCryptographicHash md5(QCryptographicHash::Md5);
-    md5.addData(key.toAscii());
+    md5.addData(key.toLocal8Bit());
 
     QString hash        = md5.result().toHex();
     QString filename    = QString("%1.png").arg(hash);
@@ -90,7 +90,7 @@ void CDiskCache::store(const QString& key, QImage& img)
 void CDiskCache::restore(const QString& key, QImage& img)
 {
     QCryptographicHash md5(QCryptographicHash::Md5);
-    md5.addData(key.toAscii());
+    md5.addData(key.toLocal8Bit());
 
     QString hash = md5.result().toHex();
 
@@ -117,7 +117,7 @@ void CDiskCache::restore(const QString& key, QImage& img)
 bool CDiskCache::contains(const QString& key)
 {
     QCryptographicHash md5(QCryptographicHash::Md5);
-    md5.addData(key.toAscii());
+    md5.addData(key.toLocal8Bit());
 
     QString hash = md5.result().toHex();
     return table.contains(hash) || cache.contains(hash);

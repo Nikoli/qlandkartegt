@@ -56,6 +56,7 @@
 #include "CCanvas.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 
 CTextEditWidget::CTextEditWidget(QWidget * parent)

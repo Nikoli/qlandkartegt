@@ -1,14 +1,17 @@
 project(QZip)
 
 # Required cmake version
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 2.8.8)
 
 
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
-find_package(Qt4 REQUIRED)
+# Find includes in corresponding build directories
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# Instruct CMake to run moc automatically when needed.
+set(CMAKE_AUTOMOC ON)
 
-include(${QT_USE_FILE})
+find_package(Qt5Core)
 
 if(WIN32)
     #add path to zlib.h in QT 3rdparty directory
@@ -41,11 +44,7 @@ set(RCS
 )
 
 
-qt4_wrap_cpp(MOC_SRCS ${HDRS})
-qt4_wrap_ui(UI_HDRS ${UIS})
-qt4_add_resources(RC_SRCS ${RCS})
-
-
+qt5_add_resources(RC_SRCS ${RCS})
 
 include_directories(
   ${CMAKE_BINARY_DIR}
@@ -67,13 +66,12 @@ add_library(qzip
   ${QM_FILES}
 )
 
+qt5_use_modules(qzip Core)
+
 if(WIN32)
-target_link_libraries( qzip
-      ${QT_LIBRARIES}
-)
+
 else(WIN32)
 target_link_libraries( qzip
-      ${QT_LIBRARIES}
       z
 )
 endif(WIN32)

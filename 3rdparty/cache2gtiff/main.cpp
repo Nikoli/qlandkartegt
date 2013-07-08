@@ -735,15 +735,17 @@ static int exportWMS(int level, double lon1, double lat1, double lon2, double la
             }
 
             QUrl url(map.url);
-            url.addQueryItem("request", "GetMap");
-            url.addQueryItem("version", version);
-            url.addQueryItem("layers", layers);
-            url.addQueryItem("styles", "");
-            url.addQueryItem("srs", srs);
-            url.addQueryItem("format", format);
-            url.addQueryItem("width", QString::number(map.blockSizeX));
-            url.addQueryItem("height", QString::number(map.blockSizeY));
-            url.addQueryItem("bbox", bbox);
+            QUrlQuery query;
+            query.addQueryItem("request", "GetMap");
+            query.addQueryItem("version", version);
+            query.addQueryItem("layers", layers);
+            query.addQueryItem("styles", "");
+            query.addQueryItem("srs", srs);
+            query.addQueryItem("format", format);
+            query.addQueryItem("width", QString::number(map.blockSizeX));
+            query.addQueryItem("height", QString::number(map.blockSizeY));
+            query.addQueryItem("bbox", bbox);
+            url.setQuery(query);
 
             QImage img;
             diskCache.restore(url.toString(),img);

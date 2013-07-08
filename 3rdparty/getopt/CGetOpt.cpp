@@ -152,11 +152,11 @@ void CGetOpt::init( int argc, char *argv[], int offset )
     numReqArgs = numOptArgs = 0;
     currArg = 1; // appname is not part of the arguments
     if ( argc ) {
-	// application name
-	aname = QFileInfo( QString::fromUtf8( argv[0] ) ).fileName();
-	// arguments
-	for ( int i = offset; i < argc; ++i )
-	    args.append( QString::fromUtf8( argv[i] ) );
+    // application name
+    aname = QFileInfo( QString::fromUtf8( argv[0] ) ).fileName();
+    // arguments
+    for ( int i = offset; i < argc; ++i )
+        args.append( QString::fromUtf8( argv[i] ) );
     }
 }
 
@@ -274,7 +274,7 @@ bool CGetOpt::parse( bool untilFirstSwitchOnly )
 	    }
 	    if ( t == LongOpt && opt.type == OUnknown ) {
 		if ( currOpt.type != OVarLen ) {
-		    qWarning( "Unknown option --%s", (const char *)a.toAscii() );
+            qWarning( "Unknown option --%s", (const char *)a.toAscii() );
 		    return false;
 		} else {
 		    // VarLength options support arguments starting with '-'
@@ -351,7 +351,7 @@ bool CGetOpt::parse( bool untilFirstSwitchOnly )
 	    } else {
 		QString n = currType == LongOpt ?
 			    currOpt.lname : QString( QChar( currOpt.sname ) );
-		qWarning( "Expected an argument after '%s' option", (const char *)n.toAscii() );
+        qWarning( "Expected an argument after '%s' option", (const char *)n.toAscii() );
 		return false;
 	    }
 	    break;

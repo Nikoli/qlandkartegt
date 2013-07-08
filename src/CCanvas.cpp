@@ -60,6 +60,7 @@
 #include "CMapDEMSlopeSetup.h"
 
 #include <QtGui>
+#include <QtPrintSupport>
 
 #include <stdio.h>
 #include <tzdata.h>

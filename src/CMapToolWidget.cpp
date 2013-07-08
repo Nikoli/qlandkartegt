@@ -30,6 +30,7 @@
 #include "config.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CMapToolWidget::CMapToolWidget(QTabWidget * parent)
 : QWidget(parent)
@@ -227,18 +228,18 @@ void CMapToolWidget::slotDBChanged()
     }
 
     // adjust column sizes to fit
-    treeKnownMapsStream->header()->setResizeMode(0,QHeaderView::Interactive);
+    treeKnownMapsStream->header()->setSectionResizeMode(0,QHeaderView::Interactive);
     for(int i=0; i < eMaxColumn - 1; ++i)
     {
         treeKnownMapsStream->resizeColumnToContents(i);
     }
-    treeKnownMapsVector->header()->setResizeMode(0,QHeaderView::Interactive);
+    treeKnownMapsVector->header()->setSectionResizeMode(0,QHeaderView::Interactive);
     for(int i=0; i < eMaxColumn - 1; ++i)
     {
         treeKnownMapsVector->resizeColumnToContents(i);
     }
 
-    treeKnownMapsRaster->header()->setResizeMode(0,QHeaderView::Interactive);
+    treeKnownMapsRaster->header()->setSectionResizeMode(0,QHeaderView::Interactive);
     for(int i=0; i < eMaxColumn - 1; ++i)
     {
         treeKnownMapsRaster->resizeColumnToContents(i);

@@ -132,7 +132,8 @@ void CMouseMoveWpt::draw(QPainter& p)
         QPixmap icon = selWpt->getIcon();
         QPixmap back = QPixmap(icon.size());
         back.fill(Qt::white);
-        back.setMask(icon.alphaChannel().createMaskFromColor(Qt::black));
+        /// @todo qt5
+        //back.setMask(icon.alphaChannel().createMaskFromColor(Qt::black));
 
         p.drawPixmap(x2 - 8 , y2 - 8, back);
         p.drawPixmap(x2 - 8 , y2 - 7, back);

@@ -34,6 +34,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QSqlDatabase>
 #include <algorithm>
 

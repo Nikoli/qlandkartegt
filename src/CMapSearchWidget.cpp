@@ -31,6 +31,7 @@
 #include "config.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 #define SEARCHDELAY 1500
 

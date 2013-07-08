@@ -27,6 +27,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CSearchToolWidget::CSearchToolWidget(QTabWidget * parent)
 : QWidget(parent)

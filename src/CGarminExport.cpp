@@ -22,6 +22,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 #undef DEBUG_SHOW_SECT_DESC
 
@@ -469,9 +470,9 @@ void CGarminExport::addTileToMPS(tile_t& t, QDataStream& mps)
     mps << t.fid << t.pid;
     // file ID, map name, tile name
     mps << t.id;
-    mps.writeRawData(t.map.toAscii(),t.map.size() + 1);
-    mps.writeRawData(t.name.toAscii(),t.name.size() + 1);
-    mps.writeRawData(t.map.toAscii(),t.map.size() + 1);
+    mps.writeRawData(t.map.toLocal8Bit(),t.map.size() + 1);
+    mps.writeRawData(t.name.toLocal8Bit(),t.name.size() + 1);
+    mps.writeRawData(t.map.toLocal8Bit(),t.map.size() + 1);
 
     QString intname = t.subfiles.keys()[0];
     // ??? wow. :-/ write the number in the internal name
@@ -583,17 +584,17 @@ void CGarminExport::slotStart()
         while(map != maps.end())
         {
             mps << quint8('F');
-            mps << quint16(5 + map->map.toAscii().size());
+            mps << quint16(5 + map->map.toLocal8Bit().size());
             // I suspect this should really be the basic file name of the .img set:
             mps << map->fid << map->pid;
 
-            mps.writeRawData(map->map.toAscii(),map->map.toAscii().size());
+            mps.writeRawData(map->map.toLocal8Bit(),map->map.toLocal8Bit().size());
             mps.writeRawData("\0",1);
 
             if(!map->key.isEmpty())
             {
                 mps << (quint8)'U' << (quint16)26;
-                mps.writeRawData(map->key.toAscii(),26);
+                mps.writeRawData(map->key.toLocal8Bit(),26);
             }
             ++map;
         }
@@ -707,8 +708,8 @@ void CGarminExport::slotStart()
                     quint16 blockidx = 0;
 
                     initFATBlock(pFAT);
-                    memcpy(pFAT->name, subfile.key().toAscii(), sizeof(pFAT->name));
-                    memcpy(pFAT->type, part.key().toAscii(), sizeof(pFAT->type));
+                    memcpy(pFAT->name, subfile.key().toLocal8Bit(), sizeof(pFAT->name));
+                    memcpy(pFAT->type, part.key().toLocal8Bit(), sizeof(pFAT->type));
                     pFAT->size = gar_endian(uint32_t, part->size);
                     pFAT->part = gar_endian(uint16_t, partno++ << 8);
 
@@ -718,8 +719,8 @@ void CGarminExport::slotStart()
                         {
                             gmapsupp.write(FATblock);
                             initFATBlock(pFAT);
-                            memcpy(pFAT->name, subfile.key().toAscii(), sizeof(pFAT->name));
-                            memcpy(pFAT->type, part.key().toAscii(), sizeof(pFAT->type));
+                            memcpy(pFAT->name, subfile.key().toLocal8Bit(), sizeof(pFAT->name));
+                            memcpy(pFAT->type, part.key().toLocal8Bit(), sizeof(pFAT->type));
                             pFAT->size  = 0;
                             pFAT->part  = gar_endian(uint16_t, partno++ << 8);
                             blockidx    = 0;
@@ -782,7 +783,7 @@ void CGarminExport::slotStart()
                 quint16 blockidx = 0;
 
                 initFATBlock(pFAT);
-                memcpy(pFAT->name, fi.baseName().toAscii(), sizeof(pFAT->name));
+                memcpy(pFAT->name, fi.baseName().toLocal8Bit(), sizeof(pFAT->name));
                 memcpy(pFAT->type, "TYP", sizeof(pFAT->type));
                 pFAT->size = gar_endian(uint32_t, fi.size());
                 pFAT->part = gar_endian(uint16_t, partno++ << 8);
@@ -792,7 +793,7 @@ void CGarminExport::slotStart()
                     {
                         gmapsupp.write(FATblock);
                         initFATBlock(pFAT);
-                        memcpy(pFAT->name, fi.baseName().toAscii(), sizeof(pFAT->name));
+                        memcpy(pFAT->name, fi.baseName().toLocal8Bit(), sizeof(pFAT->name));
                         memcpy(pFAT->type, "TYP", sizeof(pFAT->type));
                         pFAT->size  = 0;
                         pFAT->part  = gar_endian(uint16_t, partno++ << 8);

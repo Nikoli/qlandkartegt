@@ -22,6 +22,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CMapNoMap::CMapNoMap(CCanvas * parent)
 : IMap(eNoMap, "NoMap", parent)
@@ -59,7 +60,7 @@ void CMapNoMap::setup(const QString& proj, double xscale, double yscale)
 {
     if(pjsrc) pj_free(pjsrc);
 
-    pjsrc   = pj_init_plus(proj.toAscii().data());
+    pjsrc   = pj_init_plus(proj.toLocal8Bit().data());
     oSRS.importFromProj4(getProjection());
     this->xscale = xscale;
     this->yscale = yscale;

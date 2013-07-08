@@ -48,6 +48,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtXml/QDomDocument>
 
 #include <gdal_priv.h>

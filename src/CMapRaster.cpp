@@ -21,6 +21,7 @@
 #include <ogr_spatialref.h>
 
 #include <QtGui>
+#include <QtWidgets>
 
 CMapRaster::CMapRaster(const QString& fn, CCanvas * parent)
 : IMap(eRaster, "",parent)

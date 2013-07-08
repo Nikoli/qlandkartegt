@@ -26,6 +26,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtXml>
 #include <QtNetwork>
 
@@ -116,7 +117,7 @@ CMapWms::CMapWms(const QString &key, const QString &filename, CCanvas *parent)
 
     if(pjsrc == 0)
     {
-        QMessageBox::critical(parent, tr("Error..."), tr("Unknown projection %1").arg(projection.toAscii().data()), QMessageBox::Abort, QMessageBox::Abort);
+        QMessageBox::critical(parent, tr("Error..."), tr("Unknown projection %1").arg(projection.toLocal8Bit().data()), QMessageBox::Abort, QMessageBox::Abort);
         return;
     }
     oSRS.importFromProj4(getProjection());
@@ -538,23 +539,25 @@ void CMapWms::draw()
             convertPixel2M(p2x, p2y);
 
             QUrl url(urlstr);
-            url.addQueryItem("request", "GetMap");
-            url.addQueryItem("version", version);
-            url.addQueryItem("layers", layers);
-            url.addQueryItem("styles", "");
-            url.addQueryItem("srs", srs);
-            url.addQueryItem("format", format);
-            url.addQueryItem("width", QString::number(blockSizeX));
-            url.addQueryItem("height", QString::number(blockSizeY));
+            QUrlQuery query;
+            query.addQueryItem("request", "GetMap");
+            query.addQueryItem("version", version);
+            query.addQueryItem("layers", layers);
+            query.addQueryItem("styles", "");
+            query.addQueryItem("srs", srs);
+            query.addQueryItem("format", format);
+            query.addQueryItem("width", QString::number(blockSizeX));
+            query.addQueryItem("height", QString::number(blockSizeY));
 
             if(pj_is_latlong(pjsrc))
             {
-                url.addQueryItem("bbox", QString("%1,%2,%3,%4").arg(p1x*RAD_TO_DEG,0,'f').arg(p2y*RAD_TO_DEG,0,'f').arg(p2x*RAD_TO_DEG,0,'f').arg(p1y*RAD_TO_DEG,0,'f'));
+                query.addQueryItem("bbox", QString("%1,%2,%3,%4").arg(p1x*RAD_TO_DEG,0,'f').arg(p2y*RAD_TO_DEG,0,'f').arg(p2x*RAD_TO_DEG,0,'f').arg(p1y*RAD_TO_DEG,0,'f'));
             }
             else
             {
-                url.addQueryItem("bbox", QString("%1,%2,%3,%4").arg(p1x,0,'f').arg(p2y,0,'f').arg(p2x,0,'f').arg(p1y,0,'f'));
+                query.addQueryItem("bbox", QString("%1,%2,%3,%4").arg(p1x,0,'f').arg(p2y,0,'f').arg(p2x,0,'f').arg(p1y,0,'f'));
             }
+            url.setQuery(query);
 
             request_t req;
             req.url         = url;

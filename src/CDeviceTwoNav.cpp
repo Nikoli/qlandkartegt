@@ -29,6 +29,7 @@
 #include "CDlgDeviceExportPath.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 struct twonav_icon_t
 {
@@ -637,12 +638,12 @@ void CDeviceTwoNav::readWptFile(QDir& dir, const QString& filename, QList<CWpt*>
     {
         line = in.readLine();
 
-        switch(line[0].toAscii())
+        switch(line[0].toLatin1())
         {
             case 'B':
             {
                 QString name        = line.mid(1).simplified();
-                QTextCodec * codec  = QTextCodec::codecForName(name.toAscii());
+                QTextCodec * codec  = QTextCodec::codecForName(name.toLocal8Bit());
                 if(codec)
                 {
                     in.setCodec(codec);
@@ -990,12 +991,12 @@ void CDeviceTwoNav::readTrkFile(QDir &dir, const QString &filename, QList<CTrack
     while(!line.isEmpty())
     {
         line = in.readLine();
-        switch(line[0].toAscii())
+        switch(line[0].toLatin1())
         {
             case 'B':
             {
                 QString name        = line.mid(1).simplified();
-                QTextCodec * codec  = QTextCodec::codecForName(name.toAscii());
+                QTextCodec * codec  = QTextCodec::codecForName(name.toLocal8Bit());
                 if(codec)
                 {
                     in.setCodec(codec);

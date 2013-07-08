@@ -22,6 +22,7 @@
 #include "CMapDB.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CDlgSetupGrid::CDlgSetupGrid(QWidget * parent)
 : QDialog(parent)

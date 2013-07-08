@@ -44,6 +44,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QSqlQuery>
 #include <QSqlError>
 
@@ -454,8 +455,7 @@ void CGeoDB::migrateDB(int version)
             }
             case 5:
             {
-                QFSFileEngine fse(CResources::self().pathGeoDB().absoluteFilePath("qlgt.db"));
-                fse.copy(CResources::self().pathGeoDB().absoluteFilePath("qlgt_save_v4.db"));
+                QFile::copy(CResources::self().pathGeoDB().absoluteFilePath("qlgt.db"), CResources::self().pathGeoDB().absoluteFilePath("qlgt_save_v4.db"));
 
                 QSqlQuery query2(db);
 
@@ -662,8 +662,8 @@ void CGeoDB::migrateDB(int version)
 
             case 9:
             {
-                QFSFileEngine fse(CResources::self().pathGeoDB().absoluteFilePath("qlgt.db"));
-                fse.copy(CResources::self().pathGeoDB().absoluteFilePath("qlgt_save_v8.db"));
+               QFile::copy(CResources::self().pathGeoDB().absoluteFilePath("qlgt.db"), CResources::self().pathGeoDB().absoluteFilePath("qlgt_save_v8.db"));
+
 
                 PROGRESS_SETUP(tr("Migrating database from version 8 to 9."), 1);
 
@@ -922,13 +922,13 @@ void CGeoDB::changedWorkspace()
     updateCheckmarks();
     updateDiaryIcon();
 
-    treeWorkspace->header()->setResizeMode(eCoName,QHeaderView::ResizeToContents);
-    treeWorkspace->header()->setResizeMode(eCoState,QHeaderView::ResizeToContents);
+    treeWorkspace->header()->setSectionResizeMode(eCoName,QHeaderView::ResizeToContents);
+    treeWorkspace->header()->setSectionResizeMode(eCoState,QHeaderView::ResizeToContents);
 
     CGeoDBInternalEditLock lock(this);
-    treeDatabase->header()->setResizeMode(eCoName,QHeaderView::ResizeToContents);
-    treeDatabase->header()->setResizeMode(eCoState,QHeaderView::ResizeToContents);
-    treeDatabase->header()->setResizeMode(eCoDiary,QHeaderView::ResizeToContents);
+    treeDatabase->header()->setSectionResizeMode(eCoName,QHeaderView::ResizeToContents);
+    treeDatabase->header()->setSectionResizeMode(eCoState,QHeaderView::ResizeToContents);
+    treeDatabase->header()->setSectionResizeMode(eCoDiary,QHeaderView::ResizeToContents);
 }
 
 
@@ -1070,9 +1070,9 @@ void CGeoDB::queryChildrenFromDB(QTreeWidgetItem * parent, int levels)
         item->setCheckState(eCoState, Qt::Unchecked);
     }
 
-    treeDatabase->header()->setResizeMode(eCoName,QHeaderView::ResizeToContents);
-    treeDatabase->header()->setResizeMode(eCoState,QHeaderView::ResizeToContents);
-    treeDatabase->header()->setResizeMode(eCoDiary,QHeaderView::ResizeToContents);
+    treeDatabase->header()->setSectionResizeMode(eCoName,QHeaderView::ResizeToContents);
+    treeDatabase->header()->setSectionResizeMode(eCoState,QHeaderView::ResizeToContents);
+    treeDatabase->header()->setSectionResizeMode(eCoDiary,QHeaderView::ResizeToContents);
 }
 
 

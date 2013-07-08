@@ -32,7 +32,7 @@ class CDlgConfig3D : public QDialog, private Ui::IDlgConfig3D
         virtual ~CDlgConfig3D();
 
     public slots:
-        void exec();
+        int exec();
         void accept();
 
     private:

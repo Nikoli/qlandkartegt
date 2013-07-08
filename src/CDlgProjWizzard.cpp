@@ -21,6 +21,7 @@
 #include <proj_api.h>
 
 #include <QtGui>
+#include <QtWidgets>
 
 struct mitab_entry_t {QString name; int idx;};
 

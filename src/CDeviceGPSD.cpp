@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "CDeviceGPSD.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtCore/QMutex>
 #include <sys/select.h>
 #include <unistd.h>

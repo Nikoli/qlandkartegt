@@ -30,7 +30,7 @@ class CDlgSetupGarminIcons : public QDialog, private Ui::IDlgSetupGarminIcons
         virtual ~CDlgSetupGarminIcons();
 
     public slots:
-        void exec();
+        int exec();
         void accept();
 
     private slots:

@@ -19,6 +19,7 @@
 #include "CTabWidget.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CTabWidget::CTabWidget(QWidget * parent)
 : QTabWidget(parent)

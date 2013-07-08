@@ -6,9 +6,12 @@ cmake_minimum_required(VERSION 2.6.0)
 
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
-find_package(Qt4 REQUIRED)
+# Find includes in corresponding build directories
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# Instruct CMake to run moc automatically when needed.
+set(CMAKE_AUTOMOC ON)
 
-include(${QT_USE_FILE})
+find_package(Qt5Core)
 
 set(SRCS
     qtsoap.cpp
@@ -28,9 +31,8 @@ set(RCS
 )
 
 
-qt4_wrap_cpp(MOC_SRCS ${HDRS})
-qt4_wrap_ui(UI_HDRS ${UIS})
-qt4_add_resources(RC_SRCS ${RCS})
+
+qt5_add_resources(RC_SRCS ${RCS})
 
 
 
@@ -51,6 +53,4 @@ add_library(qtsoap
   ${QM_FILES}
 )
 
-target_link_libraries( qtsoap
-      ${QT_LIBRARIES}
-)
+qt5_use_modules(qtsoap Core)

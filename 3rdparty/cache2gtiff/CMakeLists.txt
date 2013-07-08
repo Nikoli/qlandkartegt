@@ -1,13 +1,18 @@
 project(map2gcm)
 
 # Required cmake version
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 2.8.8)
 
-find_package(Qt4 REQUIRED)
+# Find includes in corresponding build directories
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# Instruct CMake to run moc automatically when needed.
+set(CMAKE_AUTOMOC ON)
+
+find_package(Qt5Core)
+find_package(Qt5Gui)
+find_package(Qt5Xml)
 find_package(GDAL REQUIRED)
 find_package(PROJ REQUIRED)
-
-include(${QT_USE_FILE})
 
 set(SRCS
     main.cpp
@@ -29,9 +34,8 @@ set(RCS
 
 )
 
-qt4_wrap_cpp(MOC_SRCS ${HDRS})
-qt4_wrap_ui(UI_HDRS ${UIS})
-qt4_add_resources(RC_SRCS ${RCS})
+#qt5_wrap_cpp(MOC_SRCS ${HDRS})
+qt5_add_resources(RC_SRCS ${RCS})
 
 include_directories(
     ${CMAKE_BINARY_DIR}
@@ -39,7 +43,6 @@ include_directories(
     ${GDAL_INCLUDE_DIRS}
     ${PROJ_INCLUDE_DIRS}
     ${JPEG_INCLUDE_DIRS}
-    ${QT_QTXML_INCLUDE_DIR}
     ../../src/
 )
 if(WIN32)
@@ -57,6 +60,8 @@ add_executable( cache2gtiff
     ${QM_FILES}
 )
 
+qt5_use_modules(cache2gtiff Core Gui Xml)
+
 add_definitions(-DSTANDALONE)
 
 if(APPLE)
@@ -73,8 +78,6 @@ target_link_libraries( cache2gtiff
     ${GDAL_LIBRARIES}
     ${PROJ_LIBRARIES}
     ${JPEG_LIBRARIES}
-    ${QT_LIBRARIES}
-    ${QT_QTXML_LIBRARIES}
 )
 
 

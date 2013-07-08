@@ -34,6 +34,7 @@
 #include "GeoMath.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include "CUndoStackModel.h"
 #include "CTrackUndoCommandDelete.h"
 #include "CTrackUndoCommandSelect.h"
@@ -228,7 +229,7 @@ void CTrackDB::loadGPX(CGpx& gpx)
                 tmpelem = trackextensionmap.value(CGpx::gpxx_ns + ":" + "DisplayColor");
                 if (!tmpelem.isNull())
                 {
-                    int colorID = gpx.getTrackColorMap().right(tmpelem.text(), -1);
+                    int colorID = gpx.getTrackColorMap().value(tmpelem.text(), -1);
                     if (colorID >= 0) track->setColor(colorID);
                 }
             }
@@ -486,7 +487,7 @@ void CTrackDB::saveGPX(CGpx& gpx, const QStringList& keys)
         QDomElement color = gpx.createElement("gpxx:DisplayColor");
         gpxx_ext.appendChild(color);
 
-        QString colname = gpx.getTrackColorMap().left(track->getColorIdx());
+        QString colname = gpx.getTrackColorMap().key(track->getColorIdx(),"");
         QDomText _color_ = gpx.createTextNode(colname);
         color.appendChild(_color_);
 

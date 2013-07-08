@@ -22,6 +22,7 @@
 #include "CTrackDB.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QNetworkInterface>
 
 #define REMOTE_PORT 45454

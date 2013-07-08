@@ -26,6 +26,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 static bool tileIndexLessThan(const QPair<int, int> &i1, const QPair<int, int> &i2)
 {

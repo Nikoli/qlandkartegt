@@ -27,6 +27,7 @@
 #include "CDlgDeviceExportPath.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CDeviceMagellan::CDeviceMagellan(QObject * parent)
     : IDevice("Magellan", parent)
@@ -226,7 +227,7 @@ void CDeviceMagellan::uploadTracks(const QList<CTrack*>& trks)
         try
         {
             QCryptographicHash md5(QCryptographicHash::Md5);
-            md5.addData(trk->getKey().toAscii());
+            md5.addData(trk->getKey().toLocal8Bit());
             QString hash = md5.result().toHex();
 
             gpx.save(dir.absoluteFilePath(QString("%1_%2.gpx").arg(prefix).arg(hash)));

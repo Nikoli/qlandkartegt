@@ -28,6 +28,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtNetwork>
 #include <QtXml>
 #include <QtScript>

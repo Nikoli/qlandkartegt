@@ -1,14 +1,18 @@
 project(map2rmp)
 
 # Required cmake version
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 2.8.8)
 
-find_package(Qt4 REQUIRED)
+# Find includes in corresponding build directories
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# Instruct CMake to run moc automatically when needed.
+set(CMAKE_AUTOMOC ON)
+
+find_package(Qt5Core)
+find_package(Qt5Gui)
 find_package(GDAL REQUIRED)
 find_package(PROJ REQUIRED)
 find_package(JPEG REQUIRED)
-
-include(${QT_USE_FILE})
 
 set(SRCS
     argv.cpp
@@ -30,9 +34,8 @@ set(RCS
 
 )
 
-qt4_wrap_cpp(MOC_SRCS ${HDRS})
-qt4_wrap_ui(UI_HDRS ${UIS})
-qt4_add_resources(RC_SRCS ${RCS})
+#qt5_wrap_cpp(MOC_SRCS ${HDRS})
+qt5_add_resources(RC_SRCS ${RCS})
 
 include_directories(
     ${CMAKE_BINARY_DIR}
@@ -60,6 +63,8 @@ add_executable( map2rmp
     ${QM_FILES}
 )
 
+qt5_use_modules(map2rmp Core Gui)
+
 if(APPLE)
 set_target_properties( map2rmp PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${MAC_BUNDLE_PATH}/Contents/Resources
@@ -76,7 +81,6 @@ target_link_libraries( map2rmp
     ${GDAL_LIBRARIES}
     ${PROJ_LIBRARIES}
     ${JPEG_LIBRARIES}
-    ${QT_LIBRARIES}
 )
 
 install(

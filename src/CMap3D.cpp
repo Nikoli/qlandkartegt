@@ -1185,21 +1185,22 @@ void CMap3D::drawWaypoints()
 
         glBlendFunc(GL_DST_COLOR,GL_ZERO);
 
-        iconMaskId  = bindTexture(icon.alphaChannel().createMaskFromColor(Qt::black));
+        /// @todo qt5
+        //iconMaskId  = bindTexture(icon.alphaChannel().createMaskFromColor(Qt::black));
         iconId      = bindTexture(icon);
-        textMaskId  = bindTexture(text.alphaChannel().createMaskFromColor(Qt::black));
+        //textMaskId  = bindTexture(text.alphaChannel().createMaskFromColor(Qt::black));
         textId      = bindTexture(text);
 
-        quadTexture(u, v, wsize, wsize, ele, iconMaskId, true);
-        quadTexture(u, v, tw, th, ele + icon.height() / (zoomFactorZ*zoomFactorEle), textMaskId, true);
+        //quadTexture(u, v, wsize, wsize, ele, iconMaskId, true);
+        //quadTexture(u, v, tw, th, ele + icon.height() / (zoomFactorZ*zoomFactorEle), textMaskId, true);
 
         glBlendFunc(GL_ONE, GL_ONE);
 
         quadTexture(u, v, wsize, wsize, ele, iconId, false);
         quadTexture(u, v, tw, th, ele + icon.height() / (zoomFactorZ*zoomFactorEle), textId, false);
-        deleteTexture(iconMaskId);
+        //deleteTexture(iconMaskId);
         deleteTexture(iconId);
-        deleteTexture(textMaskId);
+        //deleteTexture(textMaskId);
         deleteTexture(textId);
 
         ++wpt;

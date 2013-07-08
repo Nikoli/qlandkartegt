@@ -22,6 +22,7 @@
 #include "CCreateMapGridTool.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CMouseRefPoint::CMouseRefPoint(CCanvas * canvas)
 : IMouse(canvas)

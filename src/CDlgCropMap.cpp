@@ -20,6 +20,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CDlgCropMap::CDlgCropMap(const QString &filename, quint32 x, quint32 y, quint32 w, quint32 h)
 : filename(filename)

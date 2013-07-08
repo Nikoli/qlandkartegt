@@ -37,7 +37,7 @@ CDlgProxy::CDlgProxy(QString &user, QString &pwd, QWidget *parent)
     iconLabel->setPixmap(theMainWindow->style()->standardIcon(QStyle::SP_MessageBoxQuestion, 0, theMainWindow).pixmap(32, 32));
 
     QString introMessage = tr("<qt>Connect to proxy \"%1\" using:</qt>");
-    introMessage = introMessage.arg(Qt::escape(url));
+    introMessage = introMessage.arg(url.toHtmlEscaped());
     introLabel->setText(introMessage);
     introLabel->setWordWrap(true);
 

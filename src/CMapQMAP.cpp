@@ -28,6 +28,7 @@
 #include "CMainWindow.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 #include <gdal_priv.h>
 #include <ogr_spatialref.h>

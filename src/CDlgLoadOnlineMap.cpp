@@ -20,6 +20,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtNetwork>
 
 #ifndef WIN32

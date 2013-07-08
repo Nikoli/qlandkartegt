@@ -25,6 +25,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 #undef IDEVICE_H
 #include <garmin/IDevice.h>
@@ -52,7 +53,7 @@ CDlgSetupGarminIcons::~CDlgSetupGarminIcons()
 }
 
 
-void CDlgSetupGarminIcons::exec()
+int CDlgSetupGarminIcons::exec()
 {
     QPushButton * but;
     QPixmap icon;
@@ -86,16 +87,16 @@ void CDlgSetupGarminIcons::exec()
 
     }
 
-    listCustomIcons->header()->setResizeMode(0,QHeaderView::Interactive);
-    listCustomIcons->header()->setResizeMode(1,QHeaderView::Interactive);
-    listCustomIcons->header()->setResizeMode(2,QHeaderView::Interactive);
-    listCustomIcons->header()->setResizeMode(3,QHeaderView::Interactive);
+    listCustomIcons->header()->setSectionResizeMode(0,QHeaderView::Interactive);
+    listCustomIcons->header()->setSectionResizeMode(1,QHeaderView::Interactive);
+    listCustomIcons->header()->setSectionResizeMode(2,QHeaderView::Interactive);
+    listCustomIcons->header()->setSectionResizeMode(3,QHeaderView::Interactive);
     listCustomIcons->resizeColumnToContents(0);
     listCustomIcons->resizeColumnToContents(1);
     listCustomIcons->resizeColumnToContents(2);
     listCustomIcons->resizeColumnToContents(3);
 
-    QDialog::exec();
+    return QDialog::exec();
 }
 
 

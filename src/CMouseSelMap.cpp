@@ -22,6 +22,7 @@
 #include "CMapSelectionRaster.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CMouseSelMap::CMouseSelMap(CCanvas * canvas)
 : IMouse(canvas)

@@ -33,6 +33,7 @@
 #include "CResources.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 bool COverlayDistance::showBullets = true;
 

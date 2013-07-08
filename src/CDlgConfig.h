@@ -30,7 +30,7 @@ class CDlgConfig : public QDialog, private Ui::IDlgConfig
         virtual ~CDlgConfig();
 
     public slots:
-        void exec();
+        int exec();
         void accept();
 
     private slots:

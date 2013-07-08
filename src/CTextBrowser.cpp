@@ -20,6 +20,7 @@
 #include "CCanvas.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CTextBrowser::CTextBrowser(QWidget *parent)
 : QTextBrowser(parent)

@@ -37,6 +37,7 @@
 #include "CTrackDB.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CWptDB * CWptDB::m_self = 0;
 
@@ -968,7 +969,8 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             QPixmap icon = (*wpt)->getIcon();
             QPixmap back = QPixmap(icon.size());
             back.fill(Qt::white);
-            back.setMask(icon.alphaChannel().createMaskFromColor(Qt::black));
+            /// @todo qt5
+            //back.setMask(icon.alphaChannel().createMaskFromColor(Qt::black));
 
             int o =  icon.width() >>1;
 

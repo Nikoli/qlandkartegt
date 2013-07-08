@@ -33,6 +33,7 @@
 #include "CImageViewer.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtNetwork>
 
 CDlgEditWpt::CDlgEditWpt(CWpt &wpt, QWidget * parent)
@@ -523,7 +524,7 @@ void CDlgEditWpt::slotUpdateBarcode()
         {
             barcode = barcode.left(177) + "...";
         }
-        dmtxEncodeDataMatrix( enc, barcode.size(), (unsigned char*)barcode.toAscii().data() );
+        dmtxEncodeDataMatrix( enc, barcode.size(), (unsigned char*)barcode.toLocal8Bit().data() );
 
         QImage curBarCode( enc->image->pxl, enc->image->width, enc->image->height, QImage::Format_RGB32 );
         labelBarcode->setPixmap(QPixmap::fromImage(curBarCode));

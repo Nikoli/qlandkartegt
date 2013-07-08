@@ -54,6 +54,8 @@
 #include "version.h"
 
 #include <QtGui>
+#include <QtWidgets>
+#include <QtPrintSupport>
 #ifndef WIN32
 #include <unistd.h>
 #endif

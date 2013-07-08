@@ -47,6 +47,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "COverlayDistanceEditWidget.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CActions::CActions(QObject *parent) :
 QObject(parent), parent(parent)
@@ -169,7 +170,7 @@ const QString& toolTip)
         slotName = actionName;
     }
 
-    connect(tmpAction, SIGNAL(triggered()), this, QString("1" + slotName + "()").toAscii().data());
+    connect(tmpAction, SIGNAL(triggered()), this, QString("1" + slotName + "()").toLocal8Bit().data());
 
 }
 

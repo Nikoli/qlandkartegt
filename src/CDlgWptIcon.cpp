@@ -20,6 +20,7 @@
 #include "WptIcons.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 static bool keyLessThanAlpha(const QString&  s1, const QString&  s2)
 {

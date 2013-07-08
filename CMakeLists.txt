@@ -1,13 +1,13 @@
-project(QLandkarteGT)
+project(QLandkarteGT_Qt5)
 
 # Required cmake version
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 2.8.8)
 
 set(APPLICATION_NAME ${PROJECT_NAME})
 
-set(APPLICATION_VERSION_MAJOR "1")
-set(APPLICATION_VERSION_MINOR "7")
-set(APPLICATION_VERSION_PATCH "1")
+set(APPLICATION_VERSION_MAJOR "2")
+set(APPLICATION_VERSION_MINOR "0")
+set(APPLICATION_VERSION_PATCH "0")
 
 add_definitions(-DVER_MAJOR=${APPLICATION_VERSION_MAJOR} -DVER_MINOR=${APPLICATION_VERSION_MINOR} -DVER_STEP=${APPLICATION_VERSION_PATCH})
 
@@ -63,11 +63,13 @@ configure_file(config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 option(WITH_PROFILING "BUILD WITH PROFILING" OFF)
 
+set(CMAKE_PREFIX_PATH /opt/Qt5.1.0/5.1.0/gcc_64/lib/cmake/)
+
 add_subdirectory(3rdparty/SerialPort)
-add_subdirectory(3rdparty/QMKToolBox)
+#add_subdirectory(3rdparty/QMKToolBox)
 add_subdirectory(3rdparty/QZip)
 add_subdirectory(3rdparty/QTextHtmlExporter)
-add_subdirectory(3rdparty/getopt)
+#add_subdirectory(3rdparty/getopt)
 add_subdirectory(3rdparty/map2gcm)
 add_subdirectory(3rdparty/map2rmap)
 add_subdirectory(3rdparty/map2rmp)

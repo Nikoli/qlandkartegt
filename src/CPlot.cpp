@@ -27,6 +27,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CPlot::CPlot(CPlotData::axis_type_e type, mode_e mode, QWidget * parent)
 : QWidget(parent)

@@ -20,6 +20,7 @@
 #include "IDB.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QString>
 #include <QDateTime>
 

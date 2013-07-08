@@ -23,6 +23,7 @@
 #include "CMainWindow.h"
 #include "CSettings.h"
 #include <QtGui>
+#include <QtWidgets>
 
 #define MAX_IDX_ZOOM 26
 #define MIN_IDX_ZOOM 0

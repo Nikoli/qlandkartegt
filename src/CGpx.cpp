@@ -66,8 +66,8 @@ CGpx::CGpx(QObject * parent, exportMode_e mode)
 
     for (int i=0;;++i)
     {
-        QColor trackColor = CTrack::lineColors[i];
-        QString colorName = colorMap.left(trackColor);
+        QColor trackColor = CTrack::lineColors[i];        
+        QString colorName = colorMap.key(trackColor,"");
         if (!colorName.isEmpty()) trackColorMap.insert(colorName, i);
         if (trackColor == Qt::transparent) break;
     }
@@ -80,16 +80,16 @@ CGpx::~CGpx()
 }
 
 
-const Dictionary<QString, QColor>& CGpx::getColorMap() const
-{
-    return colorMap;
-}
+//const Dictionary<QString, QColor>& CGpx::getColorMap() const
+//{
+//    return colorMap;
+//}
 
 
-const Dictionary<QString, int>& CGpx::getTrackColorMap() const
-{
-    return trackColorMap;
-}
+//const Dictionary<QString, int>& CGpx::getTrackColorMap() const
+//{
+//    return trackColorMap;
+//}
 
 
 void CGpx::writeMetadata()

@@ -151,9 +151,11 @@ CDlgMapWmsConfig::CDlgMapWmsConfig(CMapWms &map)
 
     QNetworkRequest request;
     QUrl url(map.urlstr);
-    url.addQueryItem("version", map.version);
-    url.addQueryItem("service", "wms");
-    url.addQueryItem("request", "GetCapabilities");
+    QUrlQuery query;
+    query.addQueryItem("version", map.version);
+    query.addQueryItem("service", "wms");
+    query.addQueryItem("request", "GetCapabilities");
+    url.setQuery(query);
     request.setUrl(url);
     accessManager->get(request);
 

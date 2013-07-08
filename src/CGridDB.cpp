@@ -24,6 +24,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CGridDB * CGridDB::m_pSelf = 0;
 
@@ -89,7 +90,7 @@ void CGridDB::setProjAndColor(const QString& proj, const QColor& c)
     color   = c;
 
     if(pjGrid) pj_free(pjGrid);
-    pjGrid  = pj_init_plus(projstr.toAscii());
+    pjGrid  = pj_init_plus(projstr.toLocal8Bit());
 
     setupGrid->setToolTip(tr("Configure grid color and projection.\nCur. proj.: %1").arg(projstr));
 

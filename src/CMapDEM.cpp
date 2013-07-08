@@ -35,6 +35,7 @@
 #endif
 
 #include <QtGui>
+#include <QtWidgets>
 
 const QRgb CMapDEM::slopeColorTable[] = {
      qRgba(0,0,0,0)
@@ -773,7 +774,8 @@ void CMapDEM::slope(QImage& img, qint16 * data, int xoff, int yoff)
 
     for(i = 0; i < (w1 * h1); ++i)
     {
-        val = abs(qRound(data[i]));
+        //val = abs(qRound(data[i]));
+        val = data[i];
         if(val > g[5])
         {
             *pixel++ = 5;

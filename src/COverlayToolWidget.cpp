@@ -22,6 +22,7 @@
 #include "CMapDB.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 COverlayToolWidget::COverlayToolWidget(QTabWidget * parent)
 : QWidget(parent)

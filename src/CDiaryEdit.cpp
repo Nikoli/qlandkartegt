@@ -34,6 +34,8 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
+#include <QtPrintSupport>
 
 class CDiaryEditLock
 {

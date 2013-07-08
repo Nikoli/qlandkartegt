@@ -28,6 +28,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QtNetwork/QHttp>
 #include <QtNetwork/QNetworkProxy>
 
@@ -763,11 +764,12 @@ void CTrack::replaceElevationByRemote(bool replaceOrignalData)
             trkpt++;
         }
 
-        QUrl url("http://ws.geonames.org");
-        url.setPath("/srtm3");
-        url.addQueryItem("lats",lats.join(","));
-        url.addQueryItem("lngs",lngs.join(","));
-        url.addQueryItem("username",username);
+        QUrl url("http://ws.geonames.org/srtm3");
+        QUrlQuery query;
+        query.addQueryItem("lats",lats.join(","));
+        query.addQueryItem("lngs",lngs.join(","));
+        query.addQueryItem("username",username);
+        url.setQuery(query);
 
         QNetworkRequest request;
         request.setUrl(url);

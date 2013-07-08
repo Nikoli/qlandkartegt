@@ -19,6 +19,7 @@
 #include "CDlgEditMapLevel.h"
 #include "CCreateMapQMAP.h"
 #include <QtGui>
+#include <QtWidgets>
 #include <gdal.h>
 
 #include "config.h"

@@ -27,6 +27,7 @@
 #include "config.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 enum meter_feet_index
 {

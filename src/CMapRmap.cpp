@@ -22,6 +22,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 
 CMapRmap::CMapRmap(const QString &key, const QString &fn, CCanvas *parent)
 : IMap(eRaster,key,parent)
@@ -383,7 +384,7 @@ bool CMapRmap::setProjection(const QString& projection, const QString& datum)
         projstr += " +ellps=bessel +towgs84=606,23,413,0,0,0,0 +units=m +no_defs";
     }
 
-    pjsrc = pj_init_plus(projstr.toAscii().data());
+    pjsrc = pj_init_plus(projstr.toLocal8Bit().data());
     if(pjsrc == 0)
     {
         return false;

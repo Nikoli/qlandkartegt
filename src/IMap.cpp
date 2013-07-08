@@ -26,6 +26,7 @@
 #include "CSettings.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <math.h>
 
 double IMap::midU = 0;

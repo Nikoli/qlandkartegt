@@ -27,6 +27,7 @@
 #include "GeoMath.h"
 
 #include <QtGui>
+#include <QtWidgets>
 #include <QNetworkProxy>
 
 #define XSTR(x) STR(x)
@@ -67,7 +68,7 @@ CDlgConfig::~CDlgConfig()
 }
 
 
-void CDlgConfig::exec()
+int CDlgConfig::exec()
 {
     CResources& resources = CResources::self();
 
@@ -179,7 +180,7 @@ void CDlgConfig::exec()
         radioTimeZone->setChecked(true);
     }
 
-    QDialog::exec();
+    return QDialog::exec();
 }
 
 
