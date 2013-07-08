@@ -229,8 +229,8 @@ void CMapJnx::readFile(const QString& fn, qint32& productId)
 
     info += QString("<p><table>");
     info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Product ID")).arg(hdr.productId);
-    info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Top/Left")).arg(strTopLeft.replace("\260","&#176;"));
-    info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Bottom/Right")).arg(strBottomRight.replace("\260","&#176;"));
+    info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Top/Left")).arg(strTopLeft.replace("°","&#176;"));
+    info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Bottom/Right")).arg(strBottomRight.replace("°","&#176;"));
 
     {
         projXY p1, p2;

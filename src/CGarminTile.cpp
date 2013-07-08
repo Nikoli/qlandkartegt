@@ -380,7 +380,7 @@ void CGarminTile::readSubfileBasics(subfile_desc_t& subfile, QFileExt &file)
     subfile.area = QRectF(QPointF(subfile.west, subfile.north), QPointF(subfile.east, subfile.south));
 
 #ifdef DEBUG_SHOW_TRE_DATA
-    qDebug() << "bounding area (\260)" << (subfile.north*RAD_TO_DEG) << (subfile.east*RAD_TO_DEG) << (subfile.south*RAD_TO_DEG) << (subfile.west*RAD_TO_DEG);
+    qDebug() << "bounding area (°)" << (subfile.north*RAD_TO_DEG) << (subfile.east*RAD_TO_DEG) << (subfile.south*RAD_TO_DEG) << (subfile.west*RAD_TO_DEG);
     qDebug() << "bounding area (rad)" << subfile.area;
 #endif                       // DEBUG_SHOW_TRE_DATA
 

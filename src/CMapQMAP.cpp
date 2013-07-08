@@ -92,8 +92,8 @@ CMapQMAP::CMapQMAP(const QString& key, const QString& fn, CCanvas * parent)
     QString strBottomRight  = mapdef.value("description/bottomright").toString();
 
     info += QString("<p><table>");
-    info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Top/Left")).arg(strTopLeft.replace("\260","&#176;"));
-    info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Bottom/Right")).arg(strBottomRight.replace("\260","&#176;"));
+    info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Top/Left")).arg(strTopLeft.replace("°","&#176;"));
+    info += QString("<tr><td style='background-color: blue; color: white;'>%1</td><td>%2</td></tr>").arg(tr("Bottom/Right")).arg(strBottomRight.replace("°","&#176;"));
 
     if(!maplevels.isEmpty())
     {
@@ -160,7 +160,7 @@ CMapQMAP::~CMapQMAP()
     QString pos;
 
     GPS_Math_Deg_To_Str(topLeft.u * RAD_TO_DEG, topLeft.v * RAD_TO_DEG, pos);
-    pos = pos.replace("\260","");
+    pos = pos.replace("°","");
     mapdef.setValue("center",pos);
     mapdef.endGroup();
 

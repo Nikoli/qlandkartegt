@@ -519,7 +519,7 @@ void CDlgEditWpt::slotUpdateBarcode()
         dmtxEncodeSetProp( enc, DmtxPropHeight, 200 );
 
         barcode += "    ";
-        barcode = barcode.replace('\260',' ');
+        barcode = barcode.replace('°',' ');
         if(barcode.size() > 180)
         {
             barcode = barcode.left(177) + "...";

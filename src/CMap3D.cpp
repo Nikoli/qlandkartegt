@@ -1255,7 +1255,7 @@ void CMap3D::drawCompass(QPainter& p)
             p.drawLine(x,35,x,50);
             p.setPen(pen2);
             p.drawLine(x,35,x,50);
-            str = QString("%1\260").arg(deg < 0 ? 360 + deg : deg > 360 ? deg - 360 : deg);
+            str = QString("%1°").arg(deg < 0 ? 360 + deg : deg > 360 ? deg - 360 : deg);
             p.setFont(f1);
         }
         else if((deg % 5) == 0)
@@ -1454,7 +1454,7 @@ void CMap3D::drawHorizont(QPainter& p)
 
         if((deg % 45) == 0)
         {
-            str = QString("%1\260").arg(abs(deg));
+            str = QString("%1°").arg(abs(deg));
             p.setFont(f1);
             CCanvas::drawText(str,p, QPoint(80, y + textOff), Qt::darkBlue, p.font());
         }

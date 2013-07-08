@@ -102,7 +102,7 @@ void COverlayDB::loadGPX(CGpx& gpx)
         if(!ovl.isNull())
         {
             QDomNodeList ovllist = ovl.childNodes();
-            uint i;
+            int i;
             for(i = 0; i < ovllist.length(); i++)
             {
                 hasItems = true;

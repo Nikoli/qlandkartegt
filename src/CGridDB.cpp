@@ -352,22 +352,22 @@ void CGridDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 
         foreach(const val_t& val, horzTopTicks)
         {
-            CCanvas::drawText(fabs(val.val)<1.e-5?"0":QString("%1\260").arg(val.val * RAD_TO_DEG), p, QPoint(val.pos, yoff), color);
+            CCanvas::drawText(fabs(val.val)<1.e-5?"0":QString("%1°").arg(val.val * RAD_TO_DEG), p, QPoint(val.pos, yoff), color);
         }
 
         foreach(const val_t& val, horzBtmTicks)
         {
-            CCanvas::drawText(fabs(val.val)<1.e-5?"0":QString("%1\260").arg(val.val * RAD_TO_DEG), p, QPoint(val.pos, h), color);
+            CCanvas::drawText(fabs(val.val)<1.e-5?"0":QString("%1°").arg(val.val * RAD_TO_DEG), p, QPoint(val.pos, h), color);
         }
 
         foreach(const val_t& val, vertLftTicks)
         {
-            CCanvas::drawText(fabs(val.val)<1.e-5?"0":QString("%1\260").arg(val.val * RAD_TO_DEG), p, QPoint(xoff, val.pos), color);
+            CCanvas::drawText(fabs(val.val)<1.e-5?"0":QString("%1°").arg(val.val * RAD_TO_DEG), p, QPoint(xoff, val.pos), color);
         }
 
         foreach(const val_t& val, vertRgtTicks)
         {
-            CCanvas::drawText(fabs(val.val)<1.e-5?"0":QString("%1\260").arg(val.val * RAD_TO_DEG), p, QPoint(w - xoff, val.pos), color);
+            CCanvas::drawText(fabs(val.val)<1.e-5?"0":QString("%1°").arg(val.val * RAD_TO_DEG), p, QPoint(w - xoff, val.pos), color);
         }
     }
     else

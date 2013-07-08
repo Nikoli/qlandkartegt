@@ -427,7 +427,7 @@ CMapTDB::~CMapTDB()
     cfg.beginGroup("garmin/maps");
     cfg.beginGroup(name);
     GPS_Math_Deg_To_Str(topLeft.u * RAD_TO_DEG, topLeft.v * RAD_TO_DEG, pos);
-    pos = pos.replace("\260","");
+    pos = pos.replace("°","");
     cfg.setValue("topleft",pos);
     cfg.setValue("zoomidx",zoomidx);
     cfg.setValue("details", detailsFineTune);

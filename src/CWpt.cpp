@@ -519,7 +519,7 @@ QString CWpt::getInfo()
     if(dir != WPT_NOFLOAT)
     {
         if(str.count()) str += "\n";
-        str += tr("direction: %1%2").arg(dir).arg(QChar('\260'));
+        str += tr("direction: %1°").arg(dir);
     }
 
     if(prx != WPT_NOFLOAT)
@@ -1170,7 +1170,7 @@ QString CWpt::getExtInfo(bool showHidden)
 
     QString cpytext = html.arg(QUrl::fromLocalFile(dirWeb.path()).toString());
     cpytext = cpytext.replace("${info}", info);
-    cpytext.replace("&deg;","\260");
+    cpytext.replace("&deg;","°");
     //    qDebug() << cpytext;
 
     return cpytext;
@@ -1183,7 +1183,7 @@ QString CWpt::htmlScale(float val)
 }
 
 
-static QRegExp rx("([NS]{1}[\\s:]*[0-9]+[\\s\260]*[0-9.,]+[\\s,/-]*[EWO]{1}[\\s:]*[0-9]+[\\s\260]*[0-9.,]+)");
+static QRegExp rx("([NS]{1}[\\s:]*[0-9]+[\\s°]*[0-9.,]+[\\s,/-]*[EWO]{1}[\\s:]*[0-9]+[\\s°]*[0-9.,]+)");
 
 void CWpt::showBuddies(bool show)
 {

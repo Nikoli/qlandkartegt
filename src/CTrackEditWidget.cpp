@@ -699,7 +699,7 @@ void CTrackEditWidget::slotUpdate()
         // azimuth
         if(trkpt->azimuth != WPT_NOFLOAT)
         {
-            str.sprintf("%1.0f\260",trkpt->azimuth);
+            str.sprintf("%1.0f°",trkpt->azimuth);
         }
         else
         {

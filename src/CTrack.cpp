@@ -1634,10 +1634,10 @@ QString CTrack::getFocusInfo()
     }
     tmp = p2.ascend - p1.ascend;
     IUnit::self().meter2elevation(tmp, val, unit);
-    str += QString("%3 %1%2 (%4\260)\n").arg(val).arg(unit).arg(QChar(0x2197)).arg(qRound(atan(tmp/d) * 360 / (2*M_PI)));
+    str += QString("%3 %1%2 (%4°)\n").arg(val).arg(unit).arg(QChar(0x2197)).arg(qRound(atan(tmp/d) * 360 / (2*M_PI)));
     tmp = p1.descend - p2.descend;
     IUnit::self().meter2elevation(tmp, val, unit);
-    str += QString("%3 %1%2 (%4\260)").arg(val).arg(unit).arg(QChar(0x2198)).arg(qRound(atan(tmp/d) * 360 / (2*M_PI)));
+    str += QString("%3 %1%2 (%4°)").arg(val).arg(unit).arg(QChar(0x2198)).arg(qRound(atan(tmp/d) * 360 / (2*M_PI)));
 
 
 

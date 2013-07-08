@@ -245,7 +245,7 @@ void CLiveLogDB::slotLiveLog(const CLiveLog& log)
         if(log.heading != WPT_NOFLOAT)
         {
             //HS: removed stand-still filtering for displayed values
-            w->lblHeading->setText(tr("%1\260 T").arg((int)(log.heading + 0.5),3,'f',0,'0'));
+            w->lblHeading->setText(tr("%1° T").arg((int)(log.heading + 0.5),3,'f',0,'0'));
         }
         else
         {

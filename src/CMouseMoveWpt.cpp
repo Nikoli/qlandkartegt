@@ -120,7 +120,7 @@ void CMouseMoveWpt::draw(QPainter& p)
 
         QString str, val, unit;
         IUnit::self().meter2distance(d, val, unit);
-        str = QString("%1%2 %3\260> <%4\260").arg(val).arg(unit).arg(a1,0,'f',0).arg(a2,0,'f',0);
+        str = QString("%1%2 %3°> <%4°").arg(val).arg(unit).arg(a1,0,'f',0).arg(a2,0,'f',0);
 
         // draw line between old and new location
         p.setPen(QPen(Qt::white,3));

@@ -438,7 +438,7 @@ void CTrackFilterWidget::slotAddFilterHidePoints1()
 
     readGuiHidePoints1(args, d, a);
 
-    QString name = groupReducePoints1->title() + QString(" (%1%2, %3\260)").arg(d).arg(spinDistance1->suffix()).arg(a);
+    QString name = groupReducePoints1->title() + QString(" (%1%2, %3°)").arg(d).arg(spinDistance1->suffix()).arg(a);
     addFilter(name, ":/icons/iconTrack16x16.png", args);
 }
 
