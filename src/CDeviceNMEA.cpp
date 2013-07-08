@@ -19,6 +19,7 @@
 
 #include <QtGui>
 #include <QtWidgets>
+#include <QtSerialPort>
 #include <proj_api.h>
 
 CDeviceNMEA::CDeviceNMEA(const QString& serialport,
@@ -26,39 +27,44 @@ const QString& baudrate,
 QObject * parent)
 : IDevice("NMEA",parent)
 , serialport(serialport)
+, portInfo(serialport)
 , haveSeenData(false)
 , haveSeenGPRMC(false)
 , haveSeenGPGGA(false)
 , haveSeenGPGSA(false)
 , haveSeenGPVTG(false)
+
 {
-    enum BaudRateType eBaudrate = BAUD4800;
-    if (baudrate.compare("9600")   == 0) { eBaudrate = BAUD9600;   }
-    if (baudrate.compare("19200")  == 0) { eBaudrate = BAUD19200;  }
-    if (baudrate.compare("38400")  == 0) { eBaudrate = BAUD38400;  }
-    if (baudrate.compare("57600")  == 0) { eBaudrate = BAUD57600;  }
-    if (baudrate.compare("115200") == 0) { eBaudrate = BAUD115200; }
+    QSerialPort::BaudRate eBaudrate = QSerialPort::Baud4800;
+    if (baudrate.compare("9600")   == 0) { eBaudrate = QSerialPort::Baud9600;   }
+    if (baudrate.compare("19200")  == 0) { eBaudrate = QSerialPort::Baud19200;  }
+    if (baudrate.compare("38400")  == 0) { eBaudrate = QSerialPort::Baud38400;  }
+    if (baudrate.compare("57600")  == 0) { eBaudrate = QSerialPort::Baud57600;  }
+    if (baudrate.compare("115200") == 0) { eBaudrate = QSerialPort::Baud115200; }
 
-    tty.setBaudRate(eBaudrate);  //BaudRate
-    tty.setDataBits(DATA_8);     //DataBits
-    tty.setParity(PAR_NONE);     //Parity
-    tty.setStopBits(STOP_1);     //StopBits
-    tty.setFlowControl(FLOW_OFF);//FlowControl
 
-    tty.setTimeout(0, 10);
-    tty.enableReceiving();
-    tty.setPort(serialport);
+    tty = new QSerialPort(this);
+
+    tty->setBaudRate(eBaudrate);  //BaudRate
+    tty->setDataBits(QSerialPort::Data8);     //DataBits
+    tty->setParity(QSerialPort::NoParity);     //Parity
+    tty->setStopBits(QSerialPort::OneStop);     //StopBits
+    tty->setFlowControl(QSerialPort::NoFlowControl);//FlowControl
+
+    tty->setPortName(serialport);
+    portInfo = QSerialPortInfo(*tty);
 
     watchdog = new QTimer(this);
     connect(watchdog, SIGNAL(timeout()), this, SLOT(slotWatchdog()));
 
-    connect(&tty, SIGNAL(newDataReceived(const QByteArray &)), this, SLOT(slotNewDataReceived(const QByteArray &)));
+    connect(tty, SIGNAL(readyRead()), this, SLOT(slotNewDataReceived()));
+
 }
 
 
 CDeviceNMEA::~CDeviceNMEA()
 {
-    tty.close();
+    tty->close();
 }
 
 
@@ -77,9 +83,9 @@ void CDeviceNMEA::setLiveLog(bool on)
         //should go into the log ...
         //emit sigLiveLog(log);
 
-        if(tty.open())
+        if(tty->open(QIODevice::ReadOnly))
         {
-            uchar recv_ok = tty.receiveData();
+            bool recv_ok = tty->isOpen() && tty->isReadable();
             if (recv_ok == 1)
             {
                 log.fix = CLiveLog::eConnectionEstablished;
@@ -92,6 +98,7 @@ void CDeviceNMEA::setLiveLog(bool on)
         }
         else
         {
+            qDebug() << tty->errorString() << tty->portName() << portInfo.isValid() << portInfo.isBusy();
             log.fix = CLiveLog::eConnectionFailed;
         }
         watchdog->start(10000);
@@ -104,7 +111,7 @@ void CDeviceNMEA::setLiveLog(bool on)
     else
     {
         watchdog->stop();
-        tty.close();
+        tty->close();
         log.fix = CLiveLog::eOff;
     }
     //always update the status display;
@@ -114,13 +121,15 @@ void CDeviceNMEA::setLiveLog(bool on)
 
 bool CDeviceNMEA::liveLog()
 {
-    return tty.isOpen();
+    return tty->isOpen();
 }
 
 
-void CDeviceNMEA::slotNewDataReceived(const QByteArray &dataReceived)
+void CDeviceNMEA::slotNewDataReceived()
 {
     int i;
+
+    QByteArray dataReceived = tty->readAll();
 
     if (log.fix == CLiveLog::eConnectionEstablished)
     {
@@ -444,7 +453,7 @@ void CDeviceNMEA::decode()
 
 void CDeviceNMEA::slotWatchdog()
 {
-    if(tty.isOpen() && haveSeenData)
+    if(tty->isOpen() && haveSeenData)
     {
         haveSeenData = false;
         return;

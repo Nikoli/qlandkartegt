@@ -29,6 +29,7 @@
 #include <QtGui>
 #include <QtWidgets>
 #include <QNetworkProxy>
+#include <QtSerialPort>
 
 #define XSTR(x) STR(x)
 #define STR(x) #x
@@ -59,6 +60,14 @@ CDlgConfig::CDlgConfig(QWidget * parent)
         tz++;
     }
 
+
+    foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
+    {
+           qDebug() << "Name        : " << info.portName();
+           qDebug() << "Description : " << info.description();
+           qDebug() << "Manufacturer: " << info.manufacturer();
+           comboDevSerialPort->addItem(info.portName());
+    }
 }
 
 
@@ -142,7 +151,18 @@ int CDlgConfig::exec()
 
     lineDevIPAddr->setText(resources.m_devIPAddress);
     lineDevIPPort->setText(QString::number(resources.m_devIPPort));
-    lineDevSerialPort->setText(resources.m_devSerialPort);
+
+
+    int idx = comboDevSerialPort->findText(resources.m_devSerialPort);
+    if(idx < 0)
+    {
+        comboDevSerialPort->addItem(resources.m_devSerialPort);
+    }
+    else
+    {
+        comboDevSerialPort->setCurrentIndex(idx);
+    }
+
 #ifdef Q_OS_WIN32
     lineDevSerialPort->setToolTip(tr("Pass something like \"COM1:\" or \"\\\\.\\COM13\" or \"\\\\.\\com13\" for serial Garmin devices or NMEA devices. For Garmin USB devices leave blank."));
 #endif
@@ -237,7 +257,7 @@ void CDlgConfig::accept()
     resources.m_devKey          = comboDevice->itemData(comboDevice->currentIndex()).toString();
     resources.m_devIPAddress    = lineDevIPAddr->text();
     resources.m_devIPPort       = lineDevIPPort->text().toUShort();
-    resources.m_devSerialPort   = lineDevSerialPort->text();
+    resources.m_devSerialPort   = comboDevSerialPort->currentText();
     resources.m_devBaudRate     = comboDevBaudRate->currentText();
     resources.m_devType         = comboDevType->itemText(comboDevType->currentIndex());
     resources.m_devCharset      = comboDevCharset->itemText(comboDevCharset->currentIndex());
@@ -292,7 +312,7 @@ void CDlgConfig::slotCurrentDeviceChanged(int index)
     labelDevIPAddr->setEnabled(false);
     lineDevIPPort->setEnabled(false);
     labelDevIPPort->setEnabled(false);
-    lineDevSerialPort->setEnabled(false);
+    comboDevSerialPort->setEnabled(false);
     labelDevSerialPort->setEnabled(false);
     comboDevBaudRate->setEnabled(false);
     labelDevBaudRate->setEnabled(false);
@@ -312,7 +332,7 @@ void CDlgConfig::slotCurrentDeviceChanged(int index)
     else if(comboDevice->itemData(index) == "Garmin")
     {
         comboDevType->setEnabled(true);
-        lineDevSerialPort->setEnabled(true);
+        comboDevSerialPort->setEnabled(true);
         labelDevSerialPort->setEnabled(true);
         labelDevType->setEnabled(true);
         comboDevCharset->setEnabled(true);
@@ -323,12 +343,12 @@ void CDlgConfig::slotCurrentDeviceChanged(int index)
     }
     else if(comboDevice->itemData(index) == "Mikrokopter")
     {
-        lineDevSerialPort->setEnabled(true);
+        comboDevSerialPort->setEnabled(true);
         labelDevSerialPort->setEnabled(true);
     }
     else if(comboDevice->itemData(index) == "NMEA")
     {
-        lineDevSerialPort->setEnabled(true);
+        comboDevSerialPort->setEnabled(true);
         labelDevSerialPort->setEnabled(true);
         comboDevBaudRate->setEnabled(true);
         labelDevBaudRate->setEnabled(true);

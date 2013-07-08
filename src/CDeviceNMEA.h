@@ -20,7 +20,9 @@
 #define CDEVICENMEA_H
 
 #include "IDevice.h"
-#include <ManageSerialPort.h>
+#include <QSerialPortInfo>
+
+class QSerialPort;
 
 class CDeviceNMEA : public IDevice
 {
@@ -46,7 +48,7 @@ class CDeviceNMEA : public IDevice
         bool liveLog();
 
     private slots:
-        void slotNewDataReceived(const QByteArray &dataReceived);
+        void slotNewDataReceived();
         void slotWatchdog();
 
     private:
@@ -55,7 +57,10 @@ class CDeviceNMEA : public IDevice
 
         QString serialport;
         QString line;
-        ManageSerialPort tty;
+
+        QSerialPort * tty;
+        QSerialPortInfo portInfo;
+
 
         bool haveSeenData;
         bool haveSeenGPRMC;

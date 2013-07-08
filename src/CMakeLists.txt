@@ -23,6 +23,7 @@ find_package(Qt5OpenGL)
 find_package(Qt5DBus)
 find_package(Qt5Sql)
 find_package(Qt5PrintSupport)
+find_package(Qt5SerialPort)
 
 if(WITH_OPENGL)
     find_package(OpenGL REQUIRED)
@@ -704,7 +705,7 @@ target_link_libraries(
       ${EXIF_LIBRARIES}
       ${DMTX_LIBRARIES}
       ${GPSD_LIBRARIES}
-      SerialPort
+      #SerialPort
       #QMKToolBox
       qzip
       qtexthtmlexporter
@@ -716,7 +717,7 @@ target_link_libraries(
       GLU
   )
 
-qt5_use_modules(${PROGNAME} Core Gui Widgets Network Xml DBus WebKit WebKitWidgets Script XmlPatterns OpenGL Sql PrintSupport)
+qt5_use_modules(${PROGNAME} Core Gui Widgets Network Xml DBus WebKit WebKitWidgets Script XmlPatterns OpenGL Sql PrintSupport SerialPort)
 
 install(
     TARGETS

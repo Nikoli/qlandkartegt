@@ -65,8 +65,6 @@ option(WITH_PROFILING "BUILD WITH PROFILING" OFF)
 
 set(CMAKE_PREFIX_PATH /opt/Qt5.1.0/5.1.0/gcc_64/lib/cmake/)
 
-add_subdirectory(3rdparty/SerialPort)
-#add_subdirectory(3rdparty/QMKToolBox)
 add_subdirectory(3rdparty/QZip)
 add_subdirectory(3rdparty/QTextHtmlExporter)
 #add_subdirectory(3rdparty/getopt)
