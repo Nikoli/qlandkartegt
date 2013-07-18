@@ -589,19 +589,15 @@ void CMapDEM::draw()
 
     if(overlay == IMap::eShading)
     {
-        shading(img,data.data(), my_xscale, my_yscale);
+        shading(img, data.data(), my_xscale, my_yscale);
     }
     else if(overlay == IMap::eContour)
     {
-        contour(img,data.data(), my_xscale, my_yscale);
-    }
-    else if(overlay == IMap::eContour)
-    {
-        slope(img,data.data(), my_xscale, my_yscale);
+        contour(img, data.data(), my_xscale, my_yscale);
     }
     else if(overlay == IMap::eSlope)
     {
-        slope(img,data.data(), xoff1, yoff1);
+        slope(img, data.data(), xoff1, yoff1);
     }
     else
     {

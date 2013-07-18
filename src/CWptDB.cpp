@@ -944,6 +944,7 @@ void CWptDB::selWptInRange(const QPointF& center, double radius)
 }
 
 
+
 void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
 {
     IMap& map = CMapDB::self().getMap();
@@ -969,8 +970,7 @@ void CWptDB::draw(QPainter& p, const QRect& rect, bool& needsRedraw)
             QPixmap icon = (*wpt)->getIcon();
             QPixmap back = QPixmap(icon.size());
             back.fill(Qt::white);
-            /// @todo qt5
-            //back.setMask(icon.alphaChannel().createMaskFromColor(Qt::black));
+            back.setMask(icon.createHeuristicMask());
 
             int o =  icon.width() >>1;
 
