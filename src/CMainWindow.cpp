@@ -67,6 +67,9 @@
 
 CMainWindow * theMainWindow = 0;
 
+
+QSoundEffect CMainWindow::player;
+
 CMainWindow::CMainWindow()
 : geodb(0)
 , modified(false)
@@ -409,6 +412,10 @@ CMainWindow::CMainWindow()
     connect(&CTrackDB::self(), SIGNAL(sigHighlightTrack(CTrack *)), canvas, SLOT(slotHighlightTrack(CTrack*)));
     connect(&CTrackDB::self(), SIGNAL(sigChanged()), canvas, SLOT(slotTrackChanged()));
     connect(&soapHttp, SIGNAL(responseReady(const QtSoapMessage &)),this, SLOT(slotGetResponse(const QtSoapMessage &)));
+
+    player.setSource(QUrl::fromLocalFile("/home/oeichler/Code/cpp/build_Qt5QlGT/xfer-done.wav"));
+    player.setVolume(1);
+    player.play();
 
 }
 

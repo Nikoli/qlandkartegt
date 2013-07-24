@@ -701,7 +701,7 @@ void CDeviceGarmin::uploadWpts(const QList<CWpt*>& wpts)
         {
             /// @todo qt5
             //QSound::play(":/sounds/xfer-done.wav");
-        }
+       }
 
         QApplication::restoreOverrideCursor();
     }

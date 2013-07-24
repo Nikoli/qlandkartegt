@@ -67,6 +67,7 @@ class CResources : public QObject
         bool showClock(){return m_showClock;}
         bool showScale(){return m_showScale;}
         bool showToolTip(){return m_showToolTip;}
+        bool showElementInfo(){return m_showElementInfo;}
         bool showZoomLevel(){return m_showZoomLevel;}
         bool playSound(){return m_playSound;}
         bool useAntiAliasing(){return m_useAntiAliasing;}
@@ -162,6 +163,7 @@ class CResources : public QObject
         bool m_showClock;
         bool m_showScale;
         bool m_showToolTip;
+        bool m_showElementInfo;
         bool m_showZoomLevel;
         bool m_useAntiAliasing;
         bool m_reducePoiIcons;

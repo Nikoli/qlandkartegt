@@ -112,6 +112,7 @@ int CDlgConfig::exec()
     checkShowClock->setChecked(resources.m_showClock);
     checkShowScale->setChecked(resources.m_showScale);
     checkTooltip->setChecked(resources.m_showToolTip);
+    checkElementInfo->setChecked(resources.m_showElementInfo);
     checkShowZoomLevel->setChecked(resources.m_showZoomLevel);
     checkAntiAliasing->setChecked(resources.m_useAntiAliasing);
     checkReducePoiIcons->setChecked(resources.m_reducePoiIcons);
@@ -244,6 +245,7 @@ void CDlgConfig::accept()
     resources.m_showClock       = checkShowClock->isChecked();
     resources.m_showScale       = checkShowScale->isChecked();
     resources.m_showToolTip     = checkTooltip->isChecked();
+    resources.m_showElementInfo = checkElementInfo->isChecked();
     resources.m_showZoomLevel   = checkShowZoomLevel->isChecked();
     resources.m_playSound       = checkPlaySound->isChecked();
     resources.m_useAntiAliasing = checkAntiAliasing->isChecked();

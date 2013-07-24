@@ -76,6 +76,7 @@ CResources::CResources(QObject * parent)
 , m_showClock(true)
 , m_showScale(true)
 , m_showToolTip(true)
+, m_showElementInfo(true)
 , m_showZoomLevel(true)
 , m_useAntiAliasing(true)
 , m_reducePoiIcons(true)
@@ -163,6 +164,7 @@ CResources::CResources(QObject * parent)
     m_showClock        = cfg.value("environment/showClock",m_showClock).toBool();
     m_showScale        = cfg.value("environment/showScale",m_showScale).toBool();
     m_showToolTip      = cfg.value("environment/showToolTip",m_showToolTip).toBool();
+    m_showElementInfo  = cfg.value("environment/showElementInfo", m_showElementInfo).toBool();
     m_showZoomLevel    = cfg.value("environment/showZoomLevel",m_showZoomLevel).toBool();
     m_useAntiAliasing  = cfg.value("environment/useAntiAliasing",m_useAntiAliasing).toBool();
     m_reducePoiIcons   = cfg.value("environment/reducePoiIcons",m_reducePoiIcons).toBool();
@@ -258,6 +260,7 @@ CResources::~CResources()
     cfg.setValue("environment/showClock",m_showClock);
     cfg.setValue("environment/showScale",m_showScale);
     cfg.setValue("environment/showToolTip",m_showToolTip);
+    cfg.setValue("environment/showElementInfo", m_showElementInfo);
     cfg.setValue("environment/showZoomLevel",m_showZoomLevel);
     cfg.setValue("environment/useAntiAliasing",m_useAntiAliasing);
     cfg.setValue("environment/reducePoiIcons",m_reducePoiIcons);

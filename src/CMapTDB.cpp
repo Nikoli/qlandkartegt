@@ -1899,7 +1899,7 @@ void CMapTDB::draw(QPainter& p)
 
     needsRedraw = false;
 
-    if(!infotext.isEmpty() && info)
+    if(!infotext.isEmpty() && info && CResources::self().showElementInfo())
     {
         QFont f = p.font();
         f.setBold(false);
@@ -2401,14 +2401,7 @@ void CMapTDB::drawPolylines(QPainter& p, polytype_t& lines)
                     borderCount++;
                     drawLine(p, lines[*it], property, metrics, font);
                 }
-                // draw foreground line 2nd
-                p.setPen(nightView ? property.penLineNight : property.penLineDay);
-
-                it = dict[type].constBegin();
-                for( ; it != dict[type].constEnd() ; ++it)
-                {
-                    drawLine(p, lines[*it]);
-                }
+                // draw foreground line in a second run for nicer borders
             }
             else
             {
@@ -2422,8 +2415,33 @@ void CMapTDB::drawPolylines(QPainter& p, polytype_t& lines)
                 }
             }
         }
-
     }
+
+    // 2nd run to draw foreground lines.
+    props = polylineProperties.begin();
+    for(;props != end; ++props)
+    {
+        const quint32 &type = props.key();
+        const IGarminTyp::polyline_property& property = props.value();
+
+        if(dict[type].count() == 0)
+        {
+            continue;
+        }
+
+        if(property.hasBorder)
+        {
+            // draw foreground line 2nd
+            p.setPen(nightView ? property.penLineNight : property.penLineDay);
+
+            QList<quint32>::const_iterator it = dict[type].constBegin();
+            for( ; it != dict[type].constEnd() ; ++it)
+            {
+                drawLine(p, lines[*it]);
+            }
+        }
+    }
+
     //    qDebug() << "pixmapCount:" << pixmapCount
     //        << "borderCount:" << borderCount
     //        << "normalCount:" << normalCount
