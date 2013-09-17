@@ -166,7 +166,21 @@ const int CPowerLine::getNumPhases() const
     return 0;
 }
 
-
+const bool CPowerLine::hasPhase(const unsigned nump) const
+{
+    switch (phases) {
+        case 1: if (nump == 1) return true; break;
+        case 2: if (nump == 2) return true; break;
+        case 4: if (nump == 3) return true; break;
+        case 3: if ((nump == 1) || (nump == 2)) return true; break;
+        case 5: if ((nump == 1) || (nump == 3)) return true; break;
+        case 6: if ((nump == 2) || (nump == 3)) return true; break;
+        case 7: return true; break;
+    }
+    
+    return false;
+}    
+        
 const int CPowerLine::firstPhase() const {
     switch (phases) {
         case 1:

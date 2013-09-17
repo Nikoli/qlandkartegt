@@ -720,17 +720,22 @@ void CPowerToolWidget::getNodeLoads(const QString& wpt_key, const QString& nw_ke
     ph2 += thisph2;
     ph3 += thisph3;
 
-    // Check for miraculous increase of phases...
+    // Check for miraculous increase of phases and other discrepancies
     CPowerLine * lfrom = CPowerDB::self().getPowerLineByKey(fromLine);
-    if (phases > lfrom->getNumPhases()) {
+    if ((lines.size() != 0) && (phases > lfrom->getNumPhases())) {
         CPowerDB::self().flagPowerLine(fromLine);
     } else {
         // Check for multi-phase line going to less than 3 consumers at the end of the line
-        if ((lines.size() == 0) && (double(lfrom->getNumPhases()) > ceil(wpt_data.consumers)) && (wpt_data.load == 0.0)) {
+        if ((lines.size() == 0) && (wpt_data.consumers != 0) && (double(lfrom->getNumPhases()) > ceil(wpt_data.consumers)) && (wpt_data.load == 0.0)) {
             CPowerDB::self().flagPowerLine(fromLine);
         } else {
             CPowerDB::self().unFlagPowerLine(fromLine);
         }
+        // Check for loads on phases that don't exist
+        if (((wpt_data.consumers1 + wpt_data.loadphase1 > 0.0) && !lfrom->hasPhase(1)) ||
+            ((wpt_data.consumers2 + wpt_data.loadphase2 > 0.0) && !lfrom->hasPhase(2)) ||
+            ((wpt_data.consumers3 + wpt_data.loadphase3 > 0.0) && !lfrom->hasPhase(3)))
+            CPowerDB::self().flagPowerLine(fromLine);                        
     }
 
     QString wptname = wpt->getName();

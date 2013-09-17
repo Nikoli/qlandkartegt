@@ -88,7 +88,7 @@ class CPowerLine : public IItem
         const double getPowerOnPhase(const int phase);
 
         const int getNumPhases() const; // 1, 2 or 3 phases (plus neutral)
-        const bool hasPhase(const unsigned nump) const { return phases & (1>>(nump-1)); }
+        const bool hasPhase(const unsigned nump) const;
         const int firstPhase() const;
         const int secondPhase() const;
 
