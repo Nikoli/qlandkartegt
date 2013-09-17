@@ -121,6 +121,8 @@ const double CPowerLine::getDistance() const {
 
   CWpt* wpt1 = CWptDB::self().getWptByKey(keyFirst);
   CWpt* wpt2 = CWptDB::self().getWptByKey(keySecond);
+  if ((wpt1 == NULL) || (wpt2 == NULL))
+      return -1.0;
 
   pt1.u = wpt1->lon * DEG_TO_RAD;
   pt1.v = wpt1->lat * DEG_TO_RAD;

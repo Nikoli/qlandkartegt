@@ -916,6 +916,11 @@ void calcVoltage(const QString& wpt_key, const QString &nw_key, const QString& f
     foreach (line_key, lines)
     {
         CPowerLine * l = CPowerDB::self().getPowerLineByKey(line_key);
+        // Force recalculation of the power line length because of bug that doubled all lengths!
+        // Bug introduced 20.3.2013 r3608 fixed 20.7.2013 r3653
+        double newLength = l->getDistance();
+        if (newLength > 0.0)
+            l->setLength(newLength);
 
         // get end point of line
         QString next_wpt = (l->keyFirst == wpt_key ? l->keySecond : l->keyFirst);
@@ -1047,6 +1052,7 @@ void CPowerToolWidget::slotPhaseBalance()
         double ph1, ph2, ph3;
 
         getNodeLoads(nw->ph, nw_key, nw->watts, "", loads, ph1, ph2, ph3);
+        loads.sort();
         QString iText =
                 "<HTML>"
                 "<BODY>"
