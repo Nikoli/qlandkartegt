@@ -444,7 +444,10 @@ void CPowerDB::slotWptDBKeyModified(const QString& key) {
     //qDebug() << "Existing key '" << key << "' modified: " << query.value(0).toString();
 
     CWpt* wpt = CWptDB::self().getWptByKey(key);
-    if (wpt == NULL) qDebug() << "NULL key in slotWptDBKeyModified()";
+    if (wpt == NULL) {
+        qDebug() << "NULL key in slotWptDBKeyModified()";
+        return;
+    }
     
     QSqlQuery query2(*db);
     query2.prepare("UPDATE wpts SET sticky=:sticky, timestamp=:timestamp, icon=:icon, "
