@@ -37,7 +37,7 @@
 CDlgConfig::CDlgConfig(QWidget * parent)
 : QDialog(parent)
 {
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
     this->setParent(qApp->focusWidget());
     this->setWindowModality(Qt::WindowModal);
     this->setWindowFlags(Qt::Sheet);
@@ -378,7 +378,7 @@ void CDlgConfig::fillTypeCombo()
     QRegExp regex("lib(.*)\\" XSTR(SHARED_LIB_EXT));
     QString file;
     QStringList files;
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
     // MacOS X: plug-ins are stored in the bundle folder
     QDir inst_dir(QCoreApplication::applicationDirPath()
         .replace(QRegExp("MacOS$"), "Resources/Drivers"));
@@ -398,7 +398,7 @@ void CDlgConfig::fillTypeCombo()
 
     if(files.isEmpty())
     {
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
         labelMessage->setText(tr("No plugins found. I expect them in: %1")
             .arg(QCoreApplication::applicationDirPath()
             .replace(QRegExp("MacOS$"), "Resources/Drivers")));

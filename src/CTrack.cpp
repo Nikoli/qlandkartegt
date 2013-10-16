@@ -29,7 +29,7 @@
 
 #include <QtGui>
 #include <QtWidgets>
-#include <QtNetwork/QHttp>
+// #include <QtNetwork/QHttp>
 #include <QtNetwork/QNetworkProxy>
 
 #include <tzdata.h>

@@ -65,7 +65,7 @@ CResources::CResources(QObject * parent)
 , m_useGeoDB(true)
 , m_saveGeoDBOnExit(false)
 , m_saveGeoDBMinutes(5)
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
 , m_pathGeoDB(QDir::homePath())
 #else
 , m_pathGeoDB(QDir::home().filePath(CONFIGDIR))
@@ -91,7 +91,7 @@ CResources::CResources(QObject * parent)
 
     SETTINGS;
 
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
     QString family      = cfg.value("environment/mapfont/family","Arial").toString();
 #else
     // Qt on Mac OS X 10.6 sometimes fails to render, so use the Mac default font here...
@@ -195,12 +195,12 @@ CResources::CResources(QObject * parent)
     }
     else
     {
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
         struct passwd * userInfo = getpwuid(getuid());
         cacheFolder = QDir::tempPath() + "/qlandkarteqt-" + userInfo->pw_name + "/cache/";
 #else
         // Mac OS X: points to /Users/<user name>/Library/Caches/QLandkarteGT/QLandkarteGT
-        cacheFolder = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
+        cacheFolder = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
 #endif
     }
 #else

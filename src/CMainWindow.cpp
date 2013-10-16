@@ -587,7 +587,7 @@ void CMainWindow::setupMenuBar()
     //menu->addAction(QIcon(":/icons/iconPrint16x16.png"),tr("Print Diary ..."),this,SLOT(slotPrintPreview()));
     menu->addSeparator();
     menu->addAction(QIcon(":/icons/iconUnknown16x16.png"),tr("Toggle toolview"),this,SLOT(slotToggleToolView()), Qt::CTRL + Qt::Key_T);
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
     menu->addAction(QIcon(":/icons/iconExit16x16.png"),("Exit"),this,SLOT(close()), Qt::CTRL + Qt::Key_Q);
 #else
     menu->addAction(QIcon(":/icons/iconExit16x16.png"),tr("Exit"),this,SLOT(close()), Qt::CTRL + Qt::Key_Q);
@@ -639,7 +639,7 @@ void CMainWindow::setupMenuBar()
 
     menu = new QMenu(this);
     menu->setTitle(tr("&Setup"));
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
     menu->addAction(QIcon(":/icons/iconConfig16x16.png"),"&Preferences",this,SLOT(slotConfig()));
 #else
     menu->addAction(QIcon(":/icons/iconConfig16x16.png"),tr("&General"),this,SLOT(slotConfig()));
@@ -647,7 +647,7 @@ void CMainWindow::setupMenuBar()
     menuBar()->addMenu(menu);
 
     menu = new QMenu(this);
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
     menu->setTitle(("&Help"));
     menu->addAction(QIcon(":/icons/iconHelp16x16.png"),("http://FAQ"),this,SLOT(slotFAQ()));
     menu->addAction(QIcon(":/icons/iconHelp16x16.png"),("http://Help"),this,SLOT(slotHelp()));

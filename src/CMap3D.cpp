@@ -34,7 +34,7 @@
 #include <QtGui>
 #include <QtOpenGL>
 #include <math.h>
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
 #include <OpenGL/glu.h>
 #else
 #include <GL/glu.h>

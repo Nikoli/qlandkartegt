@@ -106,7 +106,7 @@ CMapQMAPExport::CMapQMAPExport(const CMapSelectionRaster& mapsel, QWidget * pare
     path_map2rmap       = QCoreApplication::applicationDirPath()+QDir::separator()+"map2rmap.exe";
     path_map2rmp        = QCoreApplication::applicationDirPath()+QDir::separator()+"map2rmp.exe";
 #else
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
     // MacOS X: applications are stored in the bundle folder
     path_map2gcm        = QString("%1/Resources/map2gcm").arg(QCoreApplication::applicationDirPath().replace(QRegExp("MacOS$"), ""));
     path_map2jnx        = QString("%1/Resources/map2jnx").arg(QCoreApplication::applicationDirPath().replace(QRegExp("MacOS$"), ""));

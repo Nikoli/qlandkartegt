@@ -26,7 +26,7 @@
 #ifndef WIN32
 #include <unistd.h>
 #include <pwd.h>
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
 #include "config.h"
 #endif
 #endif
@@ -63,7 +63,7 @@ CDlgLoadOnlineMap::CDlgLoadOnlineMap()
     }
     else
     {
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
         struct passwd * userInfo = getpwuid(getuid());
         tempDir = QDir::homePath() + "/qlandkartegt-" + userInfo->pw_name + "/maps/";
 #else

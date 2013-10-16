@@ -26,7 +26,7 @@
 
 CCopyright::CCopyright()
 {
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
     this->setParent(qApp->focusWidget());
     this->setWindowModality(Qt::WindowModal);
     this->setWindowFlags(Qt::Sheet);

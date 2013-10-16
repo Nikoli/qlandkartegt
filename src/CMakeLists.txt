@@ -20,7 +20,9 @@ find_package(Qt5WebKit)
 find_package(Qt5WebKitWidgets)
 find_package(Qt5Script)
 find_package(Qt5OpenGL)
-find_package(Qt5DBus)
+if (NOT APPLE)
+    find_package(Qt5DBus)
+endif (NOT APPLE)
 find_package(Qt5Sql)
 find_package(Qt5PrintSupport)
 find_package(Qt5SerialPort)
@@ -517,11 +519,11 @@ SET (PLOT_3D ON CACHE BOOL "3D Maps with OpenGL")
 SET (GPX_EXTENSIONS ON CACHE BOOL "Read <extensions> data from tracks in GPX files.")
 SET (GEO_DB ON CACHE BOOL "Enable Sqlite database for geo data")
 SET (MIKROKOPTER OFF CACHE BOOL "Enable telemtry with a mikrokopter")
-if (NOT WIN32)
+if (NOT WIN32 AND NOT APPLE)
 SET (DBUS ON CACHE BOOL "Enable DBus control.")
-else (NOT WIN32)
+else (NOT WIN32 AND NOT APPLE)
 SET (DBUS OFF CACHE BOOL "Enable DBus control.")
-endif (NOT WIN32)
+endif (NOT WIN32 AND NOT APPLE)
 SET (ALTKEY_MOVES_MAP OFF CACHE BOOL "Move map while pressing ALT key and mousemove.")
 SET (RMAP ON CACHE BOOL "Enable TwoNav RMAP Support")
 
@@ -715,11 +717,14 @@ target_link_libraries(
       ${QTSOAP_LIBRARIES}
       ${PROFILING_LIBRARIES}
       tzone
-      GL
-      GLU
-  )
+      ${OPENGL_LIBRARIES}
+)
 
-qt5_use_modules(${PROGNAME} Core Gui Widgets Network Xml DBus WebKit WebKitWidgets Script XmlPatterns OpenGL Sql PrintSupport SerialPort Multimedia)
+if(APPLE)
+  qt5_use_modules(${PROGNAME} Core Gui Widgets Network Xml WebKit WebKitWidgets Script XmlPatterns OpenGL Sql PrintSupport SerialPort Multimedia)
+else(APPLE)
+  qt5_use_modules(${PROGNAME} Core Gui Widgets Network Xml DBus WebKit WebKitWidgets Script XmlPatterns OpenGL Sql PrintSupport SerialPort Multimedia)
+endif(APPLE)
 
 install(
     TARGETS

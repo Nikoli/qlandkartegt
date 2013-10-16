@@ -28,7 +28,7 @@ CDlgSetupGrid::CDlgSetupGrid(QWidget * parent)
 : QDialog(parent)
 {
     this->setWindowModality(Qt::WindowModal);
-#if defined(Q_WS_MAC)
+#if defined(Q_OS_MAC)
     this->setParent(qApp->focusWidget());
     this->setWindowFlags(Qt::Sheet);
 #endif

@@ -210,7 +210,7 @@ int main(int argc, char ** argv)
         }
 
         QStringList dirList;
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
         dirList << ".";
         dirList << "src";
 #ifndef Q_OS_WIN32
@@ -257,9 +257,16 @@ int main(int argc, char ** argv)
 
     GDALAllRegister();
 
+#ifdef Q_OS_MAC
+    QCoreApplication::setApplicationName("QLandkarte GT");
+    QCoreApplication::setApplicationVersion(VER_STR);
+    QCoreApplication::setOrganizationName("org.qlandkarte");
+    QCoreApplication::setOrganizationDomain("org.qlandkarte");
+#else
     QCoreApplication::setApplicationName("QLandkarteGT");
     QCoreApplication::setOrganizationName("QLandkarteGT");
     QCoreApplication::setOrganizationDomain("qlandkarte.org");
+#endif
     QApplication::setWindowIcon(QIcon(":/icons/qlandkartegt.png"));
 
 #ifdef WIN32

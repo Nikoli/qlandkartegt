@@ -43,7 +43,7 @@
 
 #include <tzdata.h>
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
 #include <CoreFoundation/CoreFoundation.h>
 
 template<class T>
@@ -565,7 +565,7 @@ void CTrackEditWidget::slotUpdate()
     QList<CTrack::pt_t>& trkpts           = track->getTrackPoints();
     QList<CTrack::pt_t>::iterator trkpt   = trkpts.begin();
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
     // work around https://bugreports.qt.nokia.com/browse/QTBUG-21678
     CFType<CFLocaleRef> loc(CFLocaleCopyCurrent());
     CFType<CFDateFormatterRef> df(CFDateFormatterCreate(NULL, loc, kCFDateFormatterNoStyle, kCFDateFormatterNoStyle));
@@ -665,7 +665,7 @@ void CTrackEditWidget::slotUpdate()
                 time = TimeStamp(trkpt->timestamp).toZone(timezone).toDateTime();
             }
 
-#ifdef Q_WS_MAC
+#ifdef Q_OS_MAC
             CFType<CFDateRef> cfdate(CFDateCreate(NULL, time.toTime_t() - kCFAbsoluteTimeIntervalSince1970));
             CFType<CFStringRef> cfstr(CFDateFormatterCreateStringWithDate(NULL, df, cfdate));
             str = CFStringToQString(cfstr);
