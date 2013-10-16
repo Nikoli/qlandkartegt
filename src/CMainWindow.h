@@ -21,7 +21,7 @@
 
 #include <QMainWindow>
 #include <qtsoap.h>
-#include <QSoundEffect>
+
 class QSplitter;
 class QLabel;
 class QTabWidget;
@@ -81,8 +81,6 @@ class CMainWindow : public QMainWindow
         bool didCrash(){return crashed;}
 
         QCheckBox * getCheckBoxQuadraticZoom(){return quadraticZoom;}
-
-        static QSoundEffect player;
 
     protected:
         void closeEvent(QCloseEvent * e);
